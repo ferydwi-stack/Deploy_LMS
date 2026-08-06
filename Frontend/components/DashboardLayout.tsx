@@ -232,13 +232,9 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
           </div>
 
           {/* Top Right User Profile Info */}
-          <Link
-            href={role === 'admin' ? '/admin/settings' : `/${role}/profile`}
-            className="flex items-center gap-3 hover:opacity-85 transition cursor-pointer group"
-            title="Lihat Profil Saya"
-          >
+          <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900 leading-tight group-hover:text-[#2563EB] transition">
+              <p className="text-sm font-bold text-slate-900 leading-tight">
                 {userDisplayName}
               </p>
               <p className="text-xs text-slate-400 font-medium">
@@ -247,11 +243,11 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
             </div>
             <div className="relative">
               {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center">{unreadCount}</span>}
-              <div className="w-10 h-10 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-bold text-sm shadow-md uppercase font-mono group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-bold text-sm shadow-md uppercase font-mono">
                 {userInitials}
               </div>
             </div>
-          </Link>
+          </div>
         </header>
 
         {/* Main Content */}
