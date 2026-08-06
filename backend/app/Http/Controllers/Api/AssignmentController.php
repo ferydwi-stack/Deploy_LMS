@@ -13,7 +13,10 @@ class AssignmentController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Assignment::with(['course.teacher'])->withCount('submissions');
+        $query = Assignment::with([
+            'course' => fn ($q) => $q->withCount('students'),
+            'course.teacher',
+        ])->withCount('submissions');
 
         if ($request->has('course_id') && ! empty($request->course_id)) {
             $query->where('course_id', $request->course_id);
