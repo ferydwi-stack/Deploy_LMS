@@ -100,9 +100,13 @@ export default function GuruReportsPage() {
               }
             });
 
-            const tugasScore = submittedCount > 0 ? Math.round(totalScoreSum / submittedCount) : 85;
-            const storedUts = s.pivot?.uts_score !== undefined && s.pivot?.uts_score !== null ? Number(s.pivot.uts_score) : 80;
-            const storedUas = s.pivot?.uas_score !== undefined && s.pivot?.uas_score !== null ? Number(s.pivot.uas_score) : 85;
+            const tugasScore = submittedCount > 0 ? Math.round(totalScoreSum / submittedCount) : 0;
+            const storedUts = s.pivot?.uts_score !== undefined && s.pivot?.uts_score !== null ? Number(s.pivot.uts_score) : 0;
+            const storedUas = s.pivot?.uas_score !== undefined && s.pivot?.uas_score !== null ? Number(s.pivot.uas_score) : 0;
+
+            const absensiPercentStr = totalSessions > 0
+              ? `${Math.round((presentCount / totalSessions) * 100)}%`
+              : '0%';
 
             return {
               no: (idx + 1).toString().padStart(2, '0'),
@@ -112,7 +116,7 @@ export default function GuruReportsPage() {
               tugasScore: tugasScore,
               utsScore: storedUts,
               uasScore: storedUas,
-              absensiPercent: absensiPercent
+              absensiPercent: absensiPercentStr
             };
           });
           setReportsData(mapped);

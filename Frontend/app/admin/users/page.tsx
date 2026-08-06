@@ -195,18 +195,12 @@ export default function AdminUserManagementPage() {
 
   // 7. Handler: Bulk Import (Realtime POST to MySQL)
   const handleProcessImport = async () => {
-    const usersToImport = parsedImportUsers.length > 0 ? parsedImportUsers : [
-      { name: 'Teacher 1', email: 'teacher1@school.id', role: 'guru', password: 'password123', nisn_or_nip: '1985001' },
-      { name: 'Teacher 2', email: 'teacher2@school.id', role: 'guru', password: 'password123', nisn_or_nip: '1985002' },
-      { name: 'Teacher 3', email: 'teacher3@school.id', role: 'guru', password: 'password123', nisn_or_nip: '1985003' },
-      { name: 'Teacher 4', email: 'teacher4@school.id', role: 'guru', password: 'password123', nisn_or_nip: '1985004' },
-      { name: 'Teacher 5', email: 'teacher5@school.id', role: 'guru', password: 'password123', nisn_or_nip: '1985005' },
-      { name: 'Student 1', email: 'student1@student.school.id', role: 'siswa', password: 'password123', nisn_or_nip: '2026001' },
-      { name: 'Student 2', email: 'student2@student.school.id', role: 'siswa', password: 'password123', nisn_or_nip: '2026002' },
-      { name: 'Student 3', email: 'student3@student.school.id', role: 'siswa', password: 'password123', nisn_or_nip: '2026003' },
-      { name: 'Student 4', email: 'student4@student.school.id', role: 'siswa', password: 'password123', nisn_or_nip: '2026004' },
-      { name: 'Student 5', email: 'student5@student.school.id', role: 'siswa', password: 'password123', nisn_or_nip: '2026005' }
-    ];
+    if (parsedImportUsers.length === 0) {
+      alert('Pilih file CSV / Excel yang memiliki data akun terlebih dahulu.');
+      return;
+    }
+
+    const usersToImport = parsedImportUsers;
 
     try {
       const { api } = await import('@/lib/api');

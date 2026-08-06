@@ -37,41 +37,44 @@ function GuruTugasContent() {
   });
 
   const loadDataFromApi = React.useCallback(async () => {
-    const [assignmentsData, studentsData] = await Promise.all([
+    const [assignmentsData, courseDetail] = await Promise.all([
       api.getAssignments(courseId).catch(() => []),
-      api.getUsers('siswa').catch(() => [])
+      api.getCourseDetail(Number(courseId)).catch(() => null)
     ]);
 
-    const countSiswa = Array.isArray(studentsData) && studentsData.length > 0 ? studentsData.length : 8;
+    const enrolledStudents = ensureArray(courseDetail?.students, 'students');
+    const countSiswa = enrolledStudents.length;
     setRealStudentsCount(countSiswa);
 
-    if (Array.isArray(assignmentsData) && assignmentsData.length > 0) {
-      const submissionsByAssignment = await Promise.all(assignmentsData.map(async (a: any) => {
+    const assignmentsList = ensureArray(assignmentsData, 'assignments');
+
+    if (assignmentsList.length > 0) {
+      const submissionsByAssignment = await Promise.all(assignmentsList.map(async (a: any) => {
         const apiSubs = await api.getAssignmentSubmissions(a.id).catch(() => []);
-        return { assignmentId: a.id, submissions: Array.isArray(apiSubs) ? apiSubs : [] };
+        return { assignmentId: a.id, submissions: ensureArray(apiSubs, 'submissions') };
       }));
 
-      const formatted = assignmentsData.map((a: any) => {
-        const matched = submissionsByAssignment.find((item) => item.assignmentId === a.id);
+      const formatted = assignmentsList.map((a: any) => {
+        const matched = submissionsByAssignment.find((item) => String(item.assignmentId) === String(a.id));
         const apiSubs = matched ? matched.submissions : [];
         const actualCount = apiSubs.length;
 
         return {
           id: a.id,
           title: a.title,
-          category: 'Tugas Harian',
+          category: a.instruction || 'Tugas Harian',
           course: courseTitle,
-          deadline: a.due_date ? a.due_date.replace('T', ' ').substring(0, 16) : '2026-08-05 23:59',
+          deadline: a.due_date ? a.due_date.replace('T', ' ').substring(0, 16) : 'Tanpa Tenggat',
           submittedCount: actualCount,
           totalStudents: countSiswa,
-          status: actualCount >= countSiswa ? 'Selesai' : 'Aktif',
-          attachment: 'lembar_soal.pdf',
+          status: actualCount > 0 && actualCount >= countSiswa ? 'Selesai' : 'Aktif',
+          attachment: a.file_path ? getStorageUrl(a.file_path) : null,
           submissions: apiSubs.map((s: any, idx: number) => ({
             id: s.id || `SUB-${a.id}-${idx}`,
             name: s.student ? s.student.name : 'Siswa',
             nis: s.student ? (s.student.nisn_or_nip || `USR-00${s.student.id}`) : `USR-${s.student_id}`,
-            time: s.submitted_at ? s.submitted_at.substring(0, 16).replace('T', ' ') : 'Hari ini',
-            file: s.original_filename || s.file_path || 'jawaban_tugas.pdf',
+            time: s.submitted_at ? s.submitted_at.substring(0, 16).replace('T', ' ') : 'Baru saja',
+            file: s.file_path ? getStorageUrl(s.file_path) : (s.original_filename || null),
             grade: s.score !== null && s.score !== undefined ? String(s.score) : '',
             feedback: s.teacher_feedback || ''
           }))
@@ -93,13 +96,14 @@ function GuruTugasContent() {
     let taskSubmissions: any[] = [];
     try {
       const apiSubs = await api.getAssignmentSubmissions(tugas.id).catch(() => []);
-      if (Array.isArray(apiSubs) && apiSubs.length > 0) {
-        taskSubmissions = apiSubs.map((s: any, idx: number) => ({
+      const subsList = ensureArray(apiSubs, 'submissions');
+      if (subsList.length > 0) {
+        taskSubmissions = subsList.map((s: any, idx: number) => ({
           id: s.id || `SUB-${tugas.id}-${idx}`,
           name: s.student ? s.student.name : 'Siswa',
           nis: s.student ? (s.student.nisn_or_nip || `USR-00${s.student.id}`) : `USR-${s.student_id}`,
-          time: s.submitted_at ? s.submitted_at.substring(0, 16).replace('T', ' ') : 'Hari ini',
-          file: s.original_filename || s.file_path || 'jawaban_tugas.pdf',
+          time: s.submitted_at ? s.submitted_at.substring(0, 16).replace('T', ' ') : 'Baru saja',
+          file: s.file_path ? getStorageUrl(s.file_path) : (s.original_filename || null),
           grade: s.score !== null && s.score !== undefined ? String(s.score) : '',
           feedback: s.teacher_feedback || ''
         }));

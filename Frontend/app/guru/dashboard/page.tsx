@@ -33,31 +33,28 @@ export default function GuruDashboardPage() {
 
   const courses = React.useMemo(() => {
     if (!dashboardData || !currentUser) return [];
-    const { coursesData } = dashboardData;
+    const coursesData = ensureArray(dashboardData.coursesData, 'courses');
 
-    if (Array.isArray(coursesData)) {
-      const loggedInName = currentUser.name || '';
-      const loggedInId = currentUser.id;
+    const loggedInName = currentUser.name || '';
+    const loggedInId = String(currentUser.id);
 
-      const myCourses = coursesData.filter((c: any) => {
-        if (c.teacher_id && Number(c.teacher_id) === Number(loggedInId)) return true;
-        if (c.teacher && typeof c.teacher === 'object' && Number(c.teacher.id) === Number(loggedInId)) return true;
-        if (c.teacher && typeof c.teacher === 'string' && c.teacher.toLowerCase().includes(loggedInName.toLowerCase())) return true;
-        return false;
-      });
+    const myCourses = coursesData.filter((c: any) => {
+      if (c.teacher_id && String(c.teacher_id) === loggedInId) return true;
+      if (c.teacher && typeof c.teacher === 'object' && String(c.teacher.id) === loggedInId) return true;
+      if (c.teacher && typeof c.teacher === 'string' && c.teacher.toLowerCase().includes(loggedInName.toLowerCase())) return true;
+      return false;
+    });
 
-      return myCourses.map((c: any) => ({
-        id: c.id,
-        code: c.code || 'MAPEL',
-        title: c.title,
-        teacher: c.teacher ? (typeof c.teacher === 'object' ? c.teacher.name : c.teacher) : loggedInName,
-        studentsCount: c.students_count || (Array.isArray(c.students) ? c.students.length : 0),
-        materiCount: c.materials_count || 0,
-        tugasCount: c.assignments_count || 0,
-        path: '/guru/materi'
-      }));
-    }
-    return [];
+    return myCourses.map((c: any) => ({
+      id: c.id,
+      code: c.code || 'MAPEL',
+      title: c.title,
+      teacher: c.teacher ? (typeof c.teacher === 'object' ? c.teacher.name : c.teacher) : loggedInName,
+      studentsCount: c.students_count || (Array.isArray(c.students) ? c.students.length : 0),
+      materiCount: c.materials_count || 0,
+      tugasCount: c.assignments_count || 0,
+      path: '/guru/materi'
+    }));
   }, [dashboardData, currentUser]);
 
   const teacherName = currentUser?.name || '';
@@ -68,13 +65,11 @@ export default function GuruDashboardPage() {
   // Compute pending tasks to grade strictly for teacher's courses
   const pendingAssignmentsCount = React.useMemo(() => {
     if (!dashboardData || !currentUser) return 0;
-    const { assignmentsData } = dashboardData;
-    if (!Array.isArray(assignmentsData)) return 0;
+    const assignmentsData = ensureArray(dashboardData.assignmentsData, 'assignments');
 
-    const myCourseIds = new Set(courses.map(c => Number(c.id)));
-    const myAssignments = assignmentsData.filter((a: any) => myCourseIds.has(Number(a.course_id)));
+    const myCourseIds = new Set(courses.map(c => String(c.id)));
+    const myAssignments = assignmentsData.filter((a: any) => myCourseIds.has(String(a.course_id)));
 
-    // Count assignments that have un-graded submissions or are active
     return myAssignments.filter((a: any) => {
       const subCount = a.submissions_count || (Array.isArray(a.submissions) ? a.submissions.length : 0);
       return subCount > 0;

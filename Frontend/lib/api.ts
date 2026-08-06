@@ -61,6 +61,34 @@ export const setCurrentUser = (userObj: any): void => {
   }
 };
 
+export const getStorageUrl = (filePath?: string | null): string => {
+  if (!filePath) return '';
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
+  const host = typeof window !== 'undefined' ? (window.location.hostname || 'localhost') : '127.0.0.1';
+  const cleanPath = filePath.replace(/^\/+/, '').replace(/^storage\//, '');
+  return `http://${host}:8000/storage/${cleanPath}`;
+};
+
+export const ensureArray = (res: any, preferredKey?: string): any[] => {
+  if (Array.isArray(res)) return res;
+  if (!res || typeof res !== 'object') return [];
+
+  if (preferredKey && Array.isArray(res[preferredKey])) return res[preferredKey];
+  if (Array.isArray(res.data)) return res.data;
+  if (Array.isArray(res.users)) return res.users;
+  if (Array.isArray(res.courses)) return res.courses;
+  if (Array.isArray(res.assignments)) return res.assignments;
+  if (Array.isArray(res.materials)) return res.materials;
+  if (Array.isArray(res.students)) return res.students;
+  if (Array.isArray(res.attendances)) return res.attendances;
+  if (Array.isArray(res.notifications)) return res.notifications;
+  if (Array.isArray(res.submissions)) return res.submissions;
+
+  return [];
+};
+
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = getAuthToken();
   const headers: Record<string, string> = {
@@ -90,6 +118,10 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   }
 
   const data = await response.json().catch(() => ({}));
+
+  if (response.status === 401) {
+    removeAuthToken();
+  }
 
   if (!response.ok) {
     throw new Error(data.message || `API Error: ${response.status}`);

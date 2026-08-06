@@ -26,9 +26,18 @@ class CourseController extends Controller
         return response()->json($query->latest()->get());
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $course = Course::with(['teacher', 'students', 'materials', 'assignments.submissions', 'attendances'])->findOrFail($id);
+        $user = $request->user();
+
+        if ($user && $user->role === 'guru' && $course->teacher_id !== $user->id) {
+            return response()->json(['message' => 'Anda tidak memiliki akses ke kelas ini.'], 403);
+        }
+
+        if ($user && $user->role === 'siswa' && ! $course->students()->where('users.id', $user->id)->exists()) {
+            return response()->json(['message' => 'Anda belum terdaftar di kelas ini.'], 403);
+        }
 
         return response()->json($course);
     }
@@ -41,6 +50,11 @@ class CourseController extends Controller
         ]);
 
         $course = Course::findOrFail($courseId);
+        $user = $request->user();
+
+        if ($user && $user->role === 'guru' && $course->teacher_id !== $user->id) {
+            return response()->json(['message' => 'Anda tidak memiliki akses ke kelas ini.'], 403);
+        }
 
         $course->students()->updateExistingPivot($studentId, [
             'uts_score' => $validated['uts_score'],
@@ -57,14 +71,13 @@ class CourseController extends Controller
     public function store(StoreCourseRequest $request)
     {
         $validated = $request->validated();
+        $user = $request->user();
 
         if (empty($validated['teacher_id'])) {
-            $user = $request->user();
             if ($user) {
                 $validated['teacher_id'] = $user->id;
             } else {
-                $firstTeacher = User::where('role', 'guru')->first();
-                $validated['teacher_id'] = $firstTeacher ? $firstTeacher->id : 1;
+                return response()->json(['message' => 'Guru pengajar (teacher_id) wajib ditentukan.'], 422);
             }
         }
 

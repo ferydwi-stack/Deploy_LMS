@@ -12,10 +12,18 @@ class AssignmentController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
         $query = Assignment::with(['course.teacher'])->withCount('submissions');
 
         if ($request->has('course_id') && ! empty($request->course_id)) {
             $query->where('course_id', $request->course_id);
+        } elseif ($user) {
+            if ($user->role === 'guru') {
+                $query->whereHas('course', fn ($q) => $q->where('teacher_id', $user->id));
+            } elseif ($user->role === 'siswa') {
+                $query->whereHas('course.students', fn ($q) => $q->where('users.id', $user->id)
+                    ->where('course_student.status', 'active'));
+            }
         }
 
         $assignments = $query->latest()->get();
@@ -26,10 +34,17 @@ class AssignmentController extends Controller
     public function store(StoreAssignmentRequest $request)
     {
         $validated = $request->validated();
+        $user = $request->user();
 
         if (empty($validated['course_id'])) {
-            $firstCourse = Course::first();
-            $validated['course_id'] = $firstCourse ? $firstCourse->id : 1;
+            return response()->json(['message' => 'Mata pelajaran (course_id) wajib dipilih.'], 422);
+        }
+
+        if ($user && $user->role === 'guru') {
+            $course = Course::find($validated['course_id']);
+            if (! $course || $course->teacher_id !== $user->id) {
+                return response()->json(['message' => 'Anda tidak memiliki akses ke kelas ini.'], 403);
+            }
         }
 
         $assignment = Assignment::create($validated);
