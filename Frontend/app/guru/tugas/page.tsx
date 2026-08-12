@@ -4,10 +4,10 @@ import React, { useState, useEffect, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Plus, ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, X, Download, Award, CheckCircle2, Clock, Filter, ExternalLink, FileText, UploadCloud } from 'lucide-react';
+import { Plus, ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, X, Download, Award, CheckCircle2, Clock, Filter, ExternalLink, FileText, UploadCloud, Eye } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
-import { api } from '@/lib/api';
+import { api, notifyDataChanged } from '@/lib/api';
 
 function GuruTugasContent() {
   const searchParams = useSearchParams();
@@ -20,6 +20,7 @@ function GuruTugasContent() {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [previewTask, setPreviewTask] = useState<any>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
   const [submissionFilter, setSubmissionFilter] = useState<'all' | 'graded' | 'ungraded'>('all');
   const [inputGrade, setInputGrade] = useState('');
@@ -35,6 +36,7 @@ function GuruTugasContent() {
     title: '',
     category: 'Tugas Harian',
     deadline: '',
+    instruction: '',
     attachment: ''
   });
 
@@ -59,26 +61,36 @@ function GuruTugasContent() {
   const removeModalFile = (index: number) => setModalFiles(prev => prev.filter((_, i) => i !== index));
 
   const loadDataFromApi = React.useCallback(async () => {
-    const assignmentsData = await api.getAssignments(courseId).catch(() => []);
-    const studentsData = await api.getUsers('siswa').catch(() => []);
+    const [assignmentsData, courseDetail] = await Promise.all([
+      api.getAssignments(courseId).catch(() => []),
+      api.getCourseDetail(Number(courseId)).catch(() => null)
+    ]);
 
-    const countSiswa = Array.isArray(studentsData) && studentsData.length > 0 ? studentsData.length : 8;
+    const enrolledStudents = courseDetail?.students || [];
+    const countSiswa = Array.isArray(enrolledStudents) ? enrolledStudents.length : 0;
     setRealStudentsCount(countSiswa);
 
     if (Array.isArray(assignmentsData)) {
       const formatted = assignmentsData.map((a: any) => {
         const actualCount = a.submissions_count || 0;
+        const dueDate = a.due_date ? new Date(a.due_date) : null;
+        const deadlineFormatted = dueDate
+          ? dueDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : '-';
         return {
           id: a.id,
           title: a.title,
           category: 'Tugas Harian',
           course: courseTitle,
-          deadline: a.due_date ? a.due_date.replace('T', ' ').substring(0, 16) : '2026-08-05 23:59',
+          deadline: deadlineFormatted,
+          deadlineRaw: a.due_date || '',
           submittedCount: actualCount,
           totalStudents: countSiswa,
-          status: actualCount >= countSiswa ? 'Selesai' : 'Aktif',
-          attachment: 'lembar_soal.pdf',
-          submissions: [] // akan diload on-demand
+          status: actualCount >= countSiswa && countSiswa > 0 ? 'Selesai' : 'Aktif',
+          attachment: a.attachment_name || '',
+          attachmentPath: a.attachment_path || '',
+          instruction: a.instruction || '',
+          submissions: []
         };
       });
       setTugasList(formatted);
@@ -122,19 +134,37 @@ function GuruTugasContent() {
       const uploadFormData = new FormData();
       uploadFormData.append('course_id', courseId);
       uploadFormData.append('title', newTask.title);
-      uploadFormData.append('instruction', `Modul/Kategori: ${newTask.category}`);
+      let instructionText = `Modul/Kategori: ${newTask.category}`;
+      if (newTask.instruction?.trim()) {
+        instructionText += `\n\n${newTask.instruction.trim()}`;
+      }
+      uploadFormData.append('instruction', instructionText);
       if (newTask.deadline) {
-        uploadFormData.append('due_date', newTask.deadline.includes('T') ? `${newTask.deadline.replace('T', ' ')}:00` : newTask.deadline);
+        // Konversi ke format string yang persis sama tapi hindari shift timezone
+        const dateObj = new Date(newTask.deadline);
+        if (!isNaN(dateObj.getTime())) {
+          // Ambil local parts
+          const y = dateObj.getFullYear();
+          const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const d = String(dateObj.getDate()).padStart(2, '0');
+          const h = String(dateObj.getHours()).padStart(2, '0');
+          const min = String(dateObj.getMinutes()).padStart(2, '0');
+          uploadFormData.append('due_date', `${y}-${m}-${d} ${h}:${min}:00`);
+        } else {
+          uploadFormData.append('due_date', newTask.deadline.includes('T') ? `${newTask.deadline.replace('T', ' ')}:00` : newTask.deadline);
+        }
       }
       if (modalFiles.length > 0) {
         uploadFormData.append('file', modalFiles[0]);
       }
 
       await api.createAssignment(uploadFormData);
+      notifyDataChanged('lms_assignments_updated');
       
-      setNewTask({ title: '', category: 'Tugas Harian', deadline: '', attachment: '' });
+      setNewTask({ title: '', category: 'Tugas Harian', deadline: '', instruction: '', attachment: '' });
       setModalFiles([]);
       setIsCreateModalOpen(false);
+      await new Promise(r => setTimeout(r, 500));
       await loadDataFromApi();
     } catch (err: any) {
       console.error('Create assignment error:', err);
@@ -149,6 +179,7 @@ function GuruTugasContent() {
     try {
       if (selectedSubmission.id && !String(selectedSubmission.id).startsWith('SUB-')) {
         await api.gradeSubmission(selectedSubmission.id, parseInt(inputGrade || '0'), inputFeedback);
+        notifyDataChanged('lms_submissions_updated');
       }
     } catch (err) {
       console.warn('Grade submission notice:', err);
@@ -256,7 +287,12 @@ function GuruTugasContent() {
                     <span className="text-xs text-slate-400 font-mono">Tenggat: {tugas.deadline}</span>
                   </div>
                   <h4 className="text-base font-bold text-slate-900 leading-snug">{tugas.title}</h4>
-                  <p className="text-xs text-slate-400 font-mono mt-1">Lampiran Soal: {tugas.attachment}</p>
+                  {tugas.attachment && (
+                    <p className="text-xs text-slate-400 font-mono mt-1">Lampiran: {String(tugas.attachment).split('/').pop()}</p>
+                  )}
+                  {!tugas.attachment && tugas.instruction && (
+                    <p className="text-xs text-slate-400 mt-1 line-clamp-1">{tugas.instruction.replace(/https?:\/\/\S+/g, '').trim()}</p>
+                  )}
                 </div>
               </div>
 
@@ -266,13 +302,22 @@ function GuruTugasContent() {
                   <p className="text-xs font-bold text-slate-900 font-mono">{tugas.submittedCount} / {tugas.totalStudents} Siswa</p>
                 </div>
 
-                <button
-                  onClick={() => handleOpenTaskModal(tugas)}
-                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
-                >
-                  <Award className="w-4 h-4 text-amber-400" />
-                  <span>Periksa & Beri Nilai</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPreviewTask(tugas)}
+                    className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2563EB] font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span className="hidden sm:inline">Preview</span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenTaskModal(tugas)}
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
+                  >
+                    <Award className="w-4 h-4 text-amber-400" />
+                    <span>Periksa & Beri Nilai</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -408,6 +453,66 @@ function GuruTugasContent() {
         </div>
       )}
 
+      {/* Modal Preview Tugas */}
+      {previewTask && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center">
+                  <FileEdit className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">{previewTask.title}</h3>
+                  <p className="text-xs text-slate-400 font-medium">Tenggat: {previewTask.deadline}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewTask(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-6 space-y-3">
+                <p className="text-xs font-bold text-slate-800 uppercase tracking-wider">Deskripsi & Instruksi:</p>
+                <p className="text-xs text-slate-600 font-medium whitespace-pre-wrap break-words">
+                  {previewTask.instruction || 'Tidak ada deskripsi.'}
+                </p>
+              </div>
+
+              {previewTask.attachmentPath && (
+                <div className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-700 max-w-[200px] truncate">{previewTask.attachment}</span>
+                  </div>
+                  <a
+                    href={previewTask.attachmentPath.startsWith('http') ? previewTask.attachmentPath : `http://127.0.0.1:8000/storage/${previewTask.attachmentPath}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-700 transition"
+                  >
+                    Unduh File
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-6 mt-4 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => setPreviewTask(null)}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Tutup Pratinjau
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Form Input Nilai */}
       {selectedSubmission && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-60 flex items-center justify-center p-4">
@@ -517,6 +622,20 @@ function GuruTugasContent() {
                   onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Deskripsi / Link Tugas (Opsional)</label>
+                <textarea
+                  rows={3}
+                  placeholder="Contoh: Jawab semua soal di link berikut: https://drive.google.com/file/d/..."
+                  value={newTask.instruction}
+                  onChange={(e) => setNewTask({ ...newTask, instruction: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Gunakan field ini untuk share link tugas (Google Drive, MediaFire, dll) jika tidak upload file
+                </p>
               </div>
 
               <div>

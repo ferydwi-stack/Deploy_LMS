@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 
 export function useRealtimeData<T>(
   fetchData: () => Promise<T>,
   refreshInterval = 45000,
-  deps: readonly unknown[] = []
+  deps: readonly unknown[] = [],
+  eventName?: string
 ) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const fetchDataRef = useRef(fetchData);
+  const depsKey = useMemo(() => JSON.stringify(deps), [deps]);
 
   useEffect(() => {
     fetchDataRef.current = fetchData;
@@ -32,7 +34,7 @@ export function useRealtimeData<T>(
 
   useEffect(() => {
     void load(true);
-  }, [load, ...deps]);
+  }, [load, depsKey]);
 
   useEffect(() => {
     if (refreshInterval <= 0) {
@@ -46,7 +48,14 @@ export function useRealtimeData<T>(
     }, refreshInterval);
 
     return () => window.clearInterval(intervalId);
-  }, [load, refreshInterval, ...deps]);
+  }, [load, refreshInterval, depsKey]);
+
+  useEffect(() => {
+    if (!eventName || typeof window === 'undefined') return;
+    const handler = () => void load(false);
+    window.addEventListener(eventName, handler);
+    return () => window.removeEventListener(eventName, handler);
+  }, [eventName, load]);
 
   const refresh = useCallback(async () => {
     await load(true);

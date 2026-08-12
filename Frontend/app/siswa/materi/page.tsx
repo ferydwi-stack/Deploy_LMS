@@ -7,7 +7,15 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, Download, Eye, X, Video, FileText, Link2, Presentation } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
-import { api } from '@/lib/api';
+import { api, getAuthToken } from '@/lib/api';
+
+const getDownloadUrl = (filePath: string) => {
+  if (!filePath) return '';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin.replace('3000', '8000') : 'http://127.0.0.1:8000';
+  const token = getAuthToken();
+  const url = `${baseUrl}/storage/${filePath}`;
+  return token ? `${url}?token=${encodeURIComponent(token)}` : url;
+};
 
 function SiswaMateriContent() {
   const { user } = useAuth();
@@ -28,8 +36,9 @@ function SiswaMateriContent() {
           ? m.content.split('[Category: ')[1].split(']')[0]
           : 'PDF Document',
         title: m.title,
-        desc: m.content ? m.content.split('[Category:')[0].trim() : 'Modul materi pembelajaran.',
-        url: m.file_path?.startsWith('http') ? m.file_path : (m.file_path ? `http://127.0.0.1:8000/storage/${m.file_path}` : '')
+        desc: m.content ? m.content.split('[Category:')[0].trim().replace(/https?:\/\/\S+/g, '').trim() : 'Modul materi pembelajaran.',
+        url: m.file_path ? getDownloadUrl(m.file_path) : '',
+        downloadUrl: m.file_path ? getDownloadUrl(m.file_path) : ''
       }));
     }
     return [];
@@ -133,7 +142,14 @@ function SiswaMateriContent() {
                   <span>Preview / Baca</span>
                 </button>
 
-                <button className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    if (materi.downloadUrl) {
+                      window.open(materi.downloadUrl, '_blank');
+                    }
+                  }}
+                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                >
                   <Download className="w-3.5 h-3.5" />
                   <span>Unduh File</span>
                 </button>
@@ -177,17 +193,45 @@ function SiswaMateriContent() {
                 <p className="text-xs text-slate-500 font-medium max-w-xs mx-auto">{previewMateri.desc}</p>
               </div>
 
-              <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl font-mono truncate">
-                Tautan Akses: {previewMateri.url}
-              </div>
+              {previewMateri.category.includes('Link') ? (
+                <div className="bg-[#E0F2FE] border border-[#7DD3FC] rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-[#0EA5E9] font-bold text-xs uppercase">
+                    <Link2 className="w-4 h-4" />
+                    <span>Link Sumber</span>
+                  </div>
+                  <a
+                    href={previewMateri.url || previewMateri.desc}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-4 py-3 bg-white border border-[#BAE6FD] rounded-lg text-[#0EA5E9] font-bold text-xs text-center hover:bg-[#F0F9FF] transition"
+                  >
+                    Buka Link di Tab Baru
+                  </a>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl font-mono truncate">
+                  Tautan Akses: {previewMateri.url}
+                </div>
+              )}
             </div>
 
-            <div className="pt-6 mt-4 border-t border-slate-100 flex justify-end">
+            <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:justify-between items-center gap-3">
+              {!previewMateri.category.includes('Link') && previewMateri.downloadUrl && (
+                <a
+                  href={previewMateri.downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Unduh File</span>
+                </a>
+              )}
               <button
                 onClick={() => setPreviewMateri(null)}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl transition"
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
               >
-                Tutup Pratinjau
+                Tutup
               </button>
             </div>
           </div>

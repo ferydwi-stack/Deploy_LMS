@@ -74,8 +74,8 @@ function GuruUnggahMateriContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile) {
-      alert('Pilih file materi terlebih dahulu.');
+    if (!selectedFile && !formData.deskripsi) {
+      alert('Pilih file materi atau masukkan deskripsi/link terlebih dahulu.');
       return;
     }
     setLoading(true);

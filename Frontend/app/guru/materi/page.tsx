@@ -51,7 +51,7 @@ function GuruMateriContent() {
 
   const { data: materiData, loading: isLoading, refresh: refreshMaterials } = useRealtimeData(
     loadMateriFromApi,
-    5000,
+    60000,
     [courseId]
   );
 

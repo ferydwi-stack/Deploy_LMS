@@ -53,6 +53,12 @@ export const getCurrentUser = (): any | null => {
   return null;
 };
 
+export const notifyDataChanged = (eventName: string): void => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(eventName));
+  }
+};
+
 export const setCurrentUser = (userObj: any): void => {
   if (typeof window !== 'undefined' && userObj) {
     const user = userObj.user || userObj.data || userObj;

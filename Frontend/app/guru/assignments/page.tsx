@@ -1,70 +1,69 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { FileEdit, CheckCircle2, Clock, Award, Download, Eye, X } from 'lucide-react';
+import { FileEdit, CheckCircle2, Clock, Award, Download, Eye } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { api } from '@/lib/api';
 
 export default function GuruAssignmentsPage() {
-  const [submissions, setSubmissions] = useState([
-    {
-      id: 'SUB-001',
-      studentName: 'Student A',
-      studentId: 'USR-002',
-      course: 'Matematika - X IPA 1',
-      taskTitle: 'Tugas Persamaan Kuadrat',
-      submitTime: '2026-07-19 14:30 WIB',
-      file: 'jawaban_student_kuadrat.pdf',
-      grade: '90',
-      status: 'Sudah Dinilai',
-      feedback: 'Pengerjaan sangat baik, rumus ABC diterapkan dengan tepat.'
-    },
-    {
-      id: 'SUB-002',
-      studentName: 'Student B',
-      studentId: 'USR-004',
-      course: 'Matematika - X IPA 1',
-      taskTitle: 'Tugas Persamaan Kuadrat',
-      submitTime: '2026-07-20 18:15 WIB',
-      file: 'jawaban_student_persamaan.pdf',
-      grade: '',
-      status: 'Belum Dinilai',
-      feedback: ''
-    },
-    {
-      id: 'SUB-003',
-      studentName: 'Student C',
-      studentId: 'USR-005',
-      course: 'Matematika - X IPA 1',
-      taskTitle: 'Latihan Grafis Parabola',
-      submitTime: '2026-07-22 09:45 WIB',
-      file: 'grafik_parabola_student.png',
-      grade: '95',
-      status: 'Sudah Dinilai',
-      feedback: 'Grafik sangat rapi dan koordinat titik puncak tepat.'
-    }
-  ]);
-
+  const { user: currentUser } = useAuth();
   const [selectedSub, setSelectedSub] = useState<any>(null);
   const [inputGrade, setInputGrade] = useState('');
   const [inputFeedback, setInputFeedback] = useState('');
 
+  const { data: submissionsData } = useRealtimeData(
+    async () => {
+      if (!currentUser) return [];
+      const data = await api.getAllAssignments?.().catch(() => []);
+      return Array.isArray(data) ? data : [];
+    },
+    60000,
+    [currentUser?.id]
+  );
+
+  const [submissions, setSubmissions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (Array.isArray(submissionsData)) {
+      const processed = submissionsData.map((a: any) => ({
+        id: a.id,
+        studentName: a.student?.name || 'Siswa',
+        studentId: a.student?.nisn_or_nip || 'USR-000',
+        course: a.course?.title || 'Kelas',
+        taskTitle: a.title,
+        submitTime: a.submitted_at ? new Date(a.submitted_at).toLocaleString('id-ID') : '-',
+        file: a.file || '-',
+        grade: a.score ?? '',
+        status: a.status === 'graded' ? 'Sudah Dinilai' : 'Belum Dinilai',
+        feedback: a.teacher_feedback || ''
+      }));
+      setSubmissions(processed);
+    }
+  }, [submissionsData]);
+
   const handleOpenGradeModal = (sub: any) => {
     setSelectedSub(sub);
-    setInputGrade(sub.grade);
-    setInputFeedback(sub.feedback);
+    setInputGrade(sub.grade || '');
+    setInputFeedback(sub.feedback || '');
   };
 
-  const handleSaveGrade = (e: React.FormEvent) => {
+  const handleSaveGrade = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSub) return;
-    setSubmissions(submissions.map(s => s.id === selectedSub.id ? {
-      ...s,
-      grade: inputGrade,
-      status: 'Sudah Dinilai',
-      feedback: inputFeedback
-    } : s));
-    setSelectedSub(null);
+    if (!selectedSub || !inputGrade) return;
+
+    try {
+      await api.gradeSubmission(selectedSub.id, Number(inputGrade), inputFeedback);
+      await api.getAllAssignments?.().catch(() => []);
+      setSelectedSub(null);
+    } catch (err) {
+      console.error('Failed to grade:', err);
+      alert('Gagal menyimpan nilai');
+    }
   };
+
+  const pendingCount = submissions.filter(s => s.status === 'Belum Dinilai').length;
 
   return (
     <DashboardLayout
@@ -81,70 +80,76 @@ export default function GuruAssignmentsPage() {
             </p>
           </div>
           <span className="px-3.5 py-1.5 bg-[#2563EB]/10 text-[#2563EB] font-bold rounded-xl text-xs">
-            {submissions.filter(s => s.status === 'Belum Dinilai').length} Tugas Perlu Dikoreksi
+            {pendingCount} Tugas Perlu Dikoreksi
           </span>
         </div>
 
-        {/* Submissions Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider bg-slate-50/50">
-              <tr>
-                <th className="py-4 px-4">Siswa</th>
-                <th className="py-4 px-4">Tugas / Kelas</th>
-                <th className="py-4 px-4">Waktu Kirim</th>
-                <th className="py-4 px-4">Berkas</th>
-                <th className="py-4 px-4">Nilai</th>
-                <th className="py-4 px-4 text-right">Aksi Koreksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {submissions.map((sub) => (
-                <tr key={sub.id} className="hover:bg-slate-50/60 transition">
-                  <td className="py-4 px-4">
-                    <div>
-                      <p className="font-bold text-slate-900">{sub.studentName}</p>
-                      <p className="text-[11px] text-slate-400 font-mono">{sub.studentId}</p>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div>
-                      <p className="font-bold text-slate-800">{sub.taskTitle}</p>
-                      <p className="text-[11px] text-slate-400 font-medium">{sub.course}</p>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4 text-slate-500 font-medium">{sub.submitTime}</td>
-                  <td className="py-4 px-4">
-                    <button className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-[11px] flex items-center gap-1.5 transition">
-                      <Download className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{sub.file}</span>
-                    </button>
-                  </td>
-                  <td className="py-4 px-4">
-                    {sub.grade ? (
-                      <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-extrabold rounded-lg font-mono text-xs">
-                        {sub.grade} / 100
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-[11px]">
-                        Belum Dinilai
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    <button
-                      onClick={() => handleOpenGradeModal(sub)}
-                      className="px-4 py-2 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 justify-end ml-auto transition shadow-xs"
-                    >
-                      <Award className="w-3.5 h-3.5" />
-                      <span>{sub.grade ? 'Edit Nilai' : 'Beri Nilai'}</span>
-                    </button>
-                  </td>
+        {submissions.length === 0 ? (
+          <div className="text-center py-12">
+            <FileEdit className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 text-sm">Belum ada pengumpulan tugas</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider bg-slate-50/50">
+                <tr>
+                  <th className="py-4 px-4">Siswa</th>
+                  <th className="py-4 px-4">Tugas / Kelas</th>
+                  <th className="py-4 px-4">Waktu Kirim</th>
+                  <th className="py-4 px-4">Berkas</th>
+                  <th className="py-4 px-4">Nilai</th>
+                  <th className="py-4 px-4 text-right">Aksi Koreksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {submissions.map((sub) => (
+                  <tr key={sub.id} className="hover:bg-slate-50/60 transition">
+                    <td className="py-4 px-4">
+                      <div>
+                        <p className="font-bold text-slate-900">{sub.studentName}</p>
+                        <p className="text-[11px] text-slate-400 font-mono">{sub.studentId}</p>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div>
+                        <p className="font-bold text-slate-800">{sub.taskTitle}</p>
+                        <p className="text-[11px] text-slate-400 font-medium">{sub.course}</p>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-slate-500 font-medium">{sub.submitTime}</td>
+                    <td className="py-4 px-4">
+                      <button className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-[11px] flex items-center gap-1.5 transition">
+                        <Download className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{sub.file}</span>
+                      </button>
+                    </td>
+                    <td className="py-4 px-4">
+                      {sub.grade ? (
+                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-extrabold rounded-lg font-mono text-xs">
+                          {sub.grade} / 100
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-[11px]">
+                          Belum Dinilai
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <button
+                        onClick={() => handleOpenGradeModal(sub)}
+                        className="px-4 py-2 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 justify-end ml-auto transition shadow-xs"
+                      >
+                        <Award className="w-3.5 h-3.5" />
+                        <span>{sub.grade ? 'Edit Nilai' : 'Beri Nilai'}</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Modal Koreksi & Penilaian */}
@@ -160,7 +165,9 @@ export default function GuruAssignmentsPage() {
                 onClick={() => setSelectedSub(null)}
                 className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
               >
-                <X className="w-5 h-5" />
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 

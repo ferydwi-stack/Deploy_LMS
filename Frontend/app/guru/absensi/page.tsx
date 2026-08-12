@@ -62,7 +62,7 @@ function GuruAbsensiContent() {
 
   const { data: attendanceData, loading: attendanceLoading, refresh: refreshAttendance } = useRealtimeData(
     loadAttendanceData,
-    5000,
+    30000,
     [courseId, selectedDate]
   );
 

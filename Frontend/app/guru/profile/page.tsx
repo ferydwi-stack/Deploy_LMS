@@ -71,7 +71,7 @@ export default function GuruProfilePage() {
     }
   }, [currentUser]);
 
-  const { data: profileStatsData } = useRealtimeData(fetchProfileStats, 15000, [currentUser?.id]);
+  const { data: profileStatsData } = useRealtimeData(fetchProfileStats, 60000, [currentUser?.id]);
 
   useEffect(() => {
     if (profileStatsData) setProfileStats(profileStatsData);

@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, CheckCircle2, Clock, Upload, X, Award, Eye, Filter, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
-import { api } from '@/lib/api';
+import { api, notifyDataChanged } from '@/lib/api';
 
 export default function SiswaTugasPage() {
   return (
@@ -37,16 +37,18 @@ function SiswaTugasContent() {
 
   const { user: currentUser } = useAuth();
 
-  const { data: assignments } = useRealtimeData(
+  const { data: assignments, refresh: refreshAssignments } = useRealtimeData(
     () => api.getAssignments(courseId),
-    60000,
-    [courseId]
+    30000,
+    [courseId],
+    'lms_assignments_updated'
   );
 
-  const { data: mySubmissions } = useRealtimeData(
+  const { data: mySubmissions, refresh: refreshSubmissions } = useRealtimeData(
     () => api.getMySubmissions(),
-    60000,
-    []
+    30000,
+    [],
+    'lms_submissions_updated'
   );
 
   const tasks = (() => {
@@ -62,6 +64,14 @@ function SiswaTugasContent() {
     return assignments.map((a: any) => {
       const sub = submissionsMap.get(a.id);
       let taskStatus = 'Belum Dikumpulkan';
+      
+      const deadlineDate = a.due_date ? new Date(a.due_date) : null;
+      const isLate = deadlineDate && new Date() > deadlineDate;
+
+      if (isLate && !sub) {
+        taskStatus = 'Terlambat';
+      }
+
       let taskGrade = null;
       let taskFeedback = null;
       let taskFile = null;
@@ -75,8 +85,12 @@ function SiswaTugasContent() {
           taskStatus = 'Sudah Dikumpul';
           taskFeedback = sub.note || 'Berkas diterima, menunggu koreksi guru.';
         }
-        taskFile = sub.file_url || sub.file;
+        taskFile = sub.file_url || sub.file || sub.file_path;
       }
+
+      const deadlineFormatted = deadlineDate
+        ? deadlineDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : '-';
 
       return {
         id: a.id.toString(),
@@ -84,12 +98,12 @@ function SiswaTugasContent() {
         category: a.type || 'Tugas Harian',
         course: a.course ? (a.course.title || a.course.name) : 'Kelas XI IPA',
         teacher: a.course && a.course.teacher ? (a.course.teacher.name || a.course.teacher) : 'Guru Pengajar',
-        deadline: a.deadline || '2026-08-05 23:59',
+        deadline: deadlineFormatted,
         status: taskStatus,
         grade: taskGrade,
         feedback: taskFeedback,
         submittedFile: taskFile,
-        description: a.description || a.instructions || a.detail || ''
+        description: a.instruction || a.description || a.instructions || a.detail || ''
       };
     });
   })();
@@ -138,6 +152,9 @@ function SiswaTugasContent() {
       formData.append('note', submitNote || 'Tugas dikumpulkan via web LMS');
 
       await api.submitAssignment(selectedTask.id, formData);
+      await Promise.all([refreshSubmissions(), refreshAssignments()]);
+      notifyDataChanged('lms_submissions_updated');
+      notifyDataChanged('lms_assignments_updated');
 
       setIsSubmitModalOpen(false);
       setSubmittedNotice(`Tugas "${selectedTask.title}" berhasil dikumpulkan!`);
@@ -252,55 +269,86 @@ function SiswaTugasContent() {
 
       {/* Task Cards */}
       <div className="space-y-4">
-        {filteredTasks.map((task) => (
-          <div key={task.id} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h4 className="text-base font-bold text-slate-900">{task.title}</h4>
-                <p className="text-xs text-slate-500 mt-1">{task.description}</p>
+        {filteredTasks.map((task) => {
+          const linkRegex = /(https?:\/\/[^\s]+)/g;
+          const titleIsLink = /^https?:\/\//i.test(String(task.title || ''));
+          const titleLinks = titleIsLink ? [String(task.title)] : [];
+          const descLinks = task.description.match(linkRegex);
+          const links = [...titleLinks, ...(descLinks || [])];
+          const safeTitle = titleIsLink ? 'Tugas Berbasis Link' : task.title;
+          const textWithoutLinks = String(task.description || '').replace(linkRegex, '').trim();
+
+          return (
+            <div key={task.id} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h4 className="text-base font-bold text-slate-900">{safeTitle}</h4>
+                  {textWithoutLinks && (
+                    <p className="text-xs text-slate-500 mt-1 whitespace-pre-wrap">{textWithoutLinks}</p>
+                  )}
+                  
+                  {links && links.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {links.map((link: string, idx: number) => (
+                        <a 
+                          key={idx} 
+                          href={link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-block px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-[11px] font-bold transition"
+                        >
+                          Buka Link Tugas
+                        </a>
+                      ))}
+                    </div>
+                  )}
               </div>
-              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
+              <span className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 ${
+                task.status === 'Terlambat' ? 'bg-rose-100 text-rose-700' :
+                task.status === 'Belum Dikumpulkan' ? 'bg-amber-100 text-amber-700' :
+                task.status === 'Sudah Dikumpul' ? 'bg-blue-100 text-blue-700' :
+                'bg-emerald-100 text-emerald-700'
+              }`}>
                 {task.status}
               </span>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-              <span>Deadline: {task.deadline}</span>
-              <span>•</span>
-              {task.submittedFile ? (
-                <a
-                  href={task.submittedFile.startsWith('http') ? task.submittedFile : `http://127.0.0.1:8000/storage/${task.submittedFile}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  File: {task.submittedFile}
-                </a>
-              ) : (
-                <span>File: -</span>
-              )}
-            </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <span>Deadline: {task.deadline}</span>
+                <span>•</span>
+                {task.submittedFile && (
+                  <a
+                    href={task.submittedFile.startsWith('http') ? task.submittedFile : `http://127.0.0.1:8000/storage/${task.submittedFile}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Berkas jawaban: {task.submittedFile.split('/').pop()}
+                  </a>
+                )}
+              </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              {task.status === 'Belum Dikumpulkan' && (
+              {(task.status === 'Belum Dikumpulkan' || task.status === 'Terlambat') && (
                 <button
                   onClick={() => handleOpenSubmitModal(task)}
                   className="px-4 py-2 rounded-2xl bg-[#2563EB] text-white text-xs font-bold hover:bg-blue-700 transition"
                 >
-                  Kumpulkan Tugas
+                  Kumpulkan Jawaban
                 </button>
               )}
-              {task.status === 'Sudah Dinilai' && (
-                <button
-                  onClick={() => setViewGradeTask(task)}
-                  className="px-4 py-2 rounded-2xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition"
-                >
-                  Lihat Nilai
-                </button>
-              )}
+                {task.status === 'Sudah Dinilai' && (
+                  <button
+                    onClick={() => setViewGradeTask(task)}
+                    className="px-4 py-2 rounded-2xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition"
+                  >
+                    Lihat Nilai
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Modal Kumpulkan Jawaban */}
