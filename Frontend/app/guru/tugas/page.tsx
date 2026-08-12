@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Plus, ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, X, Download, Award, CheckCircle2, Clock, Filter, ExternalLink, FileText } from 'lucide-react';
+import { Plus, ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, X, Download, Award, CheckCircle2, Clock, Filter, ExternalLink, FileText, UploadCloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { api } from '@/lib/api';
@@ -24,6 +24,8 @@ function GuruTugasContent() {
   const [submissionFilter, setSubmissionFilter] = useState<'all' | 'graded' | 'ungraded'>('all');
   const [inputGrade, setInputGrade] = useState('');
   const [inputFeedback, setInputFeedback] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  const [modalFiles, setModalFiles] = useState<File[]>([]);
 
   const [tugasList, setTugasList] = useState<any[]>([]);
   const [realStudentsCount, setRealStudentsCount] = useState<number>(8);
@@ -36,48 +38,47 @@ function GuruTugasContent() {
     attachment: ''
   });
 
-  const loadDataFromApi = React.useCallback(async () => {
-    const [assignmentsData, courseDetail] = await Promise.all([
-      api.getAssignments(courseId).catch(() => []),
-      api.getCourseDetail(Number(courseId)).catch(() => null)
-    ]);
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    if (e.type === 'dragleave') setDragActive(false);
+  };
 
-    const enrolledStudents = ensureArray(courseDetail?.students, 'students');
-    const countSiswa = enrolledStudents.length;
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files?.length) setModalFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length) setModalFiles(prev => [...prev, ...Array.from(e.target.files as FileList)]);
+  };
+
+  const removeModalFile = (index: number) => setModalFiles(prev => prev.filter((_, i) => i !== index));
+
+  const loadDataFromApi = React.useCallback(async () => {
+    const assignmentsData = await api.getAssignments(courseId).catch(() => []);
+    const studentsData = await api.getUsers('siswa').catch(() => []);
+
+    const countSiswa = Array.isArray(studentsData) && studentsData.length > 0 ? studentsData.length : 8;
     setRealStudentsCount(countSiswa);
 
-    const assignmentsList = ensureArray(assignmentsData, 'assignments');
-
-    if (assignmentsList.length > 0) {
-      const submissionsByAssignment = await Promise.all(assignmentsList.map(async (a: any) => {
-        const apiSubs = await api.getAssignmentSubmissions(a.id).catch(() => []);
-        return { assignmentId: a.id, submissions: ensureArray(apiSubs, 'submissions') };
-      }));
-
-      const formatted = assignmentsList.map((a: any) => {
-        const matched = submissionsByAssignment.find((item) => String(item.assignmentId) === String(a.id));
-        const apiSubs = matched ? matched.submissions : [];
-        const actualCount = apiSubs.length;
-
+    if (Array.isArray(assignmentsData)) {
+      const formatted = assignmentsData.map((a: any) => {
+        const actualCount = a.submissions_count || 0;
         return {
           id: a.id,
           title: a.title,
-          category: a.instruction || 'Tugas Harian',
+          category: 'Tugas Harian',
           course: courseTitle,
-          deadline: a.due_date ? a.due_date.replace('T', ' ').substring(0, 16) : 'Tanpa Tenggat',
+          deadline: a.due_date ? a.due_date.replace('T', ' ').substring(0, 16) : '2026-08-05 23:59',
           submittedCount: actualCount,
           totalStudents: countSiswa,
-          status: actualCount > 0 && actualCount >= countSiswa ? 'Selesai' : 'Aktif',
-          attachment: a.file_path ? getStorageUrl(a.file_path) : null,
-          submissions: apiSubs.map((s: any, idx: number) => ({
-            id: s.id || `SUB-${a.id}-${idx}`,
-            name: s.student ? s.student.name : 'Siswa',
-            nis: s.student ? (s.student.nisn_or_nip || `USR-00${s.student.id}`) : `USR-${s.student_id}`,
-            time: s.submitted_at ? s.submitted_at.substring(0, 16).replace('T', ' ') : 'Baru saja',
-            file: s.file_path ? getStorageUrl(s.file_path) : (s.original_filename || null),
-            grade: s.score !== null && s.score !== undefined ? String(s.score) : '',
-            feedback: s.teacher_feedback || ''
-          }))
+          status: actualCount >= countSiswa ? 'Selesai' : 'Aktif',
+          attachment: 'lembar_soal.pdf',
+          submissions: [] // akan diload on-demand
         };
       });
       setTugasList(formatted);
@@ -86,39 +87,31 @@ function GuruTugasContent() {
     }
   }, [courseId, courseTitle]);
 
-  const { loading: tasksLoading } = useRealtimeData(loadDataFromApi, 5000, [courseId, courseTitle]);
+  const { loading: tasksLoading } = useRealtimeData(loadDataFromApi, 60000, [courseId, courseTitle]);
 
   useEffect(() => {
     setIsLoading(tasksLoading);
   }, [tasksLoading]);
 
   const handleOpenTaskModal = async (tugas: any) => {
-    let taskSubmissions: any[] = [];
+    setSelectedTask({ ...tugas, submissions: [], isLoadingSubs: true });
     try {
       const apiSubs = await api.getAssignmentSubmissions(tugas.id).catch(() => []);
-      const subsList = ensureArray(apiSubs, 'submissions');
-      if (subsList.length > 0) {
-        taskSubmissions = subsList.map((s: any, idx: number) => ({
-          id: s.id || `SUB-${tugas.id}-${idx}`,
-          name: s.student ? s.student.name : 'Siswa',
-          nis: s.student ? (s.student.nisn_or_nip || `USR-00${s.student.id}`) : `USR-${s.student_id}`,
-          time: s.submitted_at ? s.submitted_at.substring(0, 16).replace('T', ' ') : 'Baru saja',
-          file: s.file_path ? getStorageUrl(s.file_path) : (s.original_filename || null),
-          grade: s.score !== null && s.score !== undefined ? String(s.score) : '',
-          feedback: s.teacher_feedback || ''
-        }));
-      }
+      const taskSubmissions = Array.isArray(apiSubs) ? apiSubs.map((s: any, idx: number) => ({
+        id: s.id || `SUB-${tugas.id}-${idx}`,
+        name: s.student?.name || 'Siswa',
+        nis: s.student?.nisn_or_nip || `USR-${s.student_id}`,
+        time: s.submitted_at?.substring(0, 16).replace('T', ' ') || 'Hari ini',
+        fileName: s.original_filename || 'file_tugas',
+        filePath: s.file_path || '',
+        grade: s.score ?? '',
+        feedback: s.teacher_feedback || ''
+      })) : [];
+      setSelectedTask({ ...tugas, submissions: taskSubmissions, isLoadingSubs: false });
     } catch (e) {
       console.error(e);
+      setSelectedTask({ ...tugas, submissions: [], isLoadingSubs: false });
     }
-
-    if (taskSubmissions.length === 0 && tugas.submissions && tugas.submissions.length > 0) {
-      taskSubmissions = tugas.submissions;
-    }
-
-    const actualCount = taskSubmissions.length;
-    setTugasList(prev => prev.map(item => item.id === tugas.id ? { ...item, submittedCount: actualCount, submissions: taskSubmissions } : item));
-    setSelectedTask({ ...tugas, submittedCount: actualCount, submissions: taskSubmissions });
   };
 
   const handleCreateTask = async (e: React.FormEvent) => {
@@ -126,13 +119,21 @@ function GuruTugasContent() {
     if (!newTask.title) return;
 
     try {
-      await api.createAssignment({
-        course_id: courseId,
-        title: newTask.title,
-        instruction: `Modul/Kategori: ${newTask.category}`,
-        due_date: newTask.deadline || '2026-08-10 23:59:00'
-      });
+      const uploadFormData = new FormData();
+      uploadFormData.append('course_id', courseId);
+      uploadFormData.append('title', newTask.title);
+      uploadFormData.append('instruction', `Modul/Kategori: ${newTask.category}`);
+      if (newTask.deadline) {
+        uploadFormData.append('due_date', newTask.deadline.includes('T') ? `${newTask.deadline.replace('T', ' ')}:00` : newTask.deadline);
+      }
+      if (modalFiles.length > 0) {
+        uploadFormData.append('file', modalFiles[0]);
+      }
+
+      await api.createAssignment(uploadFormData);
+      
       setNewTask({ title: '', category: 'Tugas Harian', deadline: '', attachment: '' });
+      setModalFiles([]);
       setIsCreateModalOpen(false);
       await loadDataFromApi();
     } catch (err: any) {
@@ -360,7 +361,7 @@ function GuruTugasContent() {
                             <p className="text-[11px] text-slate-400 font-mono">{sub.nis} • {sub.time}</p>
                             <div className="mt-1">
                               <a
-                                href={sub.file?.startsWith('http') ? sub.file : `https://school.edu/files/${encodeURIComponent(sub.file || 'file.pdf')}`}
+                                href={sub.filePath?.startsWith('http') ? sub.filePath : (sub.filePath ? `http://127.0.0.1:8000/storage/${sub.filePath}` : '')}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 text-[#2563EB] hover:underline font-mono text-[11px] font-semibold rounded-lg transition"
@@ -501,8 +502,10 @@ function GuruTugasContent() {
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="Tugas Harian">Tugas Harian</option>
-                  <option value="Quiz">Quiz Interaktif</option>
-                  <option value="Praktikum">Praktikum Laboratorium</option>
+                  <option value="UTS">UTS</option>
+                  <option value="UAS">UAS</option>
+                  <option value="Remedi UTS">Remedi UTS</option>
+                  <option value="Remedi UAS">Remedi UAS</option>
                 </select>
               </div>
 
@@ -516,10 +519,51 @@ function GuruTugasContent() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">File Lampiran (Opsional)</label>
+                <div
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-xl p-4 text-center transition ${dragActive ? 'border-blue-600 bg-blue-50' : 'border-slate-300 bg-slate-50/50'}`}
+                >
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="modal-file-input"
+                  />
+                  <label htmlFor="modal-file-input" className="cursor-pointer block">
+                    <div className="flex flex-col items-center justify-center">
+                      <UploadCloud className="w-5 h-5 text-slate-400 mb-2" />
+                      <p className="text-xs font-bold text-slate-700">Seret file atau klik untuk pilih</p>
+                    </div>
+                  </label>
+                </div>
+                {modalFiles.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {modalFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-slate-100 rounded-lg text-xs">
+                        <span className="truncate text-slate-700">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeModalFile(idx)}
+                          className="text-slate-400 hover:text-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
+                  onClick={() => { setIsCreateModalOpen(false); setModalFiles([]); }}
                   className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
                 >
                   Batal

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { BookOpen, Users, Search, X, Plus, Eye, CheckCircle2 } from 'lucide-react';
+import { Users, Search, X, Eye } from 'lucide-react';
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<any[]>([]);
@@ -11,14 +11,6 @@ export default function AdminCoursesPage() {
   const [search, setSearch] = useState('');
   
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
-  const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
-
-  const [newCourse, setNewCourse] = useState({
-    title: '',
-    code: '',
-    description: ''
-  });
 
   // Load Courses and Real Students from MySQL Database
   const loadDataFromApi = async () => {
@@ -104,31 +96,6 @@ export default function AdminCoursesPage() {
     loadDataFromApi();
   }, []);
 
-  // Handler: Add New Course (Directly saves to MySQL)
-  const handleAddCourse = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCourse.title) return;
-
-    try {
-      const { api } = await import('@/lib/api');
-      const generatedCode = newCourse.code ? newCourse.code.toUpperCase() : `KLS-${Math.floor(100 + Math.random() * 900)}`;
-      
-      await api.createCourse({
-        title: newCourse.title,
-        code: generatedCode,
-        description: newCourse.description || 'Kelas pembelajaran interaktif'
-      });
-
-      setNewCourse({ title: '', code: '', description: '' });
-      setIsAddCourseModalOpen(false);
-      setSuccessMsg('Kelas baru berhasil ditambahkan ke Database MySQL!');
-      await loadDataFromApi();
-      setTimeout(() => setSuccessMsg(''), 3000);
-    } catch (err: any) {
-      console.error('Create course error:', err);
-      alert(err.message || 'Gagal menambahkan kelas baru');
-    }
-  };
 
   const filteredCourses = courses.filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -143,38 +110,27 @@ export default function AdminCoursesPage() {
       title="Monitoring Kelas"
       subtitle="Pemantauan daftar kelas aktif buatan Guru dan status pendaftaran siswa mandiri"
     >
-      {/* Toast Notification */}
-      {successMsg && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-2xl flex items-center gap-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-          <span>{successMsg}</span>
-        </div>
-      )}
 
       {/* Top Filter Bar */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 mb-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white border border-[#D6DEE7] rounded-[22px] p-5 mb-6 shadow-none flex flex-wrap items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari kelas, kode, atau pengajar..."
-            className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 pl-10"
+            className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#D6DEE7] rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB] pl-10"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
         </div>
 
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsAddCourseModalOpen(true)}
-            className="px-5 py-3 bg-[#2563EB] hover:bg-blue-700 text-white rounded-2xl text-xs font-bold shadow-md shadow-blue-500/20 transition flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Kelas Baru</span>
-          </button>
-          
-          <div className="text-xs font-bold text-slate-500">
-            Total Kelas Aktif: <span className="text-[#2563EB]">{courses.length}</span>
+          <div className="flex items-center gap-2.5 px-4 py-2.5 bg-[#EEF2FF] border border-[#2563EB]/20 rounded-xl shadow-xs">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse"></div>
+            <span className="text-xs font-bold text-slate-700">Total Kelas Aktif:</span>
+            <span className="text-xs font-extrabold text-[#2563EB] bg-white px-2.5 py-0.5 rounded-lg border border-[#2563EB]/20 shadow-2xs font-mono">
+              {courses.length}
+            </span>
           </div>
         </div>
       </div>
@@ -183,35 +139,33 @@ export default function AdminCoursesPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {isLoading ? (
           [1, 2, 3].map((n) => (
-            <div key={n} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs animate-pulse space-y-4">
-              <div className="h-5 w-20 bg-slate-200 rounded-full"></div>
-              <div className="h-6 w-3/4 bg-slate-200 rounded-md"></div>
-              <div className="h-4 w-1/2 bg-slate-100 rounded-md"></div>
-              <div className="h-8 w-full bg-slate-100 rounded-2xl pt-4"></div>
+            <div key={n} className="bg-[#EFF4F8] border border-[#D6DEE7] rounded-[22px] p-6 shadow-none animate-pulse space-y-4">
+              <div className="h-5 w-20 bg-[#D3DFE9] rounded-full"></div>
+              <div className="h-6 w-3/4 bg-[#D3DFE9] rounded-md"></div>
+              <div className="h-4 w-1/2 bg-[#DDE7F0] rounded-md"></div>
+              <div className="h-8 w-full bg-[#DDE7F0] rounded-xl pt-4"></div>
             </div>
           ))
         ) : filteredCourses.map((course) => (
           <div
             key={course.id}
-            className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between"
+            className="bg-[#EFF4F8] border border-[#D6DEE7] rounded-[22px] p-6 shadow-none flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between mb-4">
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 font-bold rounded-full font-mono text-xs border border-blue-100/60">
-                  {course.code}
-                </span>
-                <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
-                  <BookOpen className="w-4 h-4" />
-                </div>
+              <span className="px-3 py-1 bg-[#EEF2FF] text-[#2563EB] font-bold rounded-md font-mono text-xs border border-[#2563EB]/20">
+                {course.code}
+              </span>
+          <div className="w-8 h-8 rounded-full bg-[#0F172E] text-white flex items-center justify-center font-bold text-xs">
+            {course.code.split('')[0]}
+          </div>
               </div>
 
               <h3 className="text-base font-bold text-slate-900 leading-snug mb-1">{course.title}</h3>
               <p className="text-xs text-slate-400 font-medium mb-2">
                 Pengajar: <strong className="text-slate-700">{course.teacher}</strong>
               </p>
-              <p className="text-[11px] text-slate-400 font-mono mb-6">
-                Kode Akses: <strong className="text-slate-800">{course.joinCode}</strong>
-              </p>
+              <div className="mt-4 rounded-2xl bg-white border border-slate-200 px-3 py-2.5 flex items-center justify-between gap-3"><span className="text-[10px] text-slate-400 font-bold uppercase">Kode Akses Siswa<br /><strong className="text-xs text-[#0F172E] font-mono normal-case">{course.joinCode}</strong></span><span className="px-3 py-1.5 bg-[#2563EB] text-white font-bold rounded-xl text-xs">Salin</span></div>
             </div>
 
             {/* Clickable Total Siswa Pill */}
@@ -219,14 +173,14 @@ export default function AdminCoursesPage() {
               <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
                 <button
                   onClick={() => setSelectedCourse(course)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#2563EB] font-bold rounded-xl transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold rounded-xl transition cursor-pointer"
                 >
-                  <Users className="w-4 h-4 text-[#2563EB]" />
+                  <Users className="w-4 h-4 text-white" />
                   <span>{course.studentsList ? course.studentsList.length : course.studentsCount} Siswa Terdaftar</span>
                   <Eye className="w-3.5 h-3.5 ml-1" />
                 </button>
 
-                <div className="flex items-center gap-3 text-slate-400">
+                <div className="flex items-center gap-3 text-slate-400 font-medium">
                   <span>{course.materi} Materi</span>
                   <span>•</span>
                   <span>{course.tugas} Tugas</span>
@@ -240,7 +194,7 @@ export default function AdminCoursesPage() {
       {/* Modal Detail Anggota Kelas */}
       {selectedCourse && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-[28px] max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
               <div>
                 <span className="px-2.5 py-0.5 bg-blue-50 text-[#2563EB] font-mono text-[11px] font-bold rounded-md">
@@ -301,73 +255,6 @@ export default function AdminCoursesPage() {
         </div>
       )}
 
-      {/* Modal Tambah Kelas Baru */}
-      {isAddCourseModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">Tambah Kelas Pembelajaran Baru</h3>
-              <button
-                onClick={() => setIsAddCourseModalOpen(false)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddCourse} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Nama Kelas / Mata Pelajaran</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Biologi Sel & Genetik Kelas XII"
-                  value={newCourse.title}
-                  onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Kode Singkat Kelas</label>
-                <input
-                  type="text"
-                  placeholder="e.g. BIO-XII"
-                  value={newCourse.code}
-                  onChange={(e) => setNewCourse({ ...newCourse, code: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Deskripsi Kelas</label>
-                <textarea
-                  placeholder="e.g. Pembahasan konsep struktur sel, genetika populasi, dan pewarisan sifat."
-                  value={newCourse.description}
-                  onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 h-24"
-                ></textarea>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAddCourseModalOpen(false)}
-                  className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition cursor-pointer"
-                >
-                  Simpan Kelas
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 }

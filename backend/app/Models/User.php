@@ -19,6 +19,7 @@ class User extends Authenticatable
         'password',
         'role',
         'nisn_or_nip',
+        'class_name',
         'specialization',
         'subject',
         'phone',

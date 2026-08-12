@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, 
   UploadCloud, 
@@ -15,11 +15,52 @@ import {
   Sparkles,
   HelpCircle
 } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useLms } from '@/context/LmsContext';
 
 export default function GuruBuatTugasPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading...</div>}>
+      <GuruBuatTugasContent />
+    </Suspense>
+  );
+}
+
+function GuruBuatTugasContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const courseId = searchParams.get('course_id') || '';
+  const courseTitle = searchParams.get('title') || '';
+  const courseTeacher = searchParams.get('teacher') || '';
+  const courseCode = searchParams.get('code') || '';
+  const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
+
+  useLms();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    if (e.type === 'dragleave') setDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files?.length) setSelectedFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length) setSelectedFiles(prev => [...prev, ...Array.from(e.target.files as FileList)]);
+  };
+
+  const removeFile = (index: number) => setSelectedFiles(prev => prev.filter((_, i) => i !== index));
 
   const [formData, setFormData] = useState({
     judul: '',
@@ -31,30 +72,35 @@ export default function GuruBuatTugasPage() {
     bobotNilai: '100',
   });
 
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const filesArray = Array.from(e.target.files);
-      setAttachedFiles(prev => [...prev, ...filesArray]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('course_id', courseId);
+      uploadFormData.append('title', formData.judul);
+      uploadFormData.append('instruction', `Modul/Kategori: ${formData.mataPelajaran}\n\n${formData.deskripsi}`);
+      if (formData.tenggatTanggal) {
+        uploadFormData.append('due_date', `${formData.tenggatTanggal} ${formData.tenggatWaktu}:00`);
+      }
+      if (selectedFiles.length > 0) {
+        uploadFormData.append('file', selectedFiles[0]); // ambil file pertama saja sesuai backend
+      }
+
+      await api.createAssignment(uploadFormData);
+      
       setIsSubmitting(false);
       setSuccessMessage(true);
       setTimeout(() => {
-        router.push('/guru/tugas');
+        router.push(`/guru/tugas${queryParamsStr}`);
       }, 1500);
-    }, 800);
+    } catch (err: any) {
+      console.error('Upload assignment error:', err);
+      alert('Gagal membuat tugas. Silakan coba lagi.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -67,7 +113,7 @@ export default function GuruBuatTugasPage() {
         {/* Back Link Header */}
         <div className="mb-6 flex items-center justify-between">
           <Link
-            href="/guru/tugas"
+            href={`/guru/tugas${queryParamsStr}`}
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 transition bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -113,34 +159,22 @@ export default function GuruBuatTugasPage() {
 
             {/* Grid 2 Columns: Kelas & Mata Pelajaran */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+              {/* Kelas Dropdown (Hidden because tied to active course) */}
+              
+              <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Pilih Kelas <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={formData.kelas}
-                  onChange={(e) => setFormData({ ...formData, kelas: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
-                >
-                  <option value="X-IPA 1">X-IPA 1</option>
-                  <option value="X-IPA 2">X-IPA 2</option>
-                  <option value="XI-IPA 1">XI-IPA 1</option>
-                  <option value="XI-IPA 2">XI-IPA 2</option>
-                  <option value="XII-IPA 1">XII-IPA 1</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Mata Pelajaran <span className="text-rose-500">*</span>
+                  Kategori Tugas <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={formData.mataPelajaran}
                   onChange={(e) => setFormData({ ...formData, mataPelajaran: e.target.value })}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
                 >
-                  <option value="Matematika Wajib">Matematika Wajib</option>
-                  <option value="Matematika Peminatan">Matematika Peminatan</option>
+                  <option value="Tugas Harian">Tugas Harian</option>
+                  <option value="UTS">UTS (Ujian Tengah Semester)</option>
+                  <option value="UAS">UAS (Ujian Akhir Semester)</option>
+                  <option value="Remedi UTS">Remedial UTS</option>
+                  <option value="Remedi UAS">Remedial UAS</option>
                 </select>
               </div>
             </div>
@@ -209,13 +243,19 @@ export default function GuruBuatTugasPage() {
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Lampiran / Dokumen Pendukung (Opsional)
               </label>
-              <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl p-6 text-center bg-slate-50/50 transition cursor-pointer relative">
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
+<div
+                 onDragEnter={handleDrag}
+                 onDragOver={handleDrag}
+                 onDragLeave={handleDrag}
+                 onDrop={handleDrop}
+                 className={`border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer relative ${dragActive ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 hover:border-indigo-400 bg-slate-50/50'}`}
+               >
+                 <input
+                   type="file"
+                   multiple
+                   onChange={handleFileChange}
+                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                 />
                 <div className="flex flex-col items-center justify-center">
                   <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mb-3">
                     <UploadCloud className="w-6 h-6" />
@@ -230,11 +270,11 @@ export default function GuruBuatTugasPage() {
               </div>
 
               {/* List of uploaded files */}
-              {attachedFiles.length > 0 && (
+              {selectedFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-xs font-bold text-slate-700">Lampiran Terpilih ({attachedFiles.length}):</p>
+                  <p className="text-xs font-bold text-slate-700">Lampiran Terpilih ({selectedFiles.length}):</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {attachedFiles.map((file, idx) => (
+                    {selectedFiles.map((file, idx) => (
                       <div 
                         key={idx} 
                         className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl text-xs shadow-xs"
@@ -265,7 +305,7 @@ export default function GuruBuatTugasPage() {
           {/* Footer Submit Buttons */}
           <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-between gap-4">
             <Link
-              href="/guru/tugas"
+              href={`/guru/tugas${queryParamsStr}`}
               className="px-4 py-2.5 border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition"
             >
               Batal

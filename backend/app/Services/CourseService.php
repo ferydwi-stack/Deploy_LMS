@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class CourseService
 {
@@ -41,18 +42,33 @@ class CourseService
             throw new \Exception('Hanya siswa yang bisa enroll');
         }
 
-        if ($course->students()->where('users.id', $student->id)->exists()) {
-            throw new \Exception('Sudah terdaftar di kelas ini');
-        }
+        DB::transaction(function () use ($course, $student) {
+            $membership = $course->students()
+                ->where('users.id', $student->id)
+                ->first();
 
-        $course->students()->attach($student->id, ['status' => 'active']);
+            if ($membership) {
+                $membershipStatus = DB::table('course_student')
+                    ->where('course_id', $course->id)
+                    ->where('student_id', $student->id)
+                    ->value('status');
 
-        app(NotificationService::class)->notifyTeacherOfEnrollment(
-            $course->teacher,
-            $student->name,
-            $course->title,
-            $course->id
-        );
+                if ($membershipStatus === 'active') {
+                    throw new \Exception('Sudah terdaftar di kelas ini');
+                }
+
+                $course->students()->updateExistingPivot($student->id, ['status' => 'active']);
+            } else {
+                $course->students()->attach($student->id, ['status' => 'active']);
+            }
+
+            app(NotificationService::class)->notifyTeacherOfEnrollment(
+                $course->teacher,
+                $student->name,
+                $course->title,
+                $course->id
+            );
+        });
     }
 
     public function enrollByCode(string $code, User $student): Course
@@ -65,7 +81,17 @@ class CourseService
 
     public function leaveCourse(Course $course, User $student): void
     {
-        $course->students()->updateExistingPivot($student->id, ['status' => 'dropped']);
+        if ($student->role !== 'siswa') {
+            throw new \Exception('Hanya siswa yang bisa keluar dari kelas');
+        }
+
+        $updated = $course->students()
+            ->wherePivot('status', 'active')
+            ->updateExistingPivot($student->id, ['status' => 'dropped']);
+
+        if ($updated === 0) {
+            throw new \Exception('Anda belum tergabung di kelas ini');
+        }
     }
 
     public function getEnrolledStudents(Course $course): Collection
@@ -85,6 +111,6 @@ class CourseService
         return Course::with('teacher')
             ->withCount('students')
             ->latest()
-            ->get();
+            ->get(['id', 'title', 'code', 'teacher_id', 'created_at']);
     }
 }

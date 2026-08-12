@@ -36,6 +36,12 @@ export default function SiswaProfilePage() {
   });
 
   const [saved, setSaved] = useState(false);
+  const [profileStats, setProfileStats] = useState({
+    avgScore: 0,
+    attendancePercent: 0,
+    coursesCount: 0,
+    submissionPercent: 0
+  });
 
   useEffect(() => {
     if (user) {
@@ -50,11 +56,52 @@ export default function SiswaProfilePage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [myCoursesData, myAttendancesData, mySubmissionsData] = await Promise.all([
+          api.getCourses().catch(() => []),
+          api.getMyAttendances().catch(() => []),
+          api.getMySubmissions().catch(() => [])
+        ]);
+
+        const coursesCount = Array.isArray(myCoursesData) ? myCoursesData.length : 0;
+
+        const attendances = Array.isArray(myAttendancesData) ? myAttendancesData : [];
+        const presentCount = attendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
+        const attendancePercent = attendances.length > 0 ? Math.round((presentCount / attendances.length) * 100) : 0;
+
+        const submissions = Array.isArray(mySubmissionsData) ? mySubmissionsData : [];
+        const scoredSubs = submissions.filter((s: any) => s.score !== null && s.score !== undefined);
+        const avgScore = scoredSubs.length > 0 
+          ? Math.round(scoredSubs.reduce((acc: number, s: any) => acc + Number(s.score), 0) / scoredSubs.length * 10) / 10
+          : 0;
+
+        const allAssignments = await api.getAllAssignments?.().catch(() => []);
+        const totalAssignments = Array.isArray(allAssignments) ? allAssignments.length : submissions.length;
+        const submissionPercent = totalAssignments > 0 ? Math.round((submissions.length / totalAssignments) * 100) : 100;
+
+        setProfileStats({
+          avgScore,
+          attendancePercent,
+          coursesCount,
+          submissionPercent
+        });
+      } catch (e) {
+        console.error('Failed to fetch profile stats:', e);
+      }
+    };
+
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await api.updateProfile(formData);
-      const updated = res?.user || res?.data || res;
+      const updated = (res as any)?.user || (res as any)?.data || res;
       if (updated) {
         const merged = { ...user, ...updated };
         setCurrentUser(merged);
@@ -148,8 +195,8 @@ export default function SiswaProfilePage() {
               <Award className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xl font-extrabold text-slate-900">90.2</p>
-              <p className="text-[11px] text-slate-400 font-medium">Rata-rata Rapor</p>
+              <p className="text-xl font-extrabold text-slate-900" suppressHydrationWarning>{profileStats.avgScore || '-'}</p>
+              <p className="text-[11px] text-slate-400 font-medium">Rata-rata Nilai</p>
             </div>
           </div>
 
@@ -158,8 +205,8 @@ export default function SiswaProfilePage() {
               <CalendarCheck className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-xl font-extrabold text-slate-900">95%</p>
-              <p className="text-[11px] text-slate-400 font-medium">Kehadiran Bulan Ini</p>
+              <p className="text-xl font-extrabold text-slate-900" suppressHydrationWarning>{profileStats.attendancePercent}%</p>
+              <p className="text-[11px] text-slate-400 font-medium">Kehadiran</p>
             </div>
           </div>
 
@@ -168,7 +215,7 @@ export default function SiswaProfilePage() {
               <BookOpen className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-xl font-extrabold text-slate-900">3 Kelas</p>
+              <p className="text-xl font-extrabold text-slate-900" suppressHydrationWarning>{profileStats.coursesCount} Kelas</p>
               <p className="text-[11px] text-slate-400 font-medium">Kelas Yang Diikuti</p>
             </div>
           </div>
@@ -178,7 +225,7 @@ export default function SiswaProfilePage() {
               <FileCheck2 className="w-6 h-6 text-amber-600" />
             </div>
             <div>
-              <p className="text-xl font-extrabold text-slate-900">100%</p>
+              <p className="text-xl font-extrabold text-slate-900" suppressHydrationWarning>{profileStats.submissionPercent}%</p>
               <p className="text-[11px] text-slate-400 font-medium">Tugas Terkumpul</p>
             </div>
           </div>

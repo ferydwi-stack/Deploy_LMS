@@ -21,7 +21,7 @@ export function useNotifications(refreshInterval = 30000) {
         api.getNotifications(),
         api.getUnreadCount(),
       ]);
-      setNotifications(notifs.notifications || notifs);
+      setNotifications((notifs as any).notifications || notifs);
       setUnreadCount(count.unread_count);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -61,7 +61,20 @@ export function useNotifications(refreshInterval = 30000) {
       }
     }, refreshInterval);
 
-    return () => clearInterval(interval);
+    const handleNotificationsRead = () => {
+      fetchNotifications();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('notifications_read', handleNotificationsRead);
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('notifications_read', handleNotificationsRead);
+      }
+    };
   }, [refreshInterval]);
 
   return {

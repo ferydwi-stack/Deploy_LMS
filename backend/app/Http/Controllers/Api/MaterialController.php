@@ -13,18 +13,10 @@ class MaterialController extends Controller
 {
     public function index(Request $request)
     {
-        $user = $request->user();
         $query = Material::query();
 
         if ($request->has('course_id') && $request->course_id) {
             $query->where('course_id', $request->course_id);
-        } elseif ($user) {
-            if ($user->role === 'guru') {
-                $query->whereHas('course', fn ($q) => $q->where('teacher_id', $user->id));
-            } elseif ($user->role === 'siswa') {
-                $query->whereHas('course.students', fn ($q) => $q->where('users.id', $user->id)
-                    ->where('course_student.status', 'active'));
-            }
         }
 
         $materials = $query->latest()->get();
@@ -35,7 +27,6 @@ class MaterialController extends Controller
     public function store(StoreMaterialRequest $request)
     {
         $validated = $request->validated();
-        $user = $request->user();
 
         $courseId = $request->input('course_id');
         $type = $request->input('type');
@@ -43,14 +34,7 @@ class MaterialController extends Controller
         $inputContent = $request->input('content');
 
         if (empty($courseId)) {
-            return response()->json(['message' => 'Mata pelajaran (course_id) wajib dipilih.'], 422);
-        }
-
-        if ($user && $user->role === 'guru') {
-            $course = Course::find($courseId);
-            if (! $course || $course->teacher_id !== $user->id) {
-                return response()->json(['message' => 'Anda tidak memiliki akses ke kelas ini.'], 403);
-            }
+            return response()->json(['message' => 'course_id wajib diisi.'], 422);
         }
 
         $filePath = null;

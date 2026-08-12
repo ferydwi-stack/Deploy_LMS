@@ -19,6 +19,7 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:6'],
             'role' => ['required', 'in:admin,guru,siswa'],
             'nisn_or_nip' => ['nullable', 'string'],
+            'class_name' => ['nullable', 'string'],
         ];
     }
 }

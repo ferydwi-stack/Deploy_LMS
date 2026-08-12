@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 
 export default function GuruCoursesPage() {
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,9 +25,13 @@ export default function GuruCoursesPage() {
     students: ''
   });
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { data: studentsData, loading: studentsLoading } = useRealtimeData(
     () => api.getUsers('siswa').catch(() => []),
-    5000,
+    30000,
     []
   );
 
@@ -35,7 +40,7 @@ export default function GuruCoursesPage() {
       if (!user) return Promise.resolve([]);
       return api.getCourses().catch(() => []);
     },
-    5000,
+    30000,
     [user?.id]
   );
 
@@ -48,12 +53,12 @@ export default function GuruCoursesPage() {
         return false;
       }) : [];
 
-      const formatted = myCourses.map((c: any) => {
+        const formatted = myCourses.map((c: any) => {
         const enrolledStudents = Array.isArray(c.students) ? c.students : [];
         return {
           id: c.id,
           code: c.code || 'MAPEL',
-          joinCode: `${c.code || 'MAPEL'}-JOIN`,
+          joinCode: c.code || 'MAPEL',
           title: c.title,
           teacher: c.teacher ? (typeof c.teacher === 'object' ? c.teacher.name : c.teacher) : user.name,
           studentsCount: c.students_count || enrolledStudents.length,
@@ -102,7 +107,7 @@ export default function GuruCoursesPage() {
     setTimeout(() => setCopyToast(''), 3000);
   };
 
-  const teacherName = user?.name || 'Guru';
+  const teacherName = mounted && user?.name ? user.name : 'Guru';
 
   return (
     <DashboardLayout

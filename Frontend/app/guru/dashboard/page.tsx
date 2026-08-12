@@ -3,54 +3,39 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
-import { BookOpen, Users, FileCheck2, ArrowRight, Plus } from 'lucide-react';
+import { BookOpen, Users, FileCheck2, ArrowRight, Plus, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { api } from '@/lib/api';
 
 export default function GuruDashboardPage() {
   const { user: currentUser, isLoading: authLoading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchTeacherDashboard = React.useCallback(async () => {
-    try {
-      const [coursesData, assignmentsData] = await Promise.all([
-        api.getCourses().catch(() => []),
-        api.getAssignments().catch(() => [])
-      ]);
-      return { coursesData, assignmentsData };
-    } catch {
-      return { coursesData: [], assignmentsData: [] };
-    }
-  }, []);
-
-  const { data: dashboardData, loading: dataLoading } = useRealtimeData(
-    fetchTeacherDashboard,
-    15000,
+  const { data: dashboardData, loading: dataLoading, refresh } = useRealtimeData(
+    async () => {
+      try {
+        setError(null);
+        return await api.getGuruStats();
+      } catch (e: any) {
+        setError(e.message || 'Gagal memuat data dashboard guru.');
+        throw e;
+      }
+    },
+    45000,
     [currentUser?.id]
   );
 
   const isLoading = authLoading || dataLoading;
 
   const courses = React.useMemo(() => {
-    if (!dashboardData || !currentUser) return [];
-    const coursesData = ensureArray(dashboardData.coursesData, 'courses');
-
-    const loggedInName = currentUser.name || '';
-    const loggedInId = String(currentUser.id);
-
-    const myCourses = coursesData.filter((c: any) => {
-      if (c.teacher_id && String(c.teacher_id) === loggedInId) return true;
-      if (c.teacher && typeof c.teacher === 'object' && String(c.teacher.id) === loggedInId) return true;
-      if (c.teacher && typeof c.teacher === 'string' && c.teacher.toLowerCase().includes(loggedInName.toLowerCase())) return true;
-      return false;
-    });
-
-    return myCourses.map((c: any) => ({
+    if (!dashboardData || !dashboardData.courses) return [];
+    return dashboardData.courses.map((c: any) => ({
       id: c.id,
       code: c.code || 'MAPEL',
       title: c.title,
-      teacher: c.teacher ? (typeof c.teacher === 'object' ? c.teacher.name : c.teacher) : loggedInName,
-      studentsCount: c.students_count || (Array.isArray(c.students) ? c.students.length : 0),
+      teacher: currentUser?.name || 'Guru',
+      studentsCount: c.students_count || 0,
       materiCount: c.materials_count || 0,
       tugasCount: c.assignments_count || 0,
       path: '/guru/materi'
@@ -60,21 +45,8 @@ export default function GuruDashboardPage() {
   const teacherName = currentUser?.name || '';
   const teacherInitials = teacherName ? teacherName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'GP';
 
-  const totalStudentsAllCourses = courses.reduce((acc, curr) => acc + curr.studentsCount, 0);
-
-  // Compute pending tasks to grade strictly for teacher's courses
-  const pendingAssignmentsCount = React.useMemo(() => {
-    if (!dashboardData || !currentUser) return 0;
-    const assignmentsData = ensureArray(dashboardData.assignmentsData, 'assignments');
-
-    const myCourseIds = new Set(courses.map(c => String(c.id)));
-    const myAssignments = assignmentsData.filter((a: any) => myCourseIds.has(String(a.course_id)));
-
-    return myAssignments.filter((a: any) => {
-      const subCount = a.submissions_count || (Array.isArray(a.submissions) ? a.submissions.length : 0);
-      return subCount > 0;
-    }).length;
-  }, [dashboardData, currentUser, courses]);
+  const totalStudentsAllCourses = dashboardData?.total_students || 0;
+  const pendingAssignmentsCount = dashboardData?.pending_assignments || 0;
 
   const stats = [
     {
@@ -109,6 +81,25 @@ export default function GuruDashboardPage() {
       title="Dashboard Guru"
       subtitle="Ringkasan pengajaran, kelas yang telah dibuat, dan total siswa mengikutinya"
     >
+      {/* Error State */}
+      {error && (
+        <div className="mb-6 p-6 bg-rose-50 border border-rose-200 rounded-3xl flex items-start gap-4 shadow-xs">
+          <AlertCircle className="w-6 h-6 text-rose-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-rose-900 mb-1">Gagal Memuat Dashboard</h3>
+            <p className="text-xs text-rose-700 mb-3">{error}</p>
+            <button
+              onClick={() => refresh?.()}
+              disabled={dataLoading}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${dataLoading ? 'animate-spin' : ''}`} />
+              <span>{dataLoading ? 'Memuat...' : 'Coba Lagi'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <div className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 mb-8 shadow-xs flex items-center gap-5">
         <div className="w-14 h-14 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center font-bold text-xl shadow-md">
@@ -162,7 +153,7 @@ export default function GuruDashboardPage() {
             </div>
           ))
         ) : courses.length > 0 ? (
-          courses.map((course) => (
+          courses.map((course: any) => (
             <div
               key={course.id}
               className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between"

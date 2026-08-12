@@ -6,15 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Services\CourseService;
 use App\Models\Course;
 use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 
 class EnrollmentController extends Controller
 {
+    use AuthorizesRequests;
     public function enroll(Course $course, Request $request)
     {
         $user = $request->user();
-        
-        $this->authorize('enroll', $course);
         
         app(CourseService::class)->enrollStudent($course, $user);
         
@@ -26,10 +26,11 @@ class EnrollmentController extends Controller
         $user = $request->user();
         
         $validated = $request->validate([
-            'code' => 'required|string|exists:courses,code',
+            'code' => 'required|string',
         ]);
-        
-        $course = app(CourseService::class)->enrollByCode($validated['code'], $user);
+
+        $code = strtoupper(trim($validated['code']));
+        $course = app(CourseService::class)->enrollByCode($code, $user);
         
         return response()->json(['message' => 'Successfully enrolled', 'course' => $course]);
     }

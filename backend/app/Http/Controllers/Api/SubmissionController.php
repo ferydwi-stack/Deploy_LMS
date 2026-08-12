@@ -68,7 +68,7 @@ class SubmissionController extends Controller
 
     public function grade(Request $request, $id)
     {
-        $submission = Submission::with('assignment.course')->findOrFail($id);
+        $submission = Submission::with(['assignment.course', 'student'])->findOrFail($id);
         $teacher = $request->user();
 
         if ($teacher->role !== 'admin' && $submission->assignment->course->teacher_id !== $teacher->id) {
@@ -115,8 +115,8 @@ class SubmissionController extends Controller
         $assignment = Assignment::with('course')->findOrFail($assignmentId);
         $user = $request->user();
 
-        if ($user->role === 'guru' && $assignment->course->teacher_id !== $user->id) {
-            return response()->json([]);
+        if ($user->role !== 'admin' && ($user->role !== 'guru' || $assignment->course->teacher_id !== $user->id)) {
+            return response()->json(['message' => 'Anda tidak memiliki akses ke pengumpulan tugas ini.'], 403);
         }
 
         $submissions = Submission::where('assignment_id', $assignmentId)

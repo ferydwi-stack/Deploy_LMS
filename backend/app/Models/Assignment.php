@@ -13,6 +13,8 @@ class Assignment extends Model
         'course_id',
         'title',
         'instruction',
+        'attachment_path',
+        'attachment_name',
         'due_date',
     ];
 

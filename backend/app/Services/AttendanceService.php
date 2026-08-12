@@ -26,7 +26,17 @@ class AttendanceService
 
     public function saveBulkAttendances(Course $course, array $attendanceData, string $date): void
     {
+        $enrolledStudentIds = $course->students()
+            ->wherePivot('status', 'active')
+            ->pluck('users.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
         foreach ($attendanceData as $data) {
+            if (! in_array((int) $data['student_id'], $enrolledStudentIds, true)) {
+                throw new \InvalidArgumentException('Siswa tidak terdaftar aktif di kelas ini.');
+            }
+
             Attendance::updateOrCreate(
                 [
                     'course_id' => $course->id,

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { 
   ArrowLeft, 
@@ -18,7 +19,13 @@ import {
   FileCheck
 } from 'lucide-react';
 
-export default function SiswaSubmitTugasPage() {
+function SubmitTugasContent() {
+  const searchParams = useSearchParams();
+  const courseId = searchParams.get('course_id') || '1';
+  const courseTitle = searchParams.get('title') || 'Kelas';
+  const courseTeacher = searchParams.get('teacher') || 'Guru';
+  const courseCode = searchParams.get('code') || 'COURSE';
+  const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
   const [comment, setComment] = useState('');
   const [selectedFile, setSelectedFile] = useState<{ name: string; size: string } | null>({
     name: 'BudiSantoso_Tugas1_PersamaanKuadrat.pdf',
@@ -59,10 +66,9 @@ export default function SiswaSubmitTugasPage() {
       subtitle="Upload dan kirimkan hasil pekerjaan Anda"
     >
       <div className="space-y-6 max-w-4xl mx-auto">
-        {/* Back Link */}
         <div>
           <Link
-            href="/siswa/tugas"
+            href={`/siswa/tugas${queryParamsStr}`}
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 transition"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -70,18 +76,17 @@ export default function SiswaSubmitTugasPage() {
           </Link>
         </div>
 
-        {/* Success Alert Banner */}
         {isSuccess && (
           <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 shadow-sm flex items-start gap-4 animate-fade-in">
             <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-extrabold text-base text-emerald-900">Tugas Berhasil Dikumpulkan! 🎉</h4>
+              <h4 className="font-extrabold text-base text-emerald-900">Tugas Berhasil Dikumpulkan!</h4>
               <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
                 Hasil pekerjaan Anda telah terkirim kepada Bapak Ahmad Fauzi, S.Pd pada {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} pukul 23:22 WIB.
               </p>
               <div className="mt-3 flex items-center gap-3">
                 <Link
-                  href="/siswa/tugas"
+                  href={`/siswa/tugas${queryParamsStr}`}
                   className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition"
                 >
                   Lihat Semua Tugas
@@ -97,7 +102,6 @@ export default function SiswaSubmitTugasPage() {
           </div>
         )}
 
-        {/* Assignment Information Card */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
             <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-extrabold text-xs rounded-lg uppercase tracking-wider">
@@ -136,14 +140,12 @@ export default function SiswaSubmitTugasPage() {
           </div>
         </div>
 
-        {/* Submission Form Card */}
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
           <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
             <Upload className="w-5 h-5 text-indigo-600" />
             Formulir Unggah Hasil Pekerjaan
           </h3>
 
-          {/* Drag & Drop Upload Container */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
               Berkas Tugas (File Submission) <span className="text-rose-500">*</span>
@@ -192,7 +194,6 @@ export default function SiswaSubmitTugasPage() {
             )}
           </div>
 
-          {/* Notes / Comment Textarea */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
               Catatan / Komentar untuk Guru (Opsional)
@@ -201,15 +202,14 @@ export default function SiswaSubmitTugasPage() {
               rows={4}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Tuliskan catatan tambahan mengenai tugas ini (contoh: Selamat siang pak, berikut file revisi tugas 1 saya)..."
+              placeholder="Tuliskan catatan tambahan mengenai tugas ini..."
               className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
             />
           </div>
 
-          {/* Submit Action Bar */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <Link
-              href="/siswa/tugas"
+              href={`/siswa/tugas${queryParamsStr}`}
               className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition"
             >
               Batal
@@ -235,5 +235,13 @@ export default function SiswaSubmitTugasPage() {
         </form>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function SiswaSubmitTugasPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Memuat...</div>}>
+      <SubmitTugasContent />
+    </Suspense>
   );
 }

@@ -19,7 +19,7 @@ class StoreMaterialRequest extends FormRequest
             'content' => ['nullable', 'string'],
             'type' => ['nullable', 'string'],
             'url' => ['nullable', 'string'],
-            'file' => ['nullable', 'file', 'max:20480', 'mimes:pdf,doc,docx,ppt,pptx,zip,mp4'],
+            'file' => ['nullable', 'file', 'max:51200'],
         ];
     }
 }

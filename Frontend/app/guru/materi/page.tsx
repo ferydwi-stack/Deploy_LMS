@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, Upload, Download, Trash2, X, Eye, Video, FileText, Link2, Presentation, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, Upload, Download, Trash2, X, Eye, Video, FileText, Link2, Presentation, CheckCircle2, UploadCloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { api } from '@/lib/api';
@@ -21,6 +21,8 @@ function GuruMateriContent() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previewMateri, setPreviewMateri] = useState<any>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
   const [newMateri, setNewMateri] = useState({
@@ -41,7 +43,7 @@ function GuruMateriContent() {
           : 'PDF Document',
         title: m.title,
         desc: m.content ? m.content.split('[Category:')[0].trim() : 'Modul materi pembelajaran terdaftar.',
-        url: m.file_path || 'https://school.edu/files/modul.pdf'
+        url: m.file_path?.startsWith('http') ? m.file_path : `http://127.0.0.1:8000/storage/${m.file_path}`
       }));
     }
     return [];
@@ -60,16 +62,25 @@ function GuruMateriContent() {
     if (!newMateri.title) return;
 
     try {
-      const contentWithCategory = `${newMateri.desc || 'Ringkasan materi modul pembelajaran.'} [Category: ${newMateri.category}]`;
+      const fileCategory = selectedFile 
+        ? (selectedFile.type.includes('video') ? 'Video Tutorial' 
+            : selectedFile.type.includes('pdf') ? 'PDF Document' 
+            : selectedFile.type.includes('presentation') ? 'Presentation Slides' 
+            : selectedFile.type.includes('image') ? 'Gambar/Ilustrasi'
+            : 'Dokumen') 
+        : 'Link Resource';
       
-      await api.createMaterial({
-        course_id: parseInt(courseId),
-        title: newMateri.title,
-        content: contentWithCategory,
-        file_path: newMateri.url || 'https://school.edu/files/modul.pdf'
-      });
+      const contentWithCategory = `${newMateri.desc || 'Ringkasan materi modul pembelajaran.'} [Category: ${fileCategory}]`;
+      const formData = new FormData();
+      formData.append('course_id', String(parseInt(courseId)));
+      formData.append('title', newMateri.title);
+      formData.append('content', contentWithCategory);
+      if (selectedFile) formData.append('file', selectedFile);
+
+      await api.createMaterial(formData);
 
       setNewMateri({ title: '', desc: '', category: 'PDF Document', url: '' });
+      setSelectedFile(null);
       setIsModalOpen(false);
       setSuccessNotice(`Materi "${newMateri.title}" berhasil diunggah!`);
       setTimeout(() => setSuccessNotice(null), 4000);
@@ -89,6 +100,24 @@ function GuruMateriContent() {
     } catch (e) {
       console.error('Failed to delete material:', e);
     }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    if (e.type === 'dragleave') setDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files?.[0]) setSelectedFile(e.dataTransfer.files[0]);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) setSelectedFile(e.target.files[0]);
   };
 
   const getCategoryIcon = (category: string) => {
@@ -280,16 +309,9 @@ function GuruMateriContent() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">Kategori Format</label>
-                <select
-                  value={newMateri.category}
-                  onChange={(e) => setNewMateri({ ...newMateri, category: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  <option value="PDF Document">Dokumen PDF / E-Book</option>
-                  <option value="Video Tutorial">Video Tutorial (Link Youtube/MP4)</option>
-                  <option value="Presentation Slides">Slide Presentasi (PPTX/PDF)</option>
-                  <option value="Link Resource">Link Sumber Eksternal</option>
-                </select>
+                <div className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600">
+                  {selectedFile ? `Otomatis: ${selectedFile.type || selectedFile.name.split('.').pop()?.toUpperCase() || 'File'}` : 'Otomatis mengikuti jenis file yang dipilih'}
+                </div>
               </div>
 
               <div>
@@ -303,14 +325,47 @@ function GuruMateriContent() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">URL File / Video</label>
-                <input
-                  type="url"
-                  placeholder="https://drive.google.com/... atau https://youtube.com/..."
-                  value={newMateri.url}
-                  onChange={(e) => setNewMateri({ ...newMateri, url: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Upload File Materi</label>
+                <div
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${dragActive ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-slate-50/50'}`}
+                >
+                  <input
+                    type="file"
+                    className="hidden"
+                    id="material-upload-input"
+                    onChange={handleFileChange}
+                  />
+                  {selectedFile ? (
+                    <div className="flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl p-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <UploadCloud className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <div className="min-w-0 text-left">
+                          <p className="text-xs font-bold text-slate-900 truncate">{selectedFile.name}</p>
+                          <p className="text-[10px] text-slate-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFile(null)}
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label htmlFor="material-upload-input" className="cursor-pointer block">
+                      <div className="flex flex-col items-center justify-center py-4">
+                        <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
+                        <p className="text-xs font-bold text-slate-700">Seret file atau klik untuk pilih</p>
+                        <p className="text-[10px] text-slate-400 mt-1">Format bebas (Maks: 50MB)</p>
+                      </div>
+                    </label>
+                  )}
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

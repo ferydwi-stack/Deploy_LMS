@@ -6,6 +6,21 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Dependencies & Build
+node_modules/
+**/node_modules/
+vendor/
+**/vendor/
+.next/
+**/.next/
+dist/
+build/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
 # Antigravity / Gemini
 .antigravityignore
 .gemini/
@@ -13,3 +28,4 @@ Thumbs.db
 
 # Postman
 .postman/
+

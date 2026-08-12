@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GraduationCap, ArrowRight, Mail, Lock, Eye, EyeOff, ShieldCheck, UserCheck, BookOpen } from 'lucide-react';
 
+import TypewriterText from '@/components/TypewriterText';
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -99,8 +101,17 @@ export default function LoginPage() {
               <span>Platform Pembelajaran Sekolah Terpadu</span>
             </div>
 
-            <h2 className="text-2xl sm:text-4xl lg:text-[40px] font-extrabold text-[#1D4ED8] tracking-tight leading-[1.25]">
-              Kelola aktivitas belajar-mengajar dalam satu platform.
+            <h2 className="text-2xl sm:text-4xl lg:text-[40px] font-extrabold text-[#1D4ED8] tracking-tight leading-[1.25] min-h-[96px] sm:min-h-[120px] lg:min-h-[150px]">
+              <TypewriterText
+                phrases={[
+                  "Kelola aktivitas belajar-mengajar dalam satu platform.",
+                  "Pantau presensi, tugas, dan nilai secara real-time.",
+                  "Solusi digital terpadu untuk sekolah masa depan."
+                ]}
+                typingSpeed={50}
+                deletingSpeed={30}
+                pauseDuration={2800}
+              />
             </h2>
             
             <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">

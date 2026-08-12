@@ -1,3 +1,16 @@
+import type { 
+  LoginResponse, 
+  User, 
+  Course, 
+  Material, 
+  Assignment, 
+  Submission, 
+  Attendance, 
+  Notification,
+  StatsResponse,
+  ApiResponse
+} from '@/types/api';
+
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname || 'localhost';
@@ -61,34 +74,6 @@ export const setCurrentUser = (userObj: any): void => {
   }
 };
 
-export const getStorageUrl = (filePath?: string | null): string => {
-  if (!filePath) return '';
-  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-    return filePath;
-  }
-  const host = typeof window !== 'undefined' ? (window.location.hostname || 'localhost') : '127.0.0.1';
-  const cleanPath = filePath.replace(/^\/+/, '').replace(/^storage\//, '');
-  return `http://${host}:8000/storage/${cleanPath}`;
-};
-
-export const ensureArray = (res: any, preferredKey?: string): any[] => {
-  if (Array.isArray(res)) return res;
-  if (!res || typeof res !== 'object') return [];
-
-  if (preferredKey && Array.isArray(res[preferredKey])) return res[preferredKey];
-  if (Array.isArray(res.data)) return res.data;
-  if (Array.isArray(res.users)) return res.users;
-  if (Array.isArray(res.courses)) return res.courses;
-  if (Array.isArray(res.assignments)) return res.assignments;
-  if (Array.isArray(res.materials)) return res.materials;
-  if (Array.isArray(res.students)) return res.students;
-  if (Array.isArray(res.attendances)) return res.attendances;
-  if (Array.isArray(res.notifications)) return res.notifications;
-  if (Array.isArray(res.submissions)) return res.submissions;
-
-  return [];
-};
-
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = getAuthToken();
   const headers: Record<string, string> = {
@@ -119,10 +104,6 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
   const data = await response.json().catch(() => ({}));
 
-  if (response.status === 401) {
-    removeAuthToken();
-  }
-
   if (!response.ok) {
     throw new Error(data.message || `API Error: ${response.status}`);
   }
@@ -133,7 +114,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 // API Service Methods
 export const api = {
   // Auth
-  login: async (email: string, password: string) => {
+  login: async (email: string, password: string): Promise<LoginResponse> => {
     const res = await fetchApi('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -155,7 +136,7 @@ export const api = {
     }
   },
 
-  me: async () => {
+  me: async (): Promise<User> => {
     const res = await fetchApi('/auth/me');
     if (res.user) {
       setCurrentUser(res.user);
@@ -164,7 +145,7 @@ export const api = {
   },
 
   // Admin
-  getUsers: (role?: string, search?: string) => {
+  getUsers: (role?: string, search?: string): Promise<any> => {
     const params = new URLSearchParams();
     if (role) params.append('role', role);
     if (search) params.append('search', search);
@@ -172,64 +153,71 @@ export const api = {
     return fetchApi(`/admin/users${queryStr}`);
   },
 
-  createUser: (userData: any) => fetchApi('/admin/users', { method: 'POST', body: JSON.stringify(userData) }),
-  updateUser: (id: number, userData: any) => fetchApi(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(userData) }),
-  resetUserPassword: (id: number, password: string) => fetchApi(`/admin/users/${id}/reset-password`, { method: 'PUT', body: JSON.stringify({ password }) }),
-  deleteUser: (id: number) => fetchApi(`/admin/users/${id}`, { method: 'DELETE' }),
-  bulkImportUsers: (users: any[]) => fetchApi('/admin/users/bulk-import', { method: 'POST', body: JSON.stringify({ users }) }),
+  createUser: (userData: Partial<User> & { password?: string }): Promise<ApiResponse<User>> => fetchApi('/admin/users', { method: 'POST', body: JSON.stringify(userData) }),
+  updateUser: (id: number, userData: Partial<User>): Promise<ApiResponse<User>> => fetchApi(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(userData) }),
+  resetUserPassword: (id: number, password: string): Promise<ApiResponse> => fetchApi(`/admin/users/${id}/reset-password`, { method: 'PUT', body: JSON.stringify({ password }) }),
+  deleteUser: (id: number): Promise<ApiResponse> => fetchApi(`/admin/users/${id}`, { method: 'DELETE' }),
+  bulkImportUsers: (users: Partial<User>[]): Promise<ApiResponse> => fetchApi('/admin/users/bulk-import', { method: 'POST', body: JSON.stringify({ users }) }),
 
   // Courses
-  getCourses: () => fetchApi('/courses'),
-  getCourseDetail: (id: number | string) => fetchApi(`/courses/${id}`),
-  createCourse: (data: any) => fetchApi('/courses', { method: 'POST', body: JSON.stringify(data) }),
-  deleteCourse: (id: number | string) => fetchApi(`/courses/${id}`, { method: 'DELETE' }),
+  getCourses: (): Promise<Course[]> => fetchApi('/courses'),
+  getCourseDetail: (id: number | string): Promise<Course> => fetchApi(`/courses/${id}`),
+  createCourse: (data: Partial<Course>): Promise<ApiResponse<Course>> => fetchApi('/courses', { method: 'POST', body: JSON.stringify(data) }),
+  updateCourse: (id: number, data: Partial<Course>): Promise<ApiResponse<Course>> => fetchApi(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCourse: (id: number | string): Promise<ApiResponse> => fetchApi(`/courses/${id}`, { method: 'DELETE' }),
 
   // Materials
-  getMaterials: (courseId?: number | string) => fetchApi(courseId ? `/materials?course_id=${courseId}` : '/materials'),
-  createMaterial: (data: any) => fetchApi('/materials', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) }),
-  deleteMaterial: (id: number | string) => fetchApi(`/materials/${id}`, { method: 'DELETE' }),
+  getMaterials: (courseId?: number | string): Promise<Material[]> => fetchApi(courseId ? `/materials?course_id=${courseId}` : '/materials'),
+  createMaterial: (data: FormData | Partial<Material>): Promise<ApiResponse<Material>> => fetchApi('/materials', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) }),
+  deleteMaterial: (id: number | string): Promise<ApiResponse> => fetchApi(`/materials/${id}`, { method: 'DELETE' }),
 
   // Assignments
-  getAssignments: (courseId?: number | string) => fetchApi(courseId ? `/assignments?course_id=${courseId}` : '/assignments'),
-  getAssignmentDetail: (id: number | string) => fetchApi(`/assignments/${id}`),
-  createAssignment: (data: any) => fetchApi('/assignments', { method: 'POST', body: JSON.stringify(data) }),
-  deleteAssignment: (id: number | string) => fetchApi(`/assignments/${id}`, { method: 'DELETE' }),
+  getAssignments: (courseId?: number | string): Promise<Assignment[]> => fetchApi(courseId ? `/assignments?course_id=${courseId}` : '/assignments'),
+  getAssignmentDetail: (id: number | string): Promise<Assignment> => fetchApi(`/assignments/${id}`),
+  createAssignment: (data: FormData | Partial<Assignment>): Promise<ApiResponse<Assignment>> => fetchApi('/assignments', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) }),
+  deleteAssignment: (id: number | string): Promise<ApiResponse> => fetchApi(`/assignments/${id}`, { method: 'DELETE' }),
 
   // Submissions (Tugas Siswa)
-  submitAssignment: (assignmentId: number | string, formData: FormData) => 
+  submitAssignment: (assignmentId: number | string, formData: FormData): Promise<ApiResponse<Submission>> => 
     fetchApi(`/assignments/${assignmentId}/submit`, { method: 'POST', body: formData }),
 
-  gradeSubmission: (submissionId: number | string, score: number, teacherFeedback?: string) =>
+  gradeSubmission: (submissionId: number | string, score: number, teacherFeedback?: string): Promise<ApiResponse<Submission>> =>
     fetchApi(`/submissions/${submissionId}/grade`, { method: 'PUT', body: JSON.stringify({ score, teacher_feedback: teacherFeedback }) }),
 
-  getMySubmissions: () => fetchApi('/submissions/my'),
-  getAssignmentSubmissions: (assignmentId: number | string) => fetchApi(`/assignments/${assignmentId}/submissions`),
+  getMySubmissions: (): Promise<Submission[]> => fetchApi('/submissions/my'),
+  getAssignmentSubmissions: (assignmentId: number | string): Promise<Submission[]> => fetchApi(`/assignments/${assignmentId}/submissions`),
 
   // Enrollment
-  enrollCourse: (id: number) => fetchApi(`/courses/${id}/enroll`, { method: 'POST' }),
-  enrollByCode: (code: string) => fetchApi('/courses/enroll-by-code', { method: 'POST', body: JSON.stringify({ code }) }),
-  leaveCourse: (id: number) => fetchApi(`/courses/${id}/leave`, { method: 'POST' }),
-  getCourseStudents: (id: number) => fetchApi(`/courses/${id}/students`),
-  getAvailableCourses: () => fetchApi('/courses/available'),
-  kickStudent: (courseId: number, studentId: number) => fetchApi(`/courses/${courseId}/students/${studentId}`, { method: 'DELETE' }),
-  updateStudentGrade: (courseId: number, studentId: number, data: { uts_score: number; uas_score: number }) =>
+  enrollCourse: (id: number): Promise<ApiResponse> => fetchApi(`/courses/${id}/enroll`, { method: 'POST' }),
+  enrollByCode: (code: string): Promise<ApiResponse<{ course: Course }>> => fetchApi('/courses/enroll-by-code', { method: 'POST', body: JSON.stringify({ code }) }),
+  leaveCourse: (id: number): Promise<ApiResponse> => fetchApi(`/courses/${id}/leave`, { method: 'POST' }),
+  getCourseStudents: (id: number): Promise<User[]> => fetchApi(`/courses/${id}/students`),
+  getCourseReport: (id: number): Promise<any> => fetchApi(`/courses/${id}/report`),
+  getAvailableCourses: (): Promise<Course[]> => fetchApi('/courses/available'),
+  kickStudent: (courseId: number, studentId: number): Promise<ApiResponse> => fetchApi(`/courses/${courseId}/students/${studentId}`, { method: 'DELETE' }),
+  updateStudentGrade: (courseId: number, studentId: number, data: { uts_score: number; uas_score: number }): Promise<ApiResponse> =>
     fetchApi(`/courses/${courseId}/students/${studentId}/grades`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // Attendance
-  getCourseAttendances: (courseId: number, date?: string) => fetchApi(`/courses/${courseId}/attendances${date ? `?date=${date}` : ''}`),
-  saveCourseAttendances: (courseId: number, data: any) => fetchApi(`/courses/${courseId}/attendances`, { method: 'POST', body: JSON.stringify(data) }),
-  selfAttend: (courseId: number) => fetchApi('/attendances/self', { method: 'POST', body: JSON.stringify({ course_id: courseId }) }),
-  getMyAttendances: () => fetchApi('/attendances/my'),
+  getCourseAttendances: (courseId: number, date?: string): Promise<Attendance[]> => fetchApi(`/courses/${courseId}/attendances${date ? `?date=${date}` : ''}`),
+  saveCourseAttendances: (courseId: number, data: { date: string; attendances: Array<{ student_id: number; status: string; note?: string }> }): Promise<ApiResponse> => 
+    fetchApi(`/courses/${courseId}/attendances`, { method: 'POST', body: JSON.stringify(data) }),
+  selfAttend: (courseId: number): Promise<ApiResponse> => fetchApi('/attendances/self', { method: 'POST', body: JSON.stringify({ course_id: courseId }) }),
+  getMyAttendances: (): Promise<Attendance[]> => fetchApi('/attendances/my'),
 
   // Notifications
-  getNotifications: () => fetchApi('/notifications'),
-  getUnreadCount: () => fetchApi('/notifications/unread-count'),
-  markNotificationRead: (id: number) => fetchApi(`/notifications/${id}/read`, { method: 'PUT' }),
-  markAllNotificationsRead: () => fetchApi('/notifications/read-all', { method: 'PUT' }),
+  getNotifications: (): Promise<Notification[]> => fetchApi('/notifications'),
+  getUnreadCount: (): Promise<{ unread_count: number }> => fetchApi('/notifications/unread-count'),
+  markNotificationRead: (id: number): Promise<ApiResponse> => fetchApi(`/notifications/${id}/read`, { method: 'PUT' }),
+  markAllNotificationsRead: (): Promise<ApiResponse> => fetchApi('/notifications/read-all', { method: 'PUT' }),
 
   // Profile
-  updateProfile: (data: any) => fetchApi('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  updateProfile: (data: Partial<User>): Promise<ApiResponse<User>> => fetchApi('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
 
-  // Admin
-  getAdminStats: () => fetchApi('/admin/stats'),
+  // Stats
+  getAdminStats: (): Promise<StatsResponse> => fetchApi('/admin/stats'),
+  getGuruStats: (): Promise<StatsResponse> => fetchApi('/guru/stats'),
+  getSiswaStats: (): Promise<StatsResponse> => fetchApi('/siswa/stats'),
+  getAllAssignments: (): Promise<Assignment[]> => fetchApi('/assignments'),
+  getAllAttendances: (): Promise<Attendance[]> => fetchApi('/attendances/my'),
 };

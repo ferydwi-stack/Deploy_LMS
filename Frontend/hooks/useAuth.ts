@@ -30,7 +30,7 @@ export function useAuth(): AuthState {
     try {
       const userData = await api.me();
       if (userData) {
-        setUser(userData?.user || userData?.data || userData);
+        setUser((userData as any)?.user || (userData as any)?.data || userData);
       }
     } catch {
       // keep cached user if network fails
@@ -44,7 +44,7 @@ export function useAuth(): AuthState {
     try {
       await api.login(email, password);
       const userData = await api.me();
-      setUser(userData);
+      setUser(userData as any);
     } catch (error) {
       throw error;
     } finally {

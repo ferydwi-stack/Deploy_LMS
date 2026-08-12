@@ -7,26 +7,18 @@ use App\Http\Requests\StoreAssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Course;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class AssignmentController extends Controller
 {
+    use AuthorizesRequests;
     public function index(Request $request)
     {
-        $user = $request->user();
-        $query = Assignment::with([
-            'course' => fn ($q) => $q->withCount('students'),
-            'course.teacher',
-        ])->withCount('submissions');
+        $query = Assignment::with(['course.teacher'])->withCount('submissions');
 
         if ($request->has('course_id') && ! empty($request->course_id)) {
             $query->where('course_id', $request->course_id);
-        } elseif ($user) {
-            if ($user->role === 'guru') {
-                $query->whereHas('course', fn ($q) => $q->where('teacher_id', $user->id));
-            } elseif ($user->role === 'siswa') {
-                $query->whereHas('course.students', fn ($q) => $q->where('users.id', $user->id)
-                    ->where('course_student.status', 'active'));
-            }
         }
 
         $assignments = $query->latest()->get();
@@ -36,21 +28,32 @@ class AssignmentController extends Controller
 
     public function store(StoreAssignmentRequest $request)
     {
+        $this->authorize('create', Assignment::class);
         $validated = $request->validated();
-        $user = $request->user();
 
         if (empty($validated['course_id'])) {
-            return response()->json(['message' => 'Mata pelajaran (course_id) wajib dipilih.'], 422);
+            return response()->json(['message' => 'course_id wajib diisi.'], 422);
         }
 
-        if ($user && $user->role === 'guru') {
-            $course = Course::find($validated['course_id']);
-            if (! $course || $course->teacher_id !== $user->id) {
-                return response()->json(['message' => 'Anda tidak memiliki akses ke kelas ini.'], 403);
-            }
+        $course = Course::findOrFail($validated['course_id']);
+        $this->authorize('update', $course);
+
+        $attachmentPath = null;
+        $attachmentName = null;
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $attachmentName = $file->getClientOriginalName();
+            $attachmentPath = $file->store('tugas_soal', 'public');
         }
 
-        $assignment = Assignment::create($validated);
+        $assignment = Assignment::create([
+            'course_id' => $validated['course_id'],
+            'title' => $request->input('title', $validated['title'] ?? 'Tugas Baru'),
+            'instruction' => $validated['instruction'] ?? '',
+            'due_date' => $validated['due_date'] ?? null,
+            'attachment_path' => $attachmentPath,
+            'attachment_name' => $attachmentName,
+        ]);
 
         return response()->json([
             'message' => 'Tugas berhasil dibuat.',
@@ -61,6 +64,7 @@ class AssignmentController extends Controller
     public function show($id)
     {
         $assignment = Assignment::with(['course', 'submissions.student'])->findOrFail($id);
+        $this->authorize('view', $assignment);
 
         return response()->json($assignment);
     }
@@ -68,6 +72,7 @@ class AssignmentController extends Controller
     public function destroy($id)
     {
         $assignment = Assignment::findOrFail($id);
+        $this->authorize('delete', $assignment);
         $assignment->delete();
 
         return response()->json([

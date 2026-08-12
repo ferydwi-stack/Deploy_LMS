@@ -17,6 +17,7 @@ class StoreAssignmentRequest extends FormRequest
             'course_id' => ['nullable', 'exists:courses,id'],
             'title' => ['required', 'string', 'max:255'],
             'instruction' => ['nullable', 'string'],
+            'file' => ['nullable', 'file', 'max:51200'],
             'due_date' => ['nullable', 'date'],
         ];
     }

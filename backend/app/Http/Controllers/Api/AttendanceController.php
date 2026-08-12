@@ -14,7 +14,7 @@ class AttendanceController extends Controller
     use AuthorizesRequests;
     public function index(Course $course, Request $request)
     {
-        $this->authorize('viewAny', $course);
+        $this->authorize('view', $course);
         
         $date = $request->query('date', today()->toDateString());
         $attendances = app(AttendanceService::class)->getCourseAttendances($course, $date);
@@ -34,7 +34,11 @@ class AttendanceController extends Controller
             'attendances.*.note' => 'nullable|string',
         ]);
         
-        app(AttendanceService::class)->saveBulkAttendances($course, $validated['attendances'], $validated['date']);
+        try {
+            app(AttendanceService::class)->saveBulkAttendances($course, $validated['attendances'], $validated['date']);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
         
         return response()->json(['message' => 'Attendance saved successfully']);
     }

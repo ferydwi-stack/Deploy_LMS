@@ -91,7 +91,7 @@ export default function GuruProfilePage() {
         bio: formData.bio
       });
 
-      const updated = res?.user || res?.data || res;
+      const updated = (res as any)?.user || (res as any)?.data || res;
       if (updated) {
         const merged = { ...currentUser, ...updated, subject: formData.subject, specialization: formData.subject };
         setCurrentUser(merged);

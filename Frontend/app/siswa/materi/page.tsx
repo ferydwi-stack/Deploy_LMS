@@ -29,13 +29,13 @@ function SiswaMateriContent() {
           : 'PDF Document',
         title: m.title,
         desc: m.content ? m.content.split('[Category:')[0].trim() : 'Modul materi pembelajaran.',
-        url: m.file_path || 'https://school.edu/files/modul.pdf'
+        url: m.file_path?.startsWith('http') ? m.file_path : (m.file_path ? `http://127.0.0.1:8000/storage/${m.file_path}` : '')
       }));
     }
     return [];
   }, [courseId]);
 
-  const { data: materiList } = useRealtimeData(loadMaterials, 5000, [courseId]);
+  const { data: materiList } = useRealtimeData(loadMaterials, 60000, [courseId]);
 
   const getCategoryIcon = (category: string) => {
     if (category.includes('Video')) return <Video className="w-5 h-5 text-purple-600" />;
@@ -68,29 +68,34 @@ function SiswaMateriContent() {
          </div>
 
         {/* Sub-Navigation Tabs */}
-        <div className="flex items-center gap-6 border-b border-slate-200 text-sm font-bold pt-2">
-          <Link
-            href="/siswa/materi"
-            className="flex items-center gap-2 pb-3 text-[#2563EB] border-b-2 border-[#2563EB]"
-          >
-            <BookOpen className="w-4 h-4 text-[#2563EB]" />
-            <span>Materi Pembelajaran</span>
-          </Link>
-          <Link
-            href="/siswa/tugas"
-            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
-          >
-            <FileCheck2 className="w-4 h-4 text-slate-400" />
-            <span>Tugas Kelas</span>
-          </Link>
-          <Link
-            href="/siswa/absensi"
-            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
-          >
-            <CalendarCheck className="w-4 h-4 text-slate-400" />
-            <span>Kehadiran / Absensi</span>
-          </Link>
-        </div>
+        {(() => {
+          const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
+          return (
+            <div className="flex items-center gap-6 border-b border-slate-200 text-sm font-bold pt-2">
+              <Link
+                href={`/siswa/materi${queryParamsStr}`}
+                className="flex items-center gap-2 pb-3 text-[#2563EB] border-b-2 border-[#2563EB]"
+              >
+                <BookOpen className="w-4 h-4 text-[#2563EB]" />
+                <span>Materi Pembelajaran</span>
+              </Link>
+              <Link
+                href={`/siswa/tugas${queryParamsStr}`}
+                className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
+              >
+                <FileCheck2 className="w-4 h-4 text-slate-400" />
+                <span>Tugas Kelas</span>
+              </Link>
+              <Link
+                href={`/siswa/absensi${queryParamsStr}`}
+                className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
+              >
+                <CalendarCheck className="w-4 h-4 text-slate-400" />
+                <span>Kehadiran / Absensi</span>
+              </Link>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Main Section Header */}

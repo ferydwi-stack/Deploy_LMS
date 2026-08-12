@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, 
   UploadCloud, 
@@ -16,9 +16,25 @@ import {
   AlertCircle,
   Upload
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 export default function GuruUnggahMateriPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading...</div>}>
+      <GuruUnggahMateriContent />
+    </Suspense>
+  );
+}
+
+function GuruUnggahMateriContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const courseId = searchParams.get('course_id') || '';
+  const courseTitle = searchParams.get('title') || '';
+  const courseTeacher = searchParams.get('teacher') || '';
+  const courseCode = searchParams.get('code') || '';
+  const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -56,17 +72,33 @@ export default function GuruUnggahMateriPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedFile) {
+      alert('Pilih file materi terlebih dahulu.');
+      return;
+    }
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('course_id', courseId);
+      uploadFormData.append('title', formData.judul);
+      uploadFormData.append('content', formData.deskripsi || 'Modul materi pembelajaran');
+      uploadFormData.append('type', formData.jenis);
+      if (selectedFile) uploadFormData.append('file', selectedFile);
+
+      await api.createMaterial(uploadFormData);
       setLoading(false);
       setSuccess(true);
       setTimeout(() => {
-        router.push('/guru/materi');
+        router.push(`/guru/materi${queryParamsStr}`);
       }, 1500);
-    }, 1000);
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Gagal mengunggah materi. Silakan coba lagi.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -78,7 +110,7 @@ export default function GuruUnggahMateriPage() {
       {/* Back Link */}
       <div className="mb-6">
         <Link
-          href="/guru/materi"
+          href={`/guru/materi${queryParamsStr}`}
           className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 transition bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-2xs"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -128,24 +160,8 @@ export default function GuruUnggahMateriPage() {
               />
             </div>
 
-            {/* Pilih Kelas Dropdown */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Pilih Kelas Tujuan <span className="text-rose-500">*</span>
-              </label>
-              <select
-                value={formData.kelas}
-                onChange={(e) => setFormData({ ...formData, kelas: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition bg-white"
-              >
-                <option value="X-IPA 1">X-IPA 1 (Matematika Wajib)</option>
-                <option value="X-IPA 2">X-IPA 2 (Matematika Wajib)</option>
-                <option value="XI-IPA 1">XI-IPA 1 (Matematika Peminatan)</option>
-                <option value="XI-IPA 2">XI-IPA 2 (Matematika Peminatan)</option>
-                <option value="XII-IPA 1">XII-IPA 1 (Kalkulus Lanjutan)</option>
-                <option value="Semua Kelas">Semua Kelas yang Diampu</option>
-              </select>
-            </div>
+              {/* Pilih Kelas Dropdown */}
+            {/* Field kelas disembunyikan/dihapus karena kita langsung bind ke courseId dari URL */}
 
             {/* Jenis Materi */}
             <div>
@@ -241,7 +257,7 @@ export default function GuruUnggahMateriPage() {
           {/* Form Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <Link
-              href="/guru/materi"
+              href={`/guru/materi${queryParamsStr}`}
               className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition"
             >
               Batal

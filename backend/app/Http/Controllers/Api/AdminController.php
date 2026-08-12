@@ -58,6 +58,7 @@ class AdminController extends Controller
             'password' => 'nullable|string|min:6',
             'role' => 'sometimes|required|in:admin,guru,siswa',
             'nisn_or_nip' => 'nullable|string',
+            'class_name' => 'nullable|string',
             'specialization' => 'nullable|string',
             'subject' => 'nullable|string',
             'phone' => 'nullable|string',
@@ -123,6 +124,7 @@ class AdminController extends Controller
                     'password' => Hash::make($userData['password'] ?? '12345678'),
                     'role' => $userData['role'],
                     'nisn_or_nip' => $userData['nisn_or_nip'] ?? null,
+                    'class_name' => $userData['class_name'] ?? $userData['kelas'] ?? null,
                 ]
             );
             $imported++;

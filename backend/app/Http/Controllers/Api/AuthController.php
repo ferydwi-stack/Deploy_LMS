@@ -7,6 +7,7 @@ use App\Http\Requests\Api\Auth\UpdateProfileRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
 {
@@ -17,14 +18,24 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        $throttleKey = strtolower($request->input('email')).'|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            return response()->json([
+                'message' => 'Terlalu banyak percobaan login. Silakan coba lagi nanti.',
+            ], 429)->header('Retry-After', RateLimiter::availableIn($throttleKey));
+        }
+
         $user = User::where('email', $request->email)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
+            RateLimiter::hit($throttleKey, 60);
+
             return response()->json([
                 'message' => 'Email atau password salah.',
             ], 401);
         }
 
+        RateLimiter::clear($throttleKey);
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -54,7 +65,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $request->user()?->currentAccessToken()?->delete();
 
         return response()->json([
             'message' => 'Berhasil logout',
@@ -65,6 +76,7 @@ class AuthController extends Controller
     {
         $user = $request->user();
         $user->update($request->validated());
+        $user->refresh();
 
         return response()->json([
             'message' => 'Profile berhasil diperbarui',

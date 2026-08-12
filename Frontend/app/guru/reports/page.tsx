@@ -70,12 +70,12 @@ export default function GuruReportsPage() {
 
       try {
         const { api } = await import('@/lib/api');
-        const courseDetail = await api.getCourseDetail(Number(selectedClass)).catch(() => null);
-        const enrolled = courseDetail?.students || [];
+        const reportDetail = await api.getCourseReport(Number(selectedClass)).catch(() => null);
+        const enrolled = reportDetail?.students || [];
 
         if (Array.isArray(enrolled) && enrolled.length > 0) {
-          const attendances = Array.isArray(courseDetail?.attendances) ? courseDetail.attendances : [];
-          const assignments = Array.isArray(courseDetail?.assignments) ? courseDetail.assignments : [];
+          const attendances = Array.isArray(reportDetail?.attendances) ? reportDetail.attendances : [];
+          const assignments = Array.isArray(reportDetail?.assignments) ? reportDetail.assignments : [];
 
           const mapped = enrolled.map((s: any, idx: number) => {
             const nis = s.nisn_or_nip || `USR-00${s.id || idx + 1}`;
@@ -86,27 +86,26 @@ export default function GuruReportsPage() {
             const totalSessions = studentAttendances.length;
             const absensiPercent = totalSessions > 0 
               ? `${Math.round((presentCount / totalSessions) * 100)}%` 
-              : '100%';
+              : '-';
 
-            // Calculate average assignment score for this student in this course
-            let totalScoreSum = 0;
-            let submittedCount = 0;
+            const scores = { tugas: [] as number[], uts: [] as number[], uas: [] as number[], remediUts: [] as number[], remediUas: [] as number[] };
             assignments.forEach((asg: any) => {
+              const category = String(asg.instruction || asg.category || '').replace(/^Modul\/Kategori:\s*/i, '').trim().toLowerCase();
               const subs = Array.isArray(asg.submissions) ? asg.submissions : [];
               const userSub = subs.find((sub: any) => Number(sub.student_id) === Number(s.id));
-              if (userSub && userSub.score !== null && userSub.score !== undefined) {
-                totalScoreSum += Number(userSub.score);
-                submittedCount++;
-              }
+              if (!userSub || userSub.score === null || userSub.score === undefined) return;
+              const score = Number(userSub.score);
+              if (category === 'uts') scores.uts.push(score);
+              else if (category === 'uas') scores.uas.push(score);
+              else if (category === 'remedi uts') scores.remediUts.push(score);
+              else if (category === 'remedi uas') scores.remediUas.push(score);
+              else scores.tugas.push(score);
             });
 
-            const tugasScore = submittedCount > 0 ? Math.round(totalScoreSum / submittedCount) : 0;
-            const storedUts = s.pivot?.uts_score !== undefined && s.pivot?.uts_score !== null ? Number(s.pivot.uts_score) : 0;
-            const storedUas = s.pivot?.uas_score !== undefined && s.pivot?.uas_score !== null ? Number(s.pivot.uas_score) : 0;
-
-            const absensiPercentStr = totalSessions > 0
-              ? `${Math.round((presentCount / totalSessions) * 100)}%`
-              : '0%';
+            const highest = (values: number[]) => values.length ? Math.max(...values) : null;
+            const tugasScore = scores.tugas.length ? Math.round(scores.tugas.reduce((sum, v) => sum + v, 0) / scores.tugas.length) : null;
+            const storedUts = highest(scores.uts) ?? highest(scores.remediUts) ?? (s.pivot?.uts_score !== undefined && s.pivot?.uts_score !== null ? Number(s.pivot.uts_score) : null);
+            const storedUas = highest(scores.uas) ?? highest(scores.remediUas) ?? (s.pivot?.uas_score !== undefined && s.pivot?.uas_score !== null ? Number(s.pivot.uas_score) : null);
 
             return {
               no: (idx + 1).toString().padStart(2, '0'),
@@ -116,7 +115,8 @@ export default function GuruReportsPage() {
               tugasScore: tugasScore,
               utsScore: storedUts,
               uasScore: storedUas,
-              absensiPercent: absensiPercentStr
+              absensiPercent: absensiPercent,
+              hasAnyScore: tugasScore !== null || storedUts !== null || storedUas !== null
             };
           });
           setReportsData(mapped);
@@ -149,9 +149,9 @@ export default function GuruReportsPage() {
     csvContent += `No;NIS;Nama Siswa;Rata-Rata Tugas (40%);Nilai UTS (30%);Nilai UAS (30%);Kehadiran;Nilai Akhir;Status Ketuntasan\n`;
 
     reportsData.forEach((st, idx) => {
-      const final = calculateFinal(st.tugasScore, st.utsScore, st.uasScore);
-      const status = final >= 75 ? 'Tuntas' : 'Remedial';
-      csvContent += `${idx + 1};${st.nis};"${st.name}";${st.tugasScore};${st.utsScore};${st.uasScore};${st.absensiPercent};${final};${status}\n`;
+                  const final = st.hasAnyScore && st.tugasScore !== null && st.utsScore !== null && st.uasScore !== null ? calculateFinal(st.tugasScore, st.utsScore, st.uasScore) : null;
+                  const status = final === null ? 'Belum Ada Data' : (final >= 75 ? 'Tuntas' : 'Remedial');
+                  csvContent += `${idx + 1};${st.nis};"${st.name}";${st.tugasScore ?? '-'};${st.utsScore ?? '-'};${st.uasScore ?? '-'};${st.absensiPercent};${final ?? '-'};${status}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -227,19 +227,19 @@ export default function GuruReportsPage() {
             </thead>
             <tbody>
               ${reportsData.map((st, idx) => {
-                const final = calculateFinal(st.tugasScore, st.utsScore, st.uasScore);
-                const isPassed = final >= 75;
+                const final = st.hasAnyScore && st.tugasScore !== null && st.utsScore !== null && st.uasScore !== null ? calculateFinal(st.tugasScore, st.utsScore, st.uasScore) : null;
+                const isPassed = final !== null && final >= 75;
                 return `
                   <tr>
                     <td>${idx + 1}</td>
                     <td>${st.nis}</td>
                     <td><strong>${st.name}</strong></td>
-                    <td>${st.tugasScore}</td>
-                    <td>${st.utsScore}</td>
-                    <td>${st.uasScore}</td>
+                    <td>${st.tugasScore ?? '-'}</td>
+                    <td>${st.utsScore ?? '-'}</td>
+                    <td>${st.uasScore ?? '-'}</td>
                     <td>${st.absensiPercent}</td>
-                    <td><strong>${final}</strong></td>
-                    <td class="${isPassed ? 'badge-tuntas' : 'badge-remedial'}">${isPassed ? 'Tuntas' : 'Remedial'}</td>
+                    <td><strong>${final ?? '-'}</strong></td>
+                    <td class="${final === null ? '' : (isPassed ? 'badge-tuntas' : 'badge-remedial')}">${final === null ? 'Belum Ada Data' : (isPassed ? 'Tuntas' : 'Remedial')}</td>
                   </tr>
                 `;
               }).join('')}
@@ -384,8 +384,13 @@ export default function GuruReportsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {reportsData.map((row) => {
-                  const final = calculateFinal(row.tugasScore, row.utsScore, row.uasScore);
-                  const isPassed = final >= 75;
+                  const hasAnyScore = row.hasAnyScore;
+                  const final = hasAnyScore && row.tugasScore !== null && row.utsScore !== null && row.uasScore !== null
+                    ? calculateFinal(row.tugasScore, row.utsScore, row.uasScore)
+                    : null;
+                  const isPassed = final !== null && final >= 75;
+                  const displayFinal = final !== null ? final : '-';
+                  const displayStatus = final === null ? 'Belum Ada Data' : (isPassed ? 'Tuntas' : 'Remedial');
 
                   return (
                     <tr key={row.no} className="hover:bg-slate-50/60 transition">
@@ -394,20 +399,20 @@ export default function GuruReportsPage() {
                         <p className="font-bold text-slate-900">{row.name}</p>
                         <p className="text-[11px] text-slate-400 font-mono">{row.nis}</p>
                       </td>
-                      <td className="py-4 px-4 font-semibold text-slate-700">{row.tugasScore}</td>
-                      <td className="py-4 px-4 font-bold text-blue-600 font-mono">{row.utsScore}</td>
-                      <td className="py-4 px-4 font-bold text-purple-600 font-mono">{row.uasScore}</td>
+                      <td className="py-4 px-4 font-semibold text-slate-700">{row.tugasScore ?? '-'}</td>
+                      <td className="py-4 px-4 font-bold text-blue-600 font-mono">{row.utsScore ?? '-'}</td>
+                      <td className="py-4 px-4 font-bold text-purple-600 font-mono">{row.uasScore ?? '-'}</td>
                       <td className="py-4 px-4">
                         <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold rounded-lg text-[11px]">
                           {row.absensiPercent}
                         </span>
                       </td>
-                      <td className="py-4 px-4 font-extrabold text-slate-900 font-mono text-sm">{final}</td>
+                      <td className="py-4 px-4 font-extrabold text-slate-900 font-mono text-sm">{displayFinal}</td>
                       <td className="py-4 px-4 text-center">
                         <span className={`px-3 py-1 rounded-full font-bold text-[11px] ${
-                          isPassed ? 'bg-emerald-100/70 text-emerald-700' : 'bg-rose-100/70 text-rose-700'
+                          final === null ? 'bg-slate-100/70 text-slate-700' : (isPassed ? 'bg-emerald-100/70 text-emerald-700' : 'bg-rose-100/70 text-rose-700')
                         }`}>
-                          {isPassed ? 'Tuntas' : 'Remedial'}
+                          {displayStatus}
                         </span>
                       </td>
                       <td className="py-4 px-4 text-right">

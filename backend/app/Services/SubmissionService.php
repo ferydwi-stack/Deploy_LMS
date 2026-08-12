@@ -8,6 +8,7 @@ use App\Models\Assignment;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SubmissionService
 {
@@ -22,30 +23,32 @@ class SubmissionService
             throw new \Exception('Tidak terdaftar di kelas ini');
         }
 
-        $path = null;
-        $originalFilename = null;
+        return DB::transaction(function () use ($assignment, $student, $request) {
+            $path = null;
+            $originalFilename = null;
 
-        if ($request->hasFile('file')) {
-            $path = $request->file('file')->store('tugas', 'public');
-            $originalFilename = $request->file('file')->getClientOriginalName();
-        }
+            if ($request->hasFile('file')) {
+                $path = $request->file('file')->store('tugas', 'public');
+                $originalFilename = $request->file('file')->getClientOriginalName();
+            }
 
-        $isLate = $assignment->due_date && now()->greaterThan($assignment->due_date);
+            $isLate = $assignment->due_date && now()->greaterThan($assignment->due_date);
 
-        $submission = Submission::updateOrCreate(
-            ['assignment_id' => $assignment->id, 'student_id' => $student->id],
-            [
-                'file_path' => $path,
-                'original_filename' => $originalFilename,
-                'note' => $request->input('note'),
-                'status' => $isLate ? 'late' : 'submitted',
-                'submitted_at' => now(),
-            ]
-        );
+            $submission = Submission::updateOrCreate(
+                ['assignment_id' => $assignment->id, 'student_id' => $student->id],
+                [
+                    'file_path' => $path,
+                    'original_filename' => $originalFilename,
+                    'note' => $request->input('note'),
+                    'status' => $isLate ? 'late' : 'submitted',
+                    'submitted_at' => now(),
+                ]
+            );
 
-        event(new SubmissionCreated($submission->load(['assignment.course.teacher', 'student'])));
+            event(new SubmissionCreated($submission->load(['assignment.course.teacher', 'student'])));
 
-        return $submission;
+            return $submission;
+        });
     }
 
     public function grade(Submission $submission, User $teacher, int $score, ?string $feedback): Submission
@@ -54,18 +57,20 @@ class SubmissionService
             throw new \Exception('Bukan tugas dari kelas Anda');
         }
 
-        $submission->update([
-            'score' => $score,
-            'teacher_feedback' => $feedback,
-            'status' => 'graded',
-            'graded_at' => now(),
-        ]);
+        return DB::transaction(function () use ($submission, $score, $feedback) {
+            $submission->update([
+                'score' => $score,
+                'teacher_feedback' => $feedback,
+                'status' => 'graded',
+                'graded_at' => now(),
+            ]);
 
-        $submission->refresh()->load(['assignment', 'student']);
+            $submission->refresh()->load(['assignment', 'student']);
 
-        event(new SubmissionGraded($submission));
+            event(new SubmissionGraded($submission));
 
-        return $submission;
+            return $submission;
+        });
     }
 
     public function getSubmissionsForAssignment(Assignment $assignment)

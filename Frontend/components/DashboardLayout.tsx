@@ -16,7 +16,9 @@ import {
   Menu, 
   X,
   FileText,
-  Settings
+  Settings,
+  Bell,
+  CheckCircle2
 } from 'lucide-react';
 
 import { api } from '@/lib/api';
@@ -45,6 +47,17 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
         try { setMountedUser(JSON.parse(cached)); } catch {}
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const data = await api.getNotifications();
+        const list = Array.isArray(data) ? data : ((data as any)?.notifications || []);
+        setNotifications(list);
+      } catch {}
+    };
+    loadNotifications();
   }, []);
 
   const roleConfig = {
@@ -105,6 +118,33 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
   }
 
   const [userStats, setUserStats] = useState({ total: 0, teachers: 0, students: 0 });
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      await api.markNotificationRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  };
+
+  const handleToggleNotifications = async () => {
+    if (!showNotifications) {
+      setShowNotifications(true);
+      try {
+        await api.markAllNotificationsRead();
+        setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
+        window.dispatchEvent(new CustomEvent('notifications_read'));
+      } catch (error) {
+        console.error('Failed to mark all as read:', error);
+      }
+    } else {
+      setShowNotifications(false);
+    }
+  };
 
   useEffect(() => {
     if (role === 'admin' && userStats.total === 0) {
@@ -138,6 +178,7 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
+        <div className="absolute inset-y-0 right-0 w-px bg-white/5 pointer-events-none" />
         <div>
           {/* Sidebar Brand Header */}
           <div className="p-6 flex items-center justify-between">
@@ -160,7 +201,7 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
 
           {/* Navigation Menu */}
           <div className="px-4 py-2">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-3">Main Menu</p>
+            <p               className="text-xs font-bold text-slate-500 uppercase tracking-wider px-3 mb-3">Main Menu</p>
             <nav className="space-y-1.5">
               {config.items.map((item) => {
                 const isSubCourse = item.path.includes('courses') && (pathname.includes('/materi') || pathname.includes('/tugas') || pathname.includes('/absensi'));
@@ -233,19 +274,115 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
 
           {/* Top Right User Profile Info */}
           <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900 leading-tight">
-                {userDisplayName}
-              </p>
-              <p className="text-xs text-slate-400 font-medium">
-                {userDisplaySub}
-              </p>
-            </div>
             <div className="relative">
-              {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center">{unreadCount}</span>}
-              <div className="w-10 h-10 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-bold text-sm shadow-md uppercase font-mono">
+              <button
+                onClick={handleToggleNotifications}
+                className="p-2 text-[#10B981] hover:bg-[#ECFDF5] rounded-xl relative"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#10B981] text-white text-[10px] flex items-center justify-center border-2 border-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              
+              {/* Notifications Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-900">Notifikasi</h3>
+                    <button
+                      onClick={() => setShowNotifications(false)}
+                      className="p-1 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <div className="w-10 h-10 mx-auto bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-2">
+                          <Bell className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs text-slate-500">Tidak ada notifikasi baru</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-50">
+                        {notifications.slice(0, 10).map((notif: any) => (
+                          <div 
+                            key={notif.id} 
+                            className={`p-3 hover:bg-slate-50 transition cursor-pointer ${!notif.read_at ? 'bg-blue-50/30' : ''}`}
+                            onClick={() => handleMarkAsRead(notif.id)}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                <Bell className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-slate-800 leading-relaxed">{notif.message}</p>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                  {new Date(notif.created_at || notif.time).toLocaleString('id-ID', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit',
+                                    day: 'numeric',
+                                    month: 'short'
+                                  })}
+                                </p>
+                              </div>
+                              {!notif.read_at && (
+                                <div className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0 mt-1" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="w-10 h-10 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-bold text-sm shadow-md uppercase font-mono hover:ring-2 hover:ring-blue-500 transition"
+              >
                 {userInitials}
-              </div>
+              </button>
+              
+              {/* Profile Dropdown */}
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="p-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-lg">
+                        {userInitials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-900 truncate">{userDisplayName}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{userDisplaySub}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      onClick={() => { setShowProfileMenu(false); router.push(`/${role}/profile`); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      <User className="w-4 h-4 text-slate-400" />
+                      <span>Profil Saya</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowProfileMenu(false); router.push('/login'); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-500" />
+                      <span>Keluar</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

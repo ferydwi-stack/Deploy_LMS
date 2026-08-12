@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\NotificationService;
 use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
@@ -28,9 +29,10 @@ class NotificationController extends Controller
         return response()->json(['unread_count' => $count]);
     }
 
-    public function markAsRead(User $notification, Request $request)
+    public function markAsRead($id, Request $request)
     {
         $user = $request->user();
+        $notification = Notification::findOrFail($id);
         
         if ($notification->user_id !== $user->id) {
             abort(403);

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import type { Course as ApiCourse, User } from '@/types/models';
+import type { Course as ApiCourse, User } from '@/types/api';
 
 export interface Course {
   id: string;
@@ -23,7 +23,8 @@ export interface Course {
 }
 
 interface LmsContextType {
-  courses: Course[];
+  enrolledCourses: Course[];
+  availableCourses: Course[];
   myCourseIds: string[];
   loading: boolean;
   addCourse: (newCourseData: { title: string; code?: string; students?: string; teacher?: string }) => Promise<Course>;
@@ -38,36 +39,57 @@ interface LmsContextType {
 
 const LmsContext = createContext<LmsContextType | undefined>(undefined);
 
+function getCourseList(data: unknown): ApiCourse[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object') {
+    const response = data as { data?: unknown; courses?: unknown };
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.courses)) return response.courses;
+  }
+  return [];
+}
+
 function mapApiCourseToLocal(apiCourse: ApiCourse): Course {
+  const students = Array.isArray(apiCourse.students) ? apiCourse.students : [];
+
   return {
     id: String(apiCourse.id),
     code: apiCourse.code,
     joinCode: apiCourse.code,
     title: apiCourse.title,
     teacher: apiCourse.teacher?.name || 'Unknown',
-    studentsCount: apiCourse.students_count || apiCourse.students?.length || 0,
+    studentsCount: apiCourse.students_count || students.length,
     materi: apiCourse.materials_count || 0,
     tugas: apiCourse.assignments_count || 0,
     path: '/guru/materi',
-    studentsList: (apiCourse.students || []).map(s => ({
+    studentsList: students.map(s => ({
       id: String(s.id),
       name: s.name,
-      email: s.nisn_or_nip || '',
-      status: s.pivot?.status === 'active' ? 'Active' : 'Dropped'
+      email: s.nisn_or_nip || s.email || '',
+      status: 'Active'
     }))
   };
 }
 
 export function LmsProvider({ children }: { children: React.ReactNode }) {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [myCourseIds, setMyCourseIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mutatingCourseId, setMutatingCourseId] = useState<string | null>(null);
 
-  const refreshCourses = async () => {
+  const refreshCourses = async (): Promise<void> => {
     try {
-      const apiCourses = await api.getCourses();
-      const mapped = Array.isArray(apiCourses) ? apiCourses.map(mapApiCourseToLocal) : [];
-      setCourses(mapped);
+      const [myCoursesData, availableCoursesData] = await Promise.all([
+        api.getCourses().catch(() => []),
+        api.getAvailableCourses().catch(() => [])
+      ]);
+
+      const myMapped = getCourseList(myCoursesData).map(mapApiCourseToLocal);
+      const availableMapped = getCourseList(availableCoursesData).map(mapApiCourseToLocal);
+      setEnrolledCourses(myMapped);
+      setAvailableCourses(availableMapped);
+      setMyCourseIds(myMapped.map(c => c.id));
     } catch (error) {
       console.error('Failed to load courses:', error);
     } finally {
@@ -77,20 +99,32 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshCourses();
+
+    const handleUserUpdated = () => {
+      refreshCourses();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('lms_user_updated', handleUserUpdated);
+      return () => {
+        window.removeEventListener('lms_user_updated', handleUserUpdated);
+      };
+    }
   }, []);
 
-  const addCourse = async (data: { title: string; code?: string; students?: string; teacher?: string }) => {
+  const addCourse = async (data: { title: string; code?: string; students?: string; teacher?: string }): Promise<Course> => {
     const generatedCode = data.code ? data.code.toUpperCase() : `MAPEL-${Math.floor(100 + Math.random() * 900)}`;
     
     try {
-      const apiCourse = await api.createCourse({
+      const response = await api.createCourse({
         title: data.title,
         code: generatedCode,
         description: 'Kelas baru buatan Guru'
       });
       
-      const newCourse = mapApiCourseToLocal(apiCourse);
-      setCourses(prev => [newCourse, ...prev]);
+      const apiCourse = (response as any).data || response;
+      const newCourse = mapApiCourseToLocal(apiCourse as ApiCourse);
+      setEnrolledCourses(prev => [newCourse, ...prev]);
       return newCourse;
     } catch (error) {
       console.error('Failed to create course:', error);
@@ -98,15 +132,20 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateCourse = async (id: string, updatedData: Partial<Course>) => {
-    setCourses(prev => prev.map(c => c.id === id ? { ...c, ...updatedData } : c));
-    await refreshCourses();
+  const updateCourse = async (id: string, updatedData: Partial<Course>): Promise<void> => {
+    try {
+      await api.updateCourse(Number(id), updatedData as any);
+      await refreshCourses();
+    } catch (error) {
+      console.error('Failed to update course:', error);
+      throw error;
+    }
   };
 
-  const deleteCourse = async (id: string) => {
+  const deleteCourse = async (id: string): Promise<void> => {
     try {
       await api.deleteCourse(id);
-      setCourses(prev => prev.filter(c => c.id !== id));
+      setEnrolledCourses(prev => prev.filter(c => c.id !== id));
       setMyCourseIds(prev => prev.filter(cId => cId !== id));
     } catch (error) {
       console.error('Failed to delete course:', error);
@@ -116,47 +155,46 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
 
   const joinCourseById = async (id: string) => {
     try {
+      setMutatingCourseId(id);
       await api.enrollCourse(Number(id));
-      setMyCourseIds(prev => prev.includes(id) ? prev : [...prev, id]);
       await refreshCourses();
     } catch (error) {
       console.error('Failed to join course:', error);
       throw error;
+    } finally {
+      setMutatingCourseId(null);
     }
   };
 
   const leaveCourseById = async (id: string) => {
     try {
+      setMutatingCourseId(id);
       await api.leaveCourse(Number(id));
-      setMyCourseIds(prev => prev.filter(cId => cId !== id));
       await refreshCourses();
     } catch (error) {
       console.error('Failed to leave course:', error);
       throw error;
+    } finally {
+      setMutatingCourseId(null);
     }
   };
 
   const joinCourseByCode = async (codeInput: string) => {
-    const cleanCode = codeInput.trim().toUpperCase();
+    const cleanCode = codeInput.trim().toUpperCase().replace(/-JOIN$/i, '');
     
     try {
       const result = await api.enrollByCode(cleanCode);
       await refreshCourses();
       
-      const enrolledCourse = courses.find(c => c.code === cleanCode);
-      if (enrolledCourse) {
-        setMyCourseIds(prev => prev.includes(enrolledCourse.id) ? prev : [...prev, enrolledCourse.id]);
-      }
-      
       return { 
         success: true, 
-        course: enrolledCourse, 
+        course: (result as any).course ? mapApiCourseToLocal((result as any).course) : undefined, 
         message: `Berhasil bergabung ke kelas dengan kode ${cleanCode}!` 
       };
-    } catch (error) {
+    } catch (error: any) {
       return { 
         success: false, 
-        message: `Kode Akses "${cleanCode}" tidak ditemukan!` 
+        message: error.message || `Kode Akses "${cleanCode}" tidak ditemukan atau gagal bergabung!` 
       };
     }
   };
@@ -173,7 +211,8 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <LmsContext.Provider value={{
-      courses,
+      enrolledCourses,
+      availableCourses,
       myCourseIds,
       loading,
       addCourse,

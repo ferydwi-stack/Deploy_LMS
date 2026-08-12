@@ -26,7 +26,7 @@ function SiswaAbsensiContent() {
       try {
         const attendances = await api.getMyAttendances();
         if (attendances && Array.isArray(attendances)) {
-          const courseAttendances = attendances.filter((a: any) => a.course_id === courseId);
+          const courseAttendances = attendances.filter((a: any) => String(a.course_id) === String(courseId));
           setHistory(courseAttendances);
           const hasToday = courseAttendances.some((a: any) => a.date === todayStr);
           setSubmittedToday(hasToday);

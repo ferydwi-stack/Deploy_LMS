@@ -11,8 +11,14 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SubmissionController;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Api\ReportController;
+
+use App\Http\Controllers\Api\StudentStatsController;
+
+use App\Http\Controllers\Api\TeacherStatsController;
+
 Route::prefix('v1')->group(function () {
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
@@ -27,14 +33,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/courses', [CourseController::class, 'store']);
         Route::put('/courses/{id}', [CourseController::class, 'update']);
         Route::delete('/courses/{id}', [CourseController::class, 'destroy']);
-        Route::post('/courses/{id}/enroll', [EnrollmentController::class, 'enroll']);
+        Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'enroll']);
         Route::post('/courses/enroll-by-code', [EnrollmentController::class, 'enrollByCode']);
-        Route::post('/courses/{id}/leave', [EnrollmentController::class, 'leave']);
-        Route::get('/courses/{id}/students', [EnrollmentController::class, 'students']);
-        Route::delete('/courses/{id}/students/{studentId}', [EnrollmentController::class, 'kickStudent']);
-        Route::put('/courses/{id}/students/{studentId}/grades', [CourseController::class, 'updateGrade']);
+        Route::post('/courses/{course}/leave', [EnrollmentController::class, 'leave']);
+        Route::get('/courses/{course}/students', [EnrollmentController::class, 'students']);
+        Route::delete('/courses/{course}/students/{studentId}', [EnrollmentController::class, 'kickStudent']);
+        Route::put('/courses/{course}/students/{studentId}/grades', [CourseController::class, 'updateGrade']);
         Route::get('/courses/{course}/attendances', [AttendanceController::class, 'index']);
         Route::post('/courses/{course}/attendances', [AttendanceController::class, 'store']);
+        Route::get('/courses/{course}/report', [ReportController::class, 'courseReport']);
 
         Route::get('/assignments', [AssignmentController::class, 'index']);
         Route::get('/assignments/{id}', [AssignmentController::class, 'show']);
@@ -43,6 +50,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/assignments/{id}/submit', [SubmissionController::class, 'submit']);
         Route::get('/assignments/{id}/submissions', [SubmissionController::class, 'assignmentSubmissions']);
         Route::get('/submissions/my', [SubmissionController::class, 'mySubmissions']);
+        Route::get('/siswa/stats', [StudentStatsController::class, 'dashboardStats']);
+        Route::get('/guru/stats', [TeacherStatsController::class, 'dashboardStats']);
         Route::put('/submissions/{id}/grade', [SubmissionController::class, 'grade']);
 
         Route::get('/materials', [MaterialController::class, 'index']);

@@ -7,28 +7,29 @@ import { GraduationCap, Users, BookOpen, FileCheck2, Search, Plus, LogOut, Check
 import { useLms } from '@/context/LmsContext';
 
 export default function SiswaCoursesPage() {
-  const { courses, myCourseIds, joinCourseByCode, joinCourseById, leaveCourseById } = useLms();
+  const { enrolledCourses, availableCourses, myCourseIds, refreshCourses, joinCourseByCode, joinCourseById, leaveCourseById } = useLms();
   const [search, setSearch] = useState('');
   const [tabFilter, setTabFilter] = useState<'my' | 'all'>('my');
   const [notice, setNotice] = useState<string | null>(null);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [inputJoinCode, setInputJoinCode] = useState('');
 
-  const effectiveMyCourseIds = myCourseIds.length > 0 ? myCourseIds : courses.map(c => c.id);
+  React.useEffect(() => {
+    refreshCourses();
+  }, []);
 
-  const myCourses = courses
-    .filter(c => effectiveMyCourseIds.includes(c.id))
-    .map(c => ({ ...c, isJoined: true }));
+  const myCourses = enrolledCourses.map(c => ({ ...c, isJoined: true }));
 
-  const allAvailableCourses = courses.map(c => ({
+  const allAvailableCourses = availableCourses.map(c => ({
     ...c,
-    isJoined: effectiveMyCourseIds.includes(c.id)
+    isJoined: myCourseIds.includes(c.id)
   }));
 
-  const handleJoinCourse = (courseId: string) => {
-    joinCourseById(courseId);
-    const target = courses.find(c => c.id === courseId);
-    setNotice(`Berhasil bergabung ke kelas ${target?.title || ''}!`);
+  const handleJoinCourse = async (courseId: string) => {
+    await joinCourseById(courseId);
+    await refreshCourses();
+    setTabFilter('my');
+    setNotice('Berhasil bergabung ke kelas!');
     setTimeout(() => setNotice(null), 3000);
   };
 
@@ -36,7 +37,7 @@ export default function SiswaCoursesPage() {
     e.preventDefault();
     if (!inputJoinCode.trim()) return;
 
-    const res = await joinCourseByCode(inputJoinCode);
+    const res = await joinCourseByCode(inputJoinCode.replace(/-JOIN$/i, ''));
     setNotice(res.message);
     if (res.success) {
       setIsJoinModalOpen(false);
@@ -51,7 +52,7 @@ export default function SiswaCoursesPage() {
     setTimeout(() => setNotice(null), 3000);
   };
 
-  const displayedCourses = (tabFilter === 'my' ? (myCourses.length > 0 ? myCourses : allAvailableCourses) : allAvailableCourses).filter(c =>
+  const displayedCourses = (tabFilter === 'my' ? myCourses : allAvailableCourses).filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase()) ||
     c.code.toLowerCase().includes(search.toLowerCase()) ||
     c.teacher.toLowerCase().includes(search.toLowerCase()) ||
@@ -135,7 +136,10 @@ export default function SiswaCoursesPage() {
               </div>
 
               {course.isJoined ? (
-                <Link href="/siswa/materi" className="block group-hover:text-[#2563EB] transition">
+                <Link
+                  href={`/siswa/materi?course_id=${course.id}&title=${encodeURIComponent(course.title)}&teacher=${encodeURIComponent(course.teacher)}&code=${encodeURIComponent(course.code)}`}
+                  className="block group-hover:text-[#2563EB] transition"
+                >
                   <h3 className="text-base font-bold text-slate-900 leading-snug mb-1">{course.title}</h3>
                 </Link>
               ) : (
@@ -165,7 +169,7 @@ export default function SiswaCoursesPage() {
               {course.isJoined ? (
                 <div className="flex items-center gap-2">
                   <Link
-                    href="/siswa/materi"
+                    href={`/siswa/materi?course_id=${course.id}&title=${encodeURIComponent(course.title)}&teacher=${encodeURIComponent(course.teacher)}&code=${encodeURIComponent(course.code)}`}
                     className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2563EB] font-bold text-xs rounded-xl text-center transition"
                   >
                     Buka Kelas
