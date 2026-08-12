@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface TypewriterTextProps {
   phrases: string[];
@@ -10,75 +10,162 @@ interface TypewriterTextProps {
   className?: string;
   cursorClassName?: string;
   loop?: boolean;
+  /**
+   * Mode:
+   * - 'smooth-typewriter': Human-like smooth typing + seamless fade-slide out transition (Recommended)
+   * - 'fade-slide': Full phrase cross-fade & slide morph animation
+   * - 'classic': Traditional character-by-character delete & type
+   */
+  mode?: 'smooth-typewriter' | 'fade-slide' | 'classic';
 }
 
 export default function TypewriterText({
   phrases,
-  typingSpeed = 55,
-  deletingSpeed = 30,
-  pauseDuration = 2500,
+  typingSpeed = 45,
+  deletingSpeed = 25,
+  pauseDuration = 3200,
   className = '',
   cursorClassName = 'bg-[#1D4ED8]',
   loop = true,
+  mode = 'smooth-typewriter',
 }: TypewriterTextProps) {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Fade-slide state
+  const [fadeState, setFadeState] = useState<'in' | 'out'>('in');
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  // --- MODE 1: Smooth Typewriter (Natural typing + smooth phrase morph fade out) ---
   useEffect(() => {
     if (!phrases || phrases.length === 0) return;
+    if (mode === 'fade-slide') return; // Handled separately
 
     const currentPhrase = phrases[phraseIndex % phrases.length];
 
+    if (isTransitioning) {
+      // Smooth fade-slide out transition before starting next phrase
+      setFadeState('out');
+      timerRef.current = setTimeout(() => {
+        setCharIndex(0);
+        setIsTransitioning(false);
+        setPhraseIndex((prev) => (prev + 1) % phrases.length);
+        setFadeState('in');
+      }, 400); // 400ms matching CSS transition
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
+    }
+
     if (isPaused) {
-      const timer = setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         setIsPaused(false);
         if (phrases.length > 1 || loop) {
-          setIsDeleting(true);
+          if (mode === 'smooth-typewriter') {
+            // Smoothly morph to next phrase via fade-slide
+            setIsTransitioning(true);
+          } else {
+            // Classic mode deletes character by character
+            setIsDeleting(true);
+          }
         }
       }, pauseDuration);
-      return () => clearTimeout(timer);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
     }
 
     if (!isDeleting) {
       if (charIndex < currentPhrase.length) {
-        const timer = setTimeout(() => {
-          setCharIndex((prev) => prev + 1);
-        }, typingSpeed);
-        return () => clearTimeout(timer);
-      } else {
-        // Finished typing current phrase
-        if (phrases.length === 1 && !loop) {
-          return; // Stay completely typed
+        // Natural human typing rhythm: pause slightly longer at punctuation
+        const nextChar = currentPhrase[charIndex];
+        let delay = typingSpeed + (Math.random() * 20 - 10); // micro variation
+
+        if (['.', ',', '!', '?', ':'].includes(nextChar)) {
+          delay += 240; // extra pause on punctuation for realism
         }
+
+        timerRef.current = setTimeout(() => {
+          setCharIndex((prev) => prev + 1);
+        }, delay);
+        return () => {
+          if (timerRef.current) clearTimeout(timerRef.current);
+        };
+      } else {
+        // Finished typing phrase
+        if (phrases.length === 1 && !loop) return;
         setIsPaused(true);
       }
     } else {
+      // Classic mode character deletion
       if (charIndex > 0) {
-        const timer = setTimeout(() => {
+        timerRef.current = setTimeout(() => {
           setCharIndex((prev) => prev - 1);
         }, deletingSpeed);
-        return () => clearTimeout(timer);
+        return () => {
+          if (timerRef.current) clearTimeout(timerRef.current);
+        };
       } else {
-        // Finished deleting current phrase
         setIsDeleting(false);
         setPhraseIndex((prev) => (prev + 1) % phrases.length);
       }
     }
-  }, [charIndex, isDeleting, isPaused, phraseIndex, phrases, typingSpeed, deletingSpeed, pauseDuration, loop]);
+  }, [charIndex, isDeleting, isPaused, isTransitioning, phraseIndex, phrases, typingSpeed, deletingSpeed, pauseDuration, loop, mode]);
+
+  // --- MODE 2: Full Fade-Slide Phrase Morph ---
+  useEffect(() => {
+    if (mode !== 'fade-slide' || !phrases || phrases.length === 0) return;
+
+    const interval = setTimeout(() => {
+      setFadeState('out');
+      setTimeout(() => {
+        setPhraseIndex((prev) => (prev + 1) % phrases.length);
+        setFadeState('in');
+      }, 450);
+    }, pauseDuration);
+
+    return () => clearTimeout(interval);
+  }, [phraseIndex, phrases, pauseDuration, mode]);
 
   const currentPhrase = phrases[phraseIndex % phrases.length] || '';
-  const displayedText = currentPhrase.slice(0, charIndex);
+  const displayedText = mode === 'fade-slide' ? currentPhrase : currentPhrase.slice(0, charIndex);
+  const isTypingComplete = charIndex >= currentPhrase.length;
 
   return (
-    <span className={`inline-block ${className}`}>
-      <span>{displayedText}</span>
+    <span className={`inline-block relative ${className}`}>
       <span
-        className={`inline-block w-[3px] h-[0.82em] ml-1 rounded-full align-middle animate-pulse ${cursorClassName}`}
-        style={{ animationDuration: '0.75s' }}
-        aria-hidden="true"
-      />
+        className={`inline-block transition-all duration-400 ease-out transform ${
+          fadeState === 'out'
+            ? 'opacity-0 -translate-y-2 blur-[2px]'
+            : 'opacity-100 translate-y-0 blur-0'
+        }`}
+      >
+        {displayedText}
+      </span>
+
+      {/* Smooth Caret Cursor */}
+      {mode !== 'fade-slide' && (
+        <span
+          className={`inline-block w-[3.5px] h-[0.85em] ml-1.5 rounded-full align-middle transition-opacity duration-300 ${cursorClassName} ${
+            isPaused ? 'animate-pulse' : 'opacity-100'
+          }`}
+          style={{
+            boxShadow: '0 0 10px rgba(37, 99, 235, 0.5)',
+          }}
+          aria-hidden="true"
+        />
+      )}
     </span>
   );
 }
