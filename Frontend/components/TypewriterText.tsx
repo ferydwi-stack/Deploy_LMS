@@ -12,7 +12,7 @@ interface TypewriterTextProps {
   loop?: boolean;
   /**
    * Mode:
-   * - 'smooth-typewriter': Human-like smooth typing + seamless fade-slide out transition (Recommended)
+   * - 'smooth-typewriter': Snappy natural typing + seamless fade-slide out transition (Recommended)
    * - 'fade-slide': Full phrase cross-fade & slide morph animation
    * - 'classic': Traditional character-by-character delete & type
    */
@@ -21,9 +21,9 @@ interface TypewriterTextProps {
 
 export default function TypewriterText({
   phrases,
-  typingSpeed = 45,
+  typingSpeed = 50,
   deletingSpeed = 25,
-  pauseDuration = 3200,
+  pauseDuration = 3000,
   className = '',
   cursorClassName = 'bg-[#1D4ED8]',
   loop = true,
@@ -62,7 +62,7 @@ export default function TypewriterText({
         setIsTransitioning(false);
         setPhraseIndex((prev) => (prev + 1) % phrases.length);
         setFadeState('in');
-      }, 400); // 400ms matching CSS transition
+      }, 350); // 350ms matching CSS transition
       return () => {
         if (timerRef.current) clearTimeout(timerRef.current);
       };
@@ -88,12 +88,12 @@ export default function TypewriterText({
 
     if (!isDeleting) {
       if (charIndex < currentPhrase.length) {
-        // Natural human typing rhythm: pause slightly longer at punctuation
+        // Precise typing rhythm: slight pause at punctuation for realism
         const nextChar = currentPhrase[charIndex];
-        let delay = typingSpeed + (Math.random() * 20 - 10); // micro variation
+        let delay = typingSpeed;
 
         if (['.', ',', '!', '?', ':'].includes(nextChar)) {
-          delay += 240; // extra pause on punctuation for realism
+          delay += 200; // brief pause on punctuation
         }
 
         timerRef.current = setTimeout(() => {
@@ -132,7 +132,7 @@ export default function TypewriterText({
       setTimeout(() => {
         setPhraseIndex((prev) => (prev + 1) % phrases.length);
         setFadeState('in');
-      }, 450);
+      }, 400);
     }, pauseDuration);
 
     return () => clearTimeout(interval);
@@ -140,28 +140,25 @@ export default function TypewriterText({
 
   const currentPhrase = phrases[phraseIndex % phrases.length] || '';
   const displayedText = mode === 'fade-slide' ? currentPhrase : currentPhrase.slice(0, charIndex);
-  const isTypingComplete = charIndex >= currentPhrase.length;
 
   return (
-    <span className={`inline-block relative ${className}`}>
-      <span
-        className={`inline-block transition-all duration-400 ease-out transform ${
-          fadeState === 'out'
-            ? 'opacity-0 -translate-y-2 blur-[2px]'
-            : 'opacity-100 translate-y-0 blur-0'
-        }`}
-      >
-        {displayedText}
-      </span>
+    <span
+      className={`inline-block relative transition-[opacity,transform,filter] duration-350 ease-out ${
+        fadeState === 'out'
+          ? 'opacity-0 -translate-y-2 blur-[2px]'
+          : 'opacity-100 translate-y-0 blur-0'
+      } ${className}`}
+    >
+      <span className="inline">{displayedText}</span>
 
-      {/* Smooth Caret Cursor */}
+      {/* Smooth Caret Cursor - strictly synchronized with typed characters */}
       {mode !== 'fade-slide' && (
         <span
-          className={`inline-block w-[3.5px] h-[0.85em] ml-1.5 rounded-full align-middle transition-opacity duration-300 ${cursorClassName} ${
+          className={`inline-block w-[3.5px] h-[0.82em] ml-1 rounded-full align-middle ${cursorClassName} ${
             isPaused ? 'animate-pulse' : 'opacity-100'
           }`}
           style={{
-            boxShadow: '0 0 10px rgba(37, 99, 235, 0.5)',
+            boxShadow: '0 0 10px rgba(37, 99, 235, 0.6)',
           }}
           aria-hidden="true"
         />
