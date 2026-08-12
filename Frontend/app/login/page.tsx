@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GraduationCap, ArrowRight, Mail, Lock, Eye, EyeOff, ShieldCheck, UserCheck, BookOpen } from 'lucide-react';
 
-import HeadlineAnimation from '@/components/HeadlineAnimation';
+import TypewriterText from '@/components/TypewriterText';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -102,14 +102,14 @@ export default function LoginPage() {
             </div>
 
             <h2 className="text-2xl sm:text-4xl lg:text-[40px] font-extrabold text-[#1D4ED8] tracking-tight leading-[1.25] min-h-[96px] sm:min-h-[120px] lg:min-h-[150px]">
-              <HeadlineAnimation
+              <TypewriterText
                 phrases={[
                   "Kelola aktivitas belajar-mengajar dalam satu platform.",
                   "Pantau presensi, tugas, dan nilai secara real-time.",
                   "Solusi digital terpadu untuk sekolah masa depan."
                 ]}
-                variant="word-stagger"
-                intervalDuration={3800}
+                typingSpeed={45}
+                pauseDuration={3200}
               />
             </h2>
             
