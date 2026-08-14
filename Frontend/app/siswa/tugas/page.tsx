@@ -73,38 +73,47 @@ function SiswaTugasContent() {
       }
 
       let taskGrade = null;
-      let taskFeedback = null;
-      let taskFile = null;
+       let taskFeedback = null;
+       let taskFile = null;
+       let submittedTime = null;
 
-      if (sub) {
-        if (sub.score !== undefined && sub.score !== null && sub.score !== '') {
-          taskStatus = 'Sudah Dinilai';
-          taskGrade = sub.score;
-          taskFeedback = sub.teacher_feedback || 'Sangat Baik';
-        } else {
-          taskStatus = 'Sudah Dikumpul';
-          taskFeedback = sub.note || 'Berkas diterima, menunggu koreksi guru.';
-        }
-        taskFile = sub.file_url || sub.file || sub.file_path;
-      }
+       if (sub) {
+         if (sub.score !== undefined && sub.score !== null && sub.score !== '') {
+           taskStatus = 'Sudah Dinilai';
+           taskGrade = sub.score;
+           taskFeedback = sub.teacher_feedback || 'Sangat Baik';
+         } else {
+           taskStatus = 'Sudah Dikumpul';
+           taskFeedback = sub.note || 'Berkas diterima, menunggu koreksi guru.';
+         }
+         taskFile = sub.file_url || sub.file || sub.file_path;
+         if (sub.submitted_at) {
+           const submittedDate = new Date(sub.submitted_at);
+           submittedTime = submittedDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+         }
+       }
 
-      const deadlineFormatted = deadlineDate
-        ? deadlineDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-        : '-';
+       const deadlineFormatted = deadlineDate
+         ? deadlineDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+         : '-';
 
-      return {
-        id: a.id.toString(),
-        title: a.title,
-        category: a.type || 'Tugas Harian',
-        course: a.course ? (a.course.title || a.course.name) : 'Kelas XI IPA',
-        teacher: a.course && a.course.teacher ? (a.course.teacher.name || a.course.teacher) : 'Guru Pengajar',
-        deadline: deadlineFormatted,
-        status: taskStatus,
-        grade: taskGrade,
-        feedback: taskFeedback,
-        submittedFile: taskFile,
-        description: a.instruction || a.description || a.instructions || a.detail || ''
-      };
+       return {
+         id: a.id.toString(),
+         title: a.title,
+         category: a.type || 'Tugas Harian',
+         course: a.course ? (a.course.title || a.course.name) : 'Kelas XI IPA',
+         teacher: a.course && a.course.teacher ? (a.course.teacher.name || a.course.teacher) : 'Guru Pengajar',
+         deadline: deadlineFormatted,
+         isLate: isLate,
+         status: taskStatus,
+         grade: taskGrade,
+         feedback: taskFeedback,
+         submittedFile: taskFile,
+         submittedTime: submittedTime,
+         description: a.instruction || a.description || a.instructions || a.detail || '',
+         attachmentPath: a.attachment_path,
+         attachmentName: a.attachment_name
+       };
     });
   })();
 
@@ -302,6 +311,18 @@ function SiswaTugasContent() {
                       ))}
                     </div>
                   )}
+                  {task.attachmentPath && (
+                    <div className="mt-2">
+                      <a 
+                        href={`http://127.0.0.1:8000/storage/${task.attachmentPath}`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-block px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-[11px] font-bold transition"
+                      >
+                        📎 Unduh Lampiran: {task.attachmentName || 'File Tugas'}
+                      </a>
+                    </div>
+                  )}
               </div>
               <span className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 ${
                 task.status === 'Terlambat' ? 'bg-rose-100 text-rose-700' :
@@ -313,18 +334,29 @@ function SiswaTugasContent() {
               </span>
             </div>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                <span>Deadline: {task.deadline}</span>
-                <span>•</span>
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
+                <span className={task.isLate && task.status !== 'Sudah Dikumpul' && task.status !== 'Sudah Dinilai' ? 'text-rose-600 font-bold' : 'text-slate-500'}>
+                  Deadline: {task.deadline}
+                  {task.isLate && task.status !== 'Sudah Dikumpul' && task.status !== 'Sudah Dinilai' && ' ⚠️'}
+                </span>
+                {task.submittedTime && (
+                  <>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-emerald-600 font-semibold">Dikumpulkan: {task.submittedTime}</span>
+                  </>
+                )}
                 {task.submittedFile && (
-                  <a
-                    href={task.submittedFile.startsWith('http') ? task.submittedFile : `http://127.0.0.1:8000/storage/${task.submittedFile}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Berkas jawaban: {task.submittedFile.split('/').pop()}
-                  </a>
+                  <>
+                    <span className="text-slate-400">•</span>
+                    <a
+                      href={task.submittedFile.startsWith('http') ? task.submittedFile : `http://127.0.0.1:8000/storage/${task.submittedFile}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Berkas jawaban: {task.submittedFile.split('/').pop()}
+                    </a>
+                  </>
                 )}
               </div>
 

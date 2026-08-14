@@ -75,7 +75,7 @@ function GuruTugasContent() {
         const actualCount = a.submissions_count || 0;
         const dueDate = a.due_date ? new Date(a.due_date) : null;
         const deadlineFormatted = dueDate
-          ? dueDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+          ? dueDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
           : '-';
         return {
           id: a.id,

@@ -171,6 +171,8 @@ export const api = {
   createCourse: (data: Partial<Course>): Promise<ApiResponse<Course>> => fetchApi('/courses', { method: 'POST', body: JSON.stringify(data) }),
   updateCourse: (id: number, data: Partial<Course>): Promise<ApiResponse<Course>> => fetchApi(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCourse: (id: number | string): Promise<ApiResponse> => fetchApi(`/courses/${id}`, { method: 'DELETE' }),
+  updateAttendanceSchedule: (id: number | string, data: { attendance_open_time: string; attendance_close_time: string }): Promise<ApiResponse<Course>> =>
+    fetchApi(`/courses/${id}/attendance-schedule`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // Materials
   getMaterials: (courseId?: number | string): Promise<Material[]> => fetchApi(courseId ? `/materials?course_id=${courseId}` : '/materials'),
@@ -206,6 +208,7 @@ export const api = {
 
   // Attendance
   getCourseAttendances: (courseId: number, date?: string): Promise<Attendance[]> => fetchApi(`/courses/${courseId}/attendances${date ? `?date=${date}` : ''}`),
+  getCourseAttendanceStats: (courseId: number): Promise<any> => fetchApi(`/courses/${courseId}/attendance-stats`),
   saveCourseAttendances: (courseId: number, data: { date: string; attendances: Array<{ student_id: number; status: string; note?: string }> }): Promise<ApiResponse> => 
     fetchApi(`/courses/${courseId}/attendances`, { method: 'POST', body: JSON.stringify(data) }),
   selfAttend: (courseId: number): Promise<ApiResponse> => fetchApi('/attendances/self', { method: 'POST', body: JSON.stringify({ course_id: courseId }) }),

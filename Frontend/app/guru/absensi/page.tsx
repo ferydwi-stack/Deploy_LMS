@@ -24,19 +24,33 @@ function GuruAbsensiContent() {
 
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [attendanceOpenTime, setAttendanceOpenTime] = useState('');
+  const [attendanceCloseTime, setAttendanceCloseTime] = useState('');
+  const [scheduleMessage, setScheduleMessage] = useState('');
+  const [attendanceStats, setAttendanceStats] = useState<Record<number, any>>({});
 
-  // Available dates for dropdown filter
   const dateOptions: Array<{ label: string; value: string }> = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const val = d.toISOString().split('T')[0];
+    const label = i === 0 ? 'Hari Ini' : d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+    dateOptions.push({ label, value: val });
+  }
 
   const loadAttendanceData = React.useCallback(async () => {
     try {
-      const [courseDetail, attendances] = await Promise.all([
+      const [courseDetail, attendances, statsRes] = await Promise.all([
         api.getCourseDetail(Number(courseId)).catch(() => null),
-        api.getCourseAttendances(Number(courseId), selectedDate).catch(() => [])
+        api.getCourseAttendances(Number(courseId), selectedDate).catch(() => []),
+        api.getCourseAttendanceStats(Number(courseId)).catch(() => ({ stats: {} })),
       ]);
 
-      const enrolled = courseDetail?.students || [];
-      const savedDailyList = Array.isArray(attendances) ? attendances : [];
+       const enrolled = courseDetail?.students || [];
+       setAttendanceOpenTime(courseDetail?.attendance_open_time || '');
+       setAttendanceCloseTime(courseDetail?.attendance_close_time || '');
+       setAttendanceStats(statsRes?.stats || {});
+       const savedDailyList = Array.isArray(attendances) ? attendances : [];
 
       if (!Array.isArray(enrolled) || enrolled.length === 0) return [];
 
@@ -45,14 +59,24 @@ function GuruAbsensiContent() {
           item.student_id === s.id || item.student?.id === s.id || item.email === s.email
         );
 
+        let timeFormatted = '-';
+        if (existing?.updated_at) {
+          const d = new Date(existing.updated_at);
+          timeFormatted = d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+        } else if (existing?.created_at) {
+          const d = new Date(existing.created_at);
+          timeFormatted = d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+        }
+
         return {
           no: (idx + 1).toString().padStart(2, '0'),
           id: s.nisn_or_nip || `USR-00${s.id}`,
           dbId: s.id,
           name: s.name,
           email: s.email,
-          status: existing?.status || 'Hadir',
-          time: existing?.attended_at || existing?.time
+          status: existing?.status || '-',
+          note: existing?.note || '',
+          time: timeFormatted,
         };
       });
     } catch {
@@ -95,6 +119,23 @@ function GuruAbsensiContent() {
     }
   };
 
+  const handleSaveSchedule = async () => {
+    if (!attendanceOpenTime || !attendanceCloseTime) {
+      setScheduleMessage('Jam mulai dan selesai absensi wajib diisi.');
+      return;
+    }
+
+    try {
+      await api.updateAttendanceSchedule(courseId, {
+        attendance_open_time: attendanceOpenTime,
+        attendance_close_time: attendanceCloseTime,
+      });
+      setScheduleMessage(`Absensi aktif pukul ${attendanceOpenTime}–${attendanceCloseTime} WIB.`);
+    } catch (error: any) {
+      setScheduleMessage(error.message || 'Jadwal absensi gagal disimpan.');
+    }
+  };
+
   const handleMarkAllPresent = async () => {
     const updated = students.map(s => ({ ...s, status: 'Hadir' }));
     setStudents(updated);
@@ -110,20 +151,29 @@ function GuruAbsensiContent() {
   };
 
   const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'Hadir': return 'bg-emerald-100/70 text-emerald-700 border-emerald-200';
-      case 'Izin': return 'bg-blue-100/70 text-blue-700 border-blue-200';
-      case 'Sakit': return 'bg-amber-100/70 text-amber-700 border-amber-200';
-      case 'Alfa': return 'bg-rose-100/70 text-rose-700 border-rose-200';
-      default: return 'bg-slate-100 text-slate-500 border-slate-200';
-    }
+    const s = status.toLowerCase();
+    if (s === 'hadir') return 'bg-emerald-100/70 text-emerald-700 border-emerald-200';
+    if (s === 'izin') return 'bg-blue-100/70 text-blue-700 border-blue-200';
+    if (s === 'sakit') return 'bg-amber-100/70 text-amber-700 border-amber-200';
+    if (s === 'alfa' || s === 'alpha') return 'bg-rose-100/70 text-rose-700 border-rose-200';
+    return 'bg-slate-100 text-slate-500 border-slate-200';
+  };
+
+  const statusLabel = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === 'hadir') return 'Hadir';
+    if (s === 'izin') return 'Izin';
+    if (s === 'sakit') return 'Sakit';
+    if (s === 'alfa' || s === 'alpha') return 'Alfa';
+    return '-';
   };
 
   const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
 
-  const countHadir = students.filter(s => s.status === 'Hadir').length;
-  const countIzinSakit = students.filter(s => s.status === 'Izin' || s.status === 'Sakit').length;
-  const countAlfa = students.filter(s => s.status === 'Alfa').length;
+  const countHadir = students.filter(s => s.status.toLowerCase() === 'hadir').length;
+  const countIzinSakit = students.filter(s => s.status.toLowerCase() === 'izin' || s.status.toLowerCase() === 'sakit').length;
+  const countAlfa = students.filter(s => s.status.toLowerCase() === 'alfa' || s.status.toLowerCase() === 'alpha').length;
+  const countBelum = students.filter(s => s.status === '-').length;
 
   return (
     <DashboardLayout
@@ -183,11 +233,11 @@ function GuruAbsensiContent() {
       )}
 
       {/* Summary Stat Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-6">
         <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-2xl font-extrabold text-emerald-600">{countHadir} / {students.length}</p>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">Siswa Hadir Hari Ini</p>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Siswa Hadir</p>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
             <UserCheck className="w-5 h-5" />
@@ -207,11 +257,57 @@ function GuruAbsensiContent() {
         <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-2xl font-extrabold text-rose-600">{countAlfa}</p>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">Siswa Alfa (Tanpa Keterangan)</p>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Siswa Alfa</p>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
             <RefreshCw className="w-5 h-5" />
           </div>
+        </div>
+
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-2xl font-extrabold text-slate-500">{countBelum}</p>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Belum Absen</p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
+            <Clock className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Schedule Setting Section */}
+      <div className="bg-blue-50 border border-blue-200 rounded-3xl p-5 mb-6 shadow-xs">
+        <p className="text-xs font-bold text-slate-700 mb-3">⏰ Atur Jadwal Absensi Aktif</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="text-xs font-bold text-slate-600 block mb-1">Jam Mulai Absensi:</label>
+            <input
+              type="time"
+              value={attendanceOpenTime}
+              onChange={(e) => setAttendanceOpenTime(e.target.value)}
+              className="px-3 py-2 bg-white border border-blue-300 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-600 block mb-1">Jam Selesai Absensi:</label>
+            <input
+              type="time"
+              value={attendanceCloseTime}
+              onChange={(e) => setAttendanceCloseTime(e.target.value)}
+              className="px-3 py-2 bg-white border border-blue-300 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+          </div>
+          <button
+            onClick={handleSaveSchedule}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl text-xs transition cursor-pointer"
+          >
+            Simpan Jadwal
+          </button>
+          {scheduleMessage && (
+            <span className="text-xs font-semibold text-blue-700 px-3 py-1 bg-blue-100 rounded-xl">
+              {scheduleMessage}
+            </span>
+          )}
         </div>
       </div>
 
@@ -256,50 +352,91 @@ function GuruAbsensiContent() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#F8FAFC] border-b border-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                <th className="py-4 px-6">No</th>
-                <th className="py-4 px-6">ID / NISN</th>
-                <th className="py-4 px-6">Nama Siswa</th>
-                <th className="py-4 px-6">Waktu Absen</th>
-                <th className="py-4 px-6">Rekap Kehadiran</th>
-                <th className="py-4 px-6">Status Kehadiran Hari Ini</th>
+                <th className="py-4 px-4">No</th>
+                <th className="py-4 px-4">ID / NISN</th>
+                <th className="py-4 px-4">Nama Siswa</th>
+                <th className="py-4 px-4">Waktu Absen</th>
+                <th className="py-4 px-4">Status Hari Ini</th>
+                <th className="py-4 px-4">Catatan</th>
+                <th className="py-4 px-4">Rekap Kehadiran</th>
+                <th className="py-4 px-4">Ubah Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               {isLoading ? (
                 [1, 2, 3, 4].map((n) => (
                   <tr key={n} className="animate-pulse">
-                    <td colSpan={6} className="py-4 px-6">
+                    <td colSpan={8} className="py-4 px-4">
                       <div className="h-4 bg-slate-100 rounded-md w-3/4"></div>
                     </td>
                   </tr>
                 ))
-              ) : students.map((student, index) => (
+              ) : students.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 px-4 text-center text-slate-400">
+                    Belum ada siswa terdaftar di kelas ini.
+                  </td>
+                </tr>
+              ) : students.map((student, index) => {
+                const stats = attendanceStats[student.dbId];
+                const statsText = stats
+                  ? `${stats.percentage}% (${stats.hadir}/${stats.total})`
+                  : '-';
+                const statsDetail = stats
+                  ? `H:${stats.hadir} I:${stats.izin} S:${stats.sakit} A:${stats.alpha}`
+                  : '';
+                const rekapColor = stats
+                  ? stats.percentage >= 80 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60'
+                    : stats.percentage >= 60 ? 'text-amber-700 bg-amber-50 border-amber-200/60'
+                    : 'text-rose-700 bg-rose-50 border-rose-200/60'
+                  : 'text-slate-400 bg-slate-50 border-slate-200/60';
+
+                return (
                 <tr key={student.id} className="hover:bg-slate-50/50 transition">
-                  <td className="py-4 px-6 font-mono font-bold text-slate-400">{student.no}</td>
-                  <td className="py-4 px-6 font-mono font-semibold text-slate-700">{student.id}</td>
-                  <td className="py-4 px-6">
+                  <td className="py-4 px-4 font-mono font-bold text-slate-400">{student.no}</td>
+                  <td className="py-4 px-4 font-mono font-semibold text-slate-700">{student.id}</td>
+                  <td className="py-4 px-4">
                     <p className="font-bold text-slate-900">{student.name}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">{student.email || `${student.name.toLowerCase().replace(/\s+/g, '')}@school.id`}</p>
+                    <p className="text-[11px] text-slate-400 font-mono">{student.email}</p>
                   </td>
-                  <td className="py-4 px-6">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 rounded-xl font-mono text-[11px] font-semibold border border-slate-200/60">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{student.time || `07:${(15 + (index * 4) % 45).toString().padStart(2, '0')} WIB`}</span>
-                    </span>
+                  <td className="py-4 px-4">
+                    {student.time !== '-' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 rounded-xl font-mono text-[11px] font-semibold border border-slate-200/60">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{student.time}</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 text-[11px]">Belum absen</span>
+                    )}
                   </td>
-                  <td className="py-4 px-6">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-xl text-[11px] border border-emerald-200/60">
-                      <span>{92 + (index % 7)}% ({23 + (index % 3)}/25)</span>
-                    </span>
+                  <td className="py-4 px-4">
+                    {student.status !== '-' ? (
+                      <span className={`inline-flex items-center px-3 py-1 rounded-xl font-bold text-[11px] border ${getStatusBadgeClass(student.status)}`}>
+                        {statusLabel(student.status)}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 rounded-xl font-bold text-[11px] border bg-slate-100 text-slate-400 border-slate-200">
+                        Belum Absen
+                      </span>
+                    )}
                   </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-2">
+                  <td className="py-4 px-4">
+                    <span className="text-[11px] text-slate-500">{student.note || '-'}</span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className={`inline-flex flex-col items-start px-3 py-1.5 rounded-xl font-bold text-[11px] border ${rekapColor}`}>
+                      <span>{statsText}</span>
+                      {statsDetail && <span className="text-[10px] font-normal mt-0.5">{statsDetail}</span>}
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center gap-1.5">
                       {['Hadir', 'Izin', 'Sakit', 'Alfa'].map((statusOption) => (
                         <button
                           key={statusOption}
                           onClick={() => handleStatusChange(index, statusOption)}
-                          className={`px-3 py-1.5 rounded-xl font-bold text-[11px] border transition cursor-pointer ${
-                            student.status === statusOption
+                          className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] border transition cursor-pointer ${
+                            student.status.toLowerCase() === statusOption.toLowerCase() || (statusOption === 'Alfa' && student.status.toLowerCase() === 'alpha')
                               ? getStatusBadgeClass(statusOption)
                               : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
                           }`}
@@ -310,7 +447,8 @@ function GuruAbsensiContent() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -14,7 +14,15 @@ class Course extends Model
         'description',
         'teacher_id',
         'code',
+        'attendance_open_time',
+        'attendance_close_time',
     ];
+
+    protected $casts = [
+        'attendance_open_time' => 'datetime:H:i',
+        'attendance_close_time' => 'datetime:H:i',
+    ];
+
 
     public function teacher()
     {

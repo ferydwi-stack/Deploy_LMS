@@ -20,11 +20,17 @@ function SiswaAbsensiContent() {
   const todayStr = new Date().toISOString().split('T')[0];
   const [submittedToday, setSubmittedToday] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [courseDetail, setCourseDetail] = useState<any>(null);
+  const [attendanceMessage, setAttendanceMessage] = useState('');
 
   useEffect(() => {
     const loadAttendances = async () => {
       try {
-        const attendances = await api.getMyAttendances();
+        const [courseData, attendances] = await Promise.all([
+          api.getCourseDetail(Number(courseId)).catch(() => null),
+          api.getMyAttendances().catch(() => []),
+        ]);
+        setCourseDetail(courseData);
         if (attendances && Array.isArray(attendances)) {
           const courseAttendances = attendances.filter((a: any) => String(a.course_id) === String(courseId));
           setHistory(courseAttendances);
@@ -52,9 +58,20 @@ function SiswaAbsensiContent() {
       const newHistory = [newEntry, ...history];
       setHistory(newHistory);
       setSubmittedToday(true);
-    } catch (e) {
+      setAttendanceMessage('Kehadiran Anda berhasil dicatat.');
+    } catch (e: any) {
+      setAttendanceMessage(e.message || 'Gagal mencatat kehadiran.');
       console.error(e);
     }
+  };
+
+  const isAttendanceTimeOpen = (): boolean => {
+    if (!courseDetail?.attendance_open_time || !courseDetail?.attendance_close_time) {
+      return false;
+    }
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    return currentTime >= courseDetail.attendance_open_time && currentTime <= courseDetail.attendance_close_time;
   };
 
   const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
@@ -115,21 +132,50 @@ function SiswaAbsensiContent() {
         </div>
 
         <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-1">Presensi Absen Mandiri Hari Ini</h3>
-        <p className="text-xs text-slate-400 font-medium max-w-md mx-auto leading-relaxed mb-6">
+        <p className="text-xs text-slate-400 font-medium max-w-md mx-auto leading-relaxed mb-3">
           Klik tombol di bawah untuk mencatat kehadiran Anda pada mata pelajaran <strong className="text-slate-700">{courseTitle}</strong> hari ini.
         </p>
 
+        {courseDetail?.attendance_open_time && courseDetail?.attendance_close_time && (
+          <div className="mb-4 p-3 bg-slate-100 rounded-2xl text-xs font-semibold text-slate-700">
+            ⏰ Jadwal Absensi Aktif: {courseDetail.attendance_open_time}–{courseDetail.attendance_close_time} WIB
+            {isAttendanceTimeOpen() ? (
+              <span className="ml-2 text-emerald-600">✓ Sedang Aktif</span>
+            ) : (
+              <span className="ml-2 text-rose-600">✗ Tidak Aktif</span>
+            )}
+          </div>
+        )}
+
+        {attendanceMessage && (
+          <div className={`mb-4 p-3 rounded-2xl text-xs font-semibold ${
+            attendanceMessage.includes('berhasil') 
+              ? 'bg-emerald-100 text-emerald-700' 
+              : 'bg-rose-100 text-rose-700'
+          }`}>
+            {attendanceMessage}
+          </div>
+        )}
+
         <button
           onClick={handleFillAttendance}
-          disabled={submittedToday}
+          disabled={submittedToday || !isAttendanceTimeOpen()}
           className={`w-full max-w-sm py-3.5 rounded-2xl font-bold text-xs shadow-lg transition flex items-center justify-center gap-2 mx-auto cursor-pointer ${
             submittedToday
               ? 'bg-emerald-500 text-white cursor-not-allowed shadow-none'
+              : !isAttendanceTimeOpen()
+              ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
               : 'bg-[#10B981] hover:bg-emerald-600 text-white shadow-emerald-500/25'
           }`}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-          <span>{submittedToday ? '✓ Kehadiran Hari Ini Sudah Tercatat' : 'Klik Untuk Absen Hadir Hari Ini'}</span>
+          <span>
+            {submittedToday 
+              ? '✓ Kehadiran Hari Ini Sudah Tercatat' 
+              : !isAttendanceTimeOpen()
+              ? '⏳ Absensi Belum Dibuka atau Sudah Ditutup'
+              : 'Klik Untuk Absen Hadir Hari Ini'}
+          </span>
         </button>
 
         {/* Riwayat Kehadiran */}

@@ -32,6 +32,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/courses/{id}', [CourseController::class, 'show']);
         Route::post('/courses', [CourseController::class, 'store']);
         Route::put('/courses/{id}', [CourseController::class, 'update']);
+        Route::put('/courses/{id}/attendance-schedule', [CourseController::class, 'updateAttendanceSchedule']);
         Route::delete('/courses/{id}', [CourseController::class, 'destroy']);
         Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'enroll']);
         Route::post('/courses/enroll-by-code', [EnrollmentController::class, 'enrollByCode']);
@@ -40,6 +41,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('/courses/{course}/students/{studentId}', [EnrollmentController::class, 'kickStudent']);
         Route::put('/courses/{course}/students/{studentId}/grades', [CourseController::class, 'updateGrade']);
         Route::get('/courses/{course}/attendances', [AttendanceController::class, 'index']);
+        Route::get('/courses/{course}/attendance-stats', [AttendanceController::class, 'stats']);
         Route::post('/courses/{course}/attendances', [AttendanceController::class, 'store']);
         Route::get('/courses/{course}/report', [ReportController::class, 'courseReport']);
 

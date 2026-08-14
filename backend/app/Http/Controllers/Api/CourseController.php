@@ -102,6 +102,24 @@ class CourseController extends Controller
         ]);
     }
 
+    public function updateAttendanceSchedule(Request $request, $id)
+    {
+        $course = Course::findOrFail($id);
+        $this->authorize('update', $course);
+
+        $validated = $request->validate([
+            'attendance_open_time' => 'nullable|date_format:H:i',
+            'attendance_close_time' => 'nullable|date_format:H:i|after:attendance_open_time',
+        ]);
+
+        $course->update($validated);
+
+        return response()->json([
+            'message' => 'Jadwal absensi berhasil disimpan.',
+            'course' => $course,
+        ]);
+    }
+
     public function destroy($id)
     {
         $course = Course::findOrFail($id);

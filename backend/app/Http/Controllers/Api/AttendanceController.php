@@ -22,6 +22,15 @@ class AttendanceController extends Controller
         return response()->json(['attendances' => $attendances]);
     }
 
+    public function stats(Course $course)
+    {
+        $this->authorize('view', $course);
+
+        $stats = app(AttendanceService::class)->getAllStudentStats($course);
+
+        return response()->json(['stats' => $stats]);
+    }
+
     public function store(Course $course, Request $request)
     {
         $this->authorize('update', $course);
@@ -53,9 +62,16 @@ class AttendanceController extends Controller
         
         $course = Course::findOrFail($validated['course_id']);
         
-        app(AttendanceService::class)->selfAttend($course, $user);
+        try {
+            $attendance = app(AttendanceService::class)->selfAttend($course, $user);
+        } catch (\Exception $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
         
-        return response()->json(['message' => 'Attendance recorded successfully']);
+        return response()->json([
+            'message' => $attendance->status === 'alpha' ? 'Anda terlambat absen dan tercatat Alfa.' : 'Kehadiran berhasil dicatat.',
+            'attendance' => $attendance,
+        ]);
     }
 
     public function myAttendances(Request $request)

@@ -38,20 +38,31 @@ export default function SiswaReportsPage() {
 
             const categorized = { tugas: [] as number[], uts: [] as number[], uas: [] as number[], remediUts: [] as number[], remediUas: [] as number[] };
             scoredSubs.forEach((s: any) => {
-              const category = String(s.assignment?.instruction || s.assignment_category || '').replace(/^Modul\/Kategori:\s*/i, '').trim().toLowerCase();
+              const instruction = String(s.assignment?.instruction || s.assignment_category || '').toLowerCase();
+              const title = String(s.assignment?.title || s.assignment_title || '').toLowerCase();
+              const combined = `${instruction} ${title}`;
               const score = Number(s.score);
-              if (category === 'uts') categorized.uts.push(score);
-              else if (category === 'uas') categorized.uas.push(score);
-              else if (category === 'remedi uts') categorized.remediUts.push(score);
-              else if (category === 'remedi uas') categorized.remediUas.push(score);
-              else categorized.tugas.push(score);
+              const isRemedi = combined.includes('remedi');
+              if (combined.includes('uts')) {
+                if (isRemedi) categorized.remediUts.push(score);
+                else categorized.uts.push(score);
+              } else if (combined.includes('uas')) {
+                if (isRemedi) categorized.remediUas.push(score);
+                else categorized.uas.push(score);
+              } else {
+                categorized.tugas.push(score);
+              }
             });
             const highest = (values: number[]) => values.length ? Math.max(...values) : 0;
             const tugasScore = categorized.tugas.length > 0 ? Math.round(categorized.tugas.reduce((acc, curr) => acc + curr, 0) / categorized.tugas.length) : null;
-            const utsScore = Math.max(pivot?.uts_score !== undefined && pivot?.uts_score !== null ? Number(pivot.uts_score) : 0, highest(categorized.uts), highest(categorized.remediUts));
-            const uasScore = Math.max(pivot?.uas_score !== undefined && pivot?.uas_score !== null ? Number(pivot.uas_score) : 0, highest(categorized.uas), highest(categorized.remediUas));
-
-            const finalScore = tugasScore !== null ? parseFloat((tugasScore * 0.4 + utsScore * 0.3 + uasScore * 0.3).toFixed(1)) : null;
+            const utsScoreRaw = Math.max(highest(categorized.uts), highest(categorized.remediUts));
+            const utsScore = utsScoreRaw > 0 ? utsScoreRaw : null;
+            const uasScoreRaw = Math.max(highest(categorized.uas), highest(categorized.remediUas));
+            const uasScore = uasScoreRaw > 0 ? uasScoreRaw : null;
+            
+            const finalScore = tugasScore !== null && utsScore !== null && uasScore !== null 
+              ? parseFloat((tugasScore * 0.4 + utsScore * 0.3 + uasScore * 0.3).toFixed(1)) 
+              : (tugasScore !== null && utsScore !== null ? parseFloat((tugasScore * 0.5 + utsScore * 0.5).toFixed(1)) : (tugasScore !== null ? tugasScore : null));
             const status = finalScore !== null ? (finalScore >= 75 ? 'Tuntas' : 'Remedial') : 'Belum Ada Data';
 
             const taskHistory = scoredSubs.map((s: any) => ({

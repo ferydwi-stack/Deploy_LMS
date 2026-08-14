@@ -62,6 +62,32 @@ class AttendanceService
             throw new \Exception('Tidak terdaftar di kelas ini');
         }
 
+        if (!$course->attendance_open_time || !$course->attendance_close_time) {
+            throw new \Exception('Jadwal absensi belum diatur oleh guru.');
+        }
+
+        $now = now();
+        $openTime = Carbon::createFromFormat('Y-m-d H:i', today()->toDateString().' '.$course->attendance_open_time->format('H:i'));
+        $closeTime = Carbon::createFromFormat('Y-m-d H:i', today()->toDateString().' '.$course->attendance_close_time->format('H:i'));
+
+        if ($now->lt($openTime)) {
+            throw new \Exception('Absensi belum dibuka oleh guru.');
+        }
+
+        if ($now->gt($closeTime)) {
+            return Attendance::updateOrCreate(
+                [
+                    'course_id' => $course->id,
+                    'student_id' => $student->id,
+                    'date' => today(),
+                ],
+                [
+                    'status' => 'alpha',
+                    'note' => 'Terlambat absen',
+                ]
+            );
+        }
+
         return Attendance::updateOrCreate(
             [
                 'course_id' => $course->id,
@@ -96,5 +122,33 @@ class AttendanceService
             'sakit' => $attendances->where('status', 'sakit')->count(),
             'alpha' => $attendances->where('status', 'alpha')->count(),
         ];
+    }
+
+    public function getAllStudentStats(Course $course): array
+    {
+        $studentIds = $course->students()
+            ->wherePivot('status', 'active')
+            ->pluck('users.id');
+
+        $attendances = Attendance::where('course_id', $course->id)
+            ->whereIn('student_id', $studentIds)
+            ->get();
+
+        $stats = [];
+        foreach ($studentIds as $studentId) {
+            $studentAtt = $attendances->where('student_id', $studentId);
+            $total = $studentAtt->count();
+            $hadir = $studentAtt->where('status', 'hadir')->count();
+            $stats[$studentId] = [
+                'total' => $total,
+                'hadir' => $hadir,
+                'izin' => $studentAtt->where('status', 'izin')->count(),
+                'sakit' => $studentAtt->where('status', 'sakit')->count(),
+                'alpha' => $studentAtt->where('status', 'alpha')->count(),
+                'percentage' => $total > 0 ? round(($hadir / $total) * 100) : 0,
+            ];
+        }
+
+        return $stats;
     }
 }

@@ -28,6 +28,8 @@ export interface Course {
   students_count?: number;
   materials_count?: number;
   assignments_count?: number;
+  attendance_open_time?: string | null;
+  attendance_close_time?: string | null;
   students?: Array<User & { pivot?: { status?: string; uts_score?: number; uas_score?: number } }>;
   created_at: string;
   updated_at: string;
@@ -82,6 +84,8 @@ export interface Attendance {
   time?: string;
   course?: Course;
   student?: User;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Notification {

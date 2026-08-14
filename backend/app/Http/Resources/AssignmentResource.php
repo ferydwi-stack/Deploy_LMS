@@ -20,6 +20,8 @@ class AssignmentResource extends JsonResource
             'title' => $this->title,
             'instruction' => $this->instruction,
             'due_date' => $this->due_date,
+            'attachment_path' => $this->attachment_path,
+            'attachment_name' => $this->attachment_name,
             'course' => new CourseResource($this->whenLoaded('course')),
             'submissions_count' => $this->when(isset($this->submissions_count), $this->submissions_count),
             'created_at' => $this->created_at,
