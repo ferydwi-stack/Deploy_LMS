@@ -136,7 +136,7 @@ export default function AdminDashboardPage() {
 
         <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white text-[#059669] font-bold rounded-2xl text-xs border border-white/70">
           <ShieldCheck className="w-4 h-4 text-[#059669]" />
-          <span>Sistem Normal (100% Online MySQL)</span>
+          <span>Sistem Normal</span>
         </div>
       </div>
 
