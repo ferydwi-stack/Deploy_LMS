@@ -16,6 +16,19 @@ class AssignmentController extends Controller
     public function index(Request $request)
     {
         $query = Assignment::with(['course.teacher'])->withCount('submissions');
+        $user = $request->user();
+
+        // Isolasi data: filter berdasarkan peran kecuali admin
+        if ($user && $user->role === 'guru') {
+            $query->whereHas('course', function ($q) use ($user) {
+                $q->where('teacher_id', $user->id);
+            });
+        } elseif ($user && $user->role === 'siswa') {
+            $query->whereHas('course.students', function ($q) use ($user) {
+                $q->where('users.id', $user->id)
+                  ->where('course_student.status', 'active');
+            });
+        }
 
         if ($request->has('course_id') && ! empty($request->course_id)) {
             $query->where('course_id', $request->course_id);
@@ -69,10 +82,15 @@ class AssignmentController extends Controller
         return response()->json($assignment);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $assignment = Assignment::findOrFail($id);
         $this->authorize('delete', $assignment);
+
+        if ($assignment->attachment_path) {
+            Storage::disk('public')->delete($assignment->attachment_path);
+        }
+
         $assignment->delete();
 
         return response()->json([

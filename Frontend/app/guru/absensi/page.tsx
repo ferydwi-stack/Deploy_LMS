@@ -56,7 +56,7 @@ function GuruAbsensiContent() {
 
       return enrolled.map((s: any, idx: number) => {
         const existing = savedDailyList.find((item: any) =>
-          item.student_id === s.id || item.student?.id === s.id || item.email === s.email
+          String(item.student_id) === String(s.id) || String(item.student?.id) === String(s.id) || item.email === s.email
         );
 
         let timeFormatted = '-';

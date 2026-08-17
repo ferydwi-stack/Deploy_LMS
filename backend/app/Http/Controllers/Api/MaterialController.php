@@ -14,6 +14,19 @@ class MaterialController extends Controller
     public function index(Request $request)
     {
         $query = Material::query();
+        $user = $request->user();
+
+        // Isolasi data: filter berdasarkan peran kecuali admin
+        if ($user && $user->role === 'guru') {
+            $query->whereHas('course', function ($q) use ($user) {
+                $q->where('teacher_id', $user->id);
+            });
+        } elseif ($user && $user->role === 'siswa') {
+            $query->whereHas('course.students', function ($q) use ($user) {
+                $q->where('users.id', $user->id)
+                  ->where('course_student.status', 'active');
+            });
+        }
 
         if ($request->has('course_id') && $request->course_id) {
             $query->where('course_id', $request->course_id);
@@ -62,9 +75,18 @@ class MaterialController extends Controller
         ], 201);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $material = Material::findOrFail($id);
+        
+        $user = $request->user();
+        
+        // Authorization: Hanya admin atau guru pemilik course yang bisa menghapus
+        if ($user->role !== 'admin') {
+            if ($user->role !== 'guru' || $material->course->teacher_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized. Anda bukan guru di kelas ini.'], 403);
+            }
+        }
 
         if ($material->file_path) {
             Storage::disk('public')->delete($material->file_path);

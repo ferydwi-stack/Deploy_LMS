@@ -26,10 +26,13 @@ export default function SiswaCoursesPage() {
   }));
 
   const handleJoinCourse = async (courseId: string) => {
-    await joinCourseById(courseId);
-    await refreshCourses();
-    setTabFilter('my');
-    setNotice('Berhasil bergabung ke kelas!');
+    const result = await joinCourseById(courseId);
+    setNotice(result.message);
+
+    if (result.success) {
+      setTabFilter('my');
+    }
+
     setTimeout(() => setNotice(null), 3000);
   };
 

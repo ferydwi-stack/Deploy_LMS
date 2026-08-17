@@ -31,7 +31,7 @@ interface LmsContextType {
   updateCourse: (id: string, updatedData: Partial<Course>) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
   joinCourseByCode: (code: string) => Promise<{ success: boolean; course?: Course; message: string }>;
-  joinCourseById: (id: string) => Promise<void>;
+  joinCourseById: (id: string) => Promise<{ success: boolean; message: string }>;
   leaveCourseById: (id: string) => Promise<void>;
   kickStudent: (courseId: string, studentId: string) => Promise<void>;
   refreshCourses: () => Promise<void>;
@@ -80,18 +80,20 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
 
   const refreshCourses = async (): Promise<void> => {
     try {
-      const [myCoursesData, availableCoursesData] = await Promise.all([
-        api.getCourses().catch(() => []),
-        api.getAvailableCourses().catch(() => [])
+      const [myCoursesResult, availableCoursesResult] = await Promise.allSettled([
+        api.getCourses(),
+        api.getAvailableCourses(),
       ]);
 
-      const myMapped = getCourseList(myCoursesData).map(mapApiCourseToLocal);
-      const availableMapped = getCourseList(availableCoursesData).map(mapApiCourseToLocal);
-      setEnrolledCourses(myMapped);
-      setAvailableCourses(availableMapped);
-      setMyCourseIds(myMapped.map(c => c.id));
-    } catch (error) {
-      console.error('Failed to load courses:', error);
+      if (myCoursesResult.status === 'fulfilled') {
+        const myMapped = getCourseList(myCoursesResult.value).map(mapApiCourseToLocal);
+        setEnrolledCourses(myMapped);
+        setMyCourseIds(myMapped.map(c => c.id));
+      }
+
+      if (availableCoursesResult.status === 'fulfilled') {
+        setAvailableCourses(getCourseList(availableCoursesResult.value).map(mapApiCourseToLocal));
+      }
     } finally {
       setLoading(false);
     }
@@ -154,13 +156,17 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const joinCourseById = async (id: string) => {
+    if (myCourseIds.includes(id)) {
+      return { success: false, message: 'Anda sudah terdaftar di kelas ini.' };
+    }
+
     try {
       setMutatingCourseId(id);
       await api.enrollCourse(Number(id));
       await refreshCourses();
-    } catch (error) {
-      console.error('Failed to join course:', error);
-      throw error;
+      return { success: true, message: 'Berhasil bergabung ke kelas!' };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Gagal bergabung ke kelas.' };
     } finally {
       setMutatingCourseId(null);
     }

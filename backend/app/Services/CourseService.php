@@ -12,7 +12,15 @@ class CourseService
 {
     public function getCoursesForUser(User $user): Collection
     {
-        $query = Course::with('teacher')->withCount(['materials', 'assignments', 'students']);
+        $query = Course::with([
+                'teacher',
+                'students' => fn ($query) => $query->wherePivot('status', 'active'),
+            ])
+            ->withCount([
+                'materials',
+                'assignments',
+                'students' => fn ($query) => $query->where('course_student.status', 'active'),
+            ]);
 
         return match ($user->role) {
             'guru' => $query->where('teacher_id', $user->id)->latest()->get(),
@@ -108,9 +116,16 @@ class CourseService
 
     public function getAvailableCourses(): Collection
     {
-        return Course::with('teacher')
-            ->withCount('students')
+        return Course::with([
+                'teacher',
+                'students' => fn ($query) => $query->wherePivot('status', 'active'),
+            ])
+            ->withCount([
+                'materials',
+                'assignments',
+                'students' => fn ($query) => $query->where('course_student.status', 'active'),
+            ])
             ->latest()
-            ->get(['id', 'title', 'code', 'teacher_id', 'created_at']);
+            ->get();
     }
 }

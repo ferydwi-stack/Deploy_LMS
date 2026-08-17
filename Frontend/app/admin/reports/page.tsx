@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Download, Calendar, CheckCircle2, UserCheck, Users, Printer, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { api } from '@/lib/api';
 
 export default function AdminReportsPage() {
@@ -13,86 +14,130 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     const fetchReports = async () => {
-      try {
-        const [coursesData, usersData, attendancesData] = await Promise.all([
-          api.getCourses().catch(() => []),
-          api.getUsers().catch(() => []),
-          api.getAllAttendances?.().catch(() => [])
-        ]);
+  try {
+    const coursesData = await api.getCourses().catch(() => []);
+    const courses = Array.isArray(coursesData) ? coursesData : [];
+    const reportResponses = await Promise.all(
+      courses.map((c: any) => api.getCourseReport(c.id).catch(() => null))
+    );
 
-        const courses = Array.isArray(coursesData) ? coursesData : [];
-        const users = Array.isArray(usersData) ? usersData : [];
-        const attendances = Array.isArray(attendancesData) ? attendancesData : [];
+    let totalHadirAll = 0;
+    let totalAttendanceAll = 0;
 
-        const courseReports = courses.map((c: any) => {
-          const teacher = c.teacher ? (typeof c.teacher === 'object' ? c.teacher.name : c.teacher) : 'Guru';
-          const students = Array.isArray(c.students) ? c.students : [];
-          const total = students.length;
+    const courseReports = reportResponses
+      .map((res: any) => {
+        if (!res?.course) return null;
+        const course = res.course;
+        const students = Array.isArray(res.students) ? res.students : [];
+        const attendances = Array.isArray(res.attendances) ? res.attendances : [];
+        const total = students.length;
+        const hadir = attendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
+        const izin = attendances.filter((a: any) => String(a.status).toLowerCase() === 'izin').length;
+        const sakit = attendances.filter((a: any) => String(a.status).toLowerCase() === 'sakit').length;
+        const alpa = attendances.filter((a: any) =>
+          String(a.status).toLowerCase() === 'alpha' || String(a.status).toLowerCase() === 'alfa'
+        ).length;
+        const percent = attendances.length > 0 ? `${Math.round((hadir / attendances.length) * 100)}%` : '0%';
 
-          const courseAttendances = attendances.filter((a: any) => Number(a.course_id) === Number(c.id));
-          const studentIds = students.map((s: any) => Number(s.id));
-          const studentAttendances = courseAttendances.filter((a: any) => studentIds.includes(Number(a.student_id || a.user_id)));
+        totalHadirAll += hadir;
+        totalAttendanceAll += attendances.length;
 
-          const hadir = studentAttendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
-          const izin = studentAttendances.filter((a: any) => String(a.status).toLowerCase() === 'izin').length;
-          const sakit = studentAttendances.filter((a: any) => String(a.status).toLowerCase() === 'sakit').length;
-          const alpa = studentAttendances.filter((a: any) => String(a.status).toLowerCase() === 'alpa').length;
-          const percent = studentAttendances.length > 0 ? `${Math.round((hadir / studentAttendances.length) * 100)}%` : '0%';
+        return {
+          class: course.title,
+          teacher: course.teacher?.name || 'Guru',
+          total,
+          hadir,
+          izin,
+          sakit,
+          alpa,
+          percent,
+        };
+      })
+      .filter(Boolean);
 
-          return {
-            class: c.title || c.name,
-            teacher,
-            total,
-            hadir,
-            izin,
-            sakit,
-            alpa,
-            percent
-          };
-        });
+    const studentPercent = totalAttendanceAll > 0
+      ? Math.round((totalHadirAll / totalAttendanceAll) * 100)
+      : 0;
 
-        const teachers = users.filter((u: any) => u.role === 'guru');
-        const teacherAttendances = attendances.filter((a: any) => 
-          teachers.some((t: any) => Number(t.id) === Number(a.user_id || a.teacher_id))
-        );
-        const teacherHadir = teacherAttendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
-        const teacherPercent = teacherAttendances.length > 0 ? Math.round((teacherHadir / teacherAttendances.length) * 100) : 100;
-
-        courseReports.push({
-          class: 'Staf Pengajar (Guru)',
-          teacher: 'Seluruh Pengajar',
-          total: teachers.length,
-          hadir: teacherHadir,
-          izin: 0,
-          sakit: 0,
-          alpa: 0,
-          percent: `${teacherPercent}%`
-        });
-
-        const totalStudentAttendances = attendances.filter((a: any) => 
-          users.some((u: any) => u.role === 'siswa' && Number(u.id) === Number(a.user_id || a.student_id))
-        );
-        const totalStudentHadir = totalStudentAttendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
-        const studentPercent = totalStudentAttendances.length > 0 
-          ? Math.round((totalStudentHadir / totalStudentAttendances.length) * 100) 
-          : 0;
-
-        setReportData(courseReports);
-        setOverallStats({ studentPercent, teacherPercent, effectiveDays: 22 });
-      } catch (e) {
-        console.error('Failed to fetch admin reports:', e);
-      }
-    };
+    setReportData(courseReports);
+    // TODO: teacherPercent perlu sumber data presensi guru tersendiri
+    // (course report ini cuma berisi presensi siswa, bukan presensi guru)
+    setOverallStats({ studentPercent, teacherPercent: 100, effectiveDays: 22 });
+  } catch (e) {
+    console.error('Failed to fetch admin reports:', e);
+  }
+};
 
     fetchReports();
   }, [range]);
 
   const handleExport = (type: string) => {
-    setDownloadNotice(`Laporan Kehadiran (${type.toUpperCase()}) berhasil di-generate dan diunduh!`);
-    setTimeout(() => setDownloadNotice(''), 3000);
-  };
+    const rows = reportData.map((row) => ({
 
-  return (
+    'Grup / Kelas': row.class,
+    'Wali Kelas / Penanggung Jawab': row.teacher,
+    'Total': row.total,
+    'Hadir': row.hadir,
+    'Izin': row.izin,
+    'Sakit': row.sakit,
+    'Alpa': row.alpa,
+    'Persentase': row.percent,
+  }));
+
+  if (type === 'excel') {
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Laporan Presensi');
+    XLSX.writeFile(wb, `laporan-presensi-admin-${range}.xlsx`);
+    setDownloadNotice('Laporan Excel berhasil diunduh.');
+  }
+
+  if (type === 'pdf') {
+    const content = document.getElementById('report-print-area');
+    if (content) {
+      const printWindow = window.open('', '_blank', 'width=1200,height=900');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Laporan Presensi Admin</title>
+              <style>
+                body { font-family: Arial, sans-serif; padding: 24px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+                th { background: #f3f4f6; text-align: left; }
+              </style>
+            </head>
+            <body>
+              ${content.innerHTML}
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }
+    }
+    setDownloadNotice('Laporan PDF siap dicetak.');
+  }
+
+  setTimeout(() => setDownloadNotice(''), 3000);
+};
+
+return (
+  <>
+    <style jsx global>{`
+      @media print {
+        @page { size: landscape; margin: 12mm; }
+        body { background: white !important; }
+        button, select, nav, aside, header { display: none !important; }
+        #report-print-area { overflow: visible !important; }
+        #report-print-area table { width: 100% !important; color: #111827 !important; }
+        #report-print-area th, #report-print-area td { padding: 8px !important; border-bottom: 1px solid #d1d5db !important; }
+        #report-print-area span { background: transparent !important; color: #111827 !important; padding: 0 !important; }
+      }
+    `}</style>
     <DashboardLayout
       role="admin"
       title="Laporan & Presensi Global"
@@ -182,7 +227,12 @@ export default function AdminReportsPage() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div id="report-print-area" className="overflow-x-auto">
+  <div className="hidden print:block mb-6">
+    <h1 className="text-xl font-bold text-slate-900">Laporan Presensi Admin</h1>
+    <p className="text-xs text-slate-500">Periode: {range === 'minggu' ? 'Minggu Ini' : range === 'bulan' ? 'Bulan Ini' : 'Semester Ini'}</p>
+    <p className="text-xs text-slate-500">Tanggal Cetak: {new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+  </div>
           <table className="w-full text-left text-xs">
             <thead className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider bg-slate-50/50">
               <tr>
@@ -216,5 +266,6 @@ export default function AdminReportsPage() {
         </div>
       </div>
     </DashboardLayout>
+    </>
   );
 }

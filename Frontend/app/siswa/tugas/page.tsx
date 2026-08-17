@@ -57,12 +57,12 @@ function SiswaTugasContent() {
     const submissionsMap = new Map();
     if (Array.isArray(mySubmissions)) {
       mySubmissions.forEach((sub: any) => {
-        submissionsMap.set(sub.assignment_id, sub);
+        submissionsMap.set(String(sub.assignment_id), sub);
       });
     }
 
     return assignments.map((a: any) => {
-      const sub = submissionsMap.get(a.id);
+      const sub = submissionsMap.get(String(a.id));
       let taskStatus = 'Belum Dikumpulkan';
       
       const deadlineDate = a.due_date ? new Date(a.due_date) : null;
@@ -98,7 +98,7 @@ function SiswaTugasContent() {
          : '-';
 
        return {
-         id: a.id.toString(),
+          id: String(a.id),
          title: a.title,
          category: a.type || 'Tugas Harian',
          course: a.course ? (a.course.title || a.course.name) : 'Kelas XI IPA',

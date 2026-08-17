@@ -17,6 +17,8 @@ export default function AdminUserManagementPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [resetPassUser, setResetPassUser] = useState<any>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
 
   const [resetSuccessMsg, setResetSuccessMsg] = useState('');
@@ -140,13 +142,20 @@ export default function AdminUserManagementPage() {
   };
 
   // 5. Handler: Delete User (Realtime DELETE to MySQL)
-  const handleDelete = async (item: any) => {
-    const targetDbId = item.dbId;
-    if (!targetDbId) return;
+  const handleDelete = (item: any) => {
+    setItemToDelete(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete || !itemToDelete.dbId) return;
+    const targetDbId = itemToDelete.dbId;
 
     try {
       const { api } = await import('@/lib/api');
       await api.deleteUser(targetDbId);
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
       await loadUsersFromApi();
     } catch (e: any) {
       console.error('MySQL Delete User Error:', e);
@@ -204,15 +213,12 @@ export default function AdminUserManagementPage() {
 
   // 7. Handler: Bulk Import (Realtime POST to MySQL)
   const handleProcessImport = async () => {
-    const usersToImport = parsedImportUsers.length > 0 ? parsedImportUsers : [
-      { name: 'Teacher 1', email: 'teacher1@school.id', role: 'guru', subject: 'Matematika', password: 'password123', nisn_or_nip: '1985001' },
-      { name: 'Teacher 2', email: 'teacher2@school.id', role: 'guru', subject: 'Fisika', password: 'password123', nisn_or_nip: '1985002' },
-      { name: 'Teacher 3', email: 'teacher3@school.id', role: 'guru', subject: 'Biologi', password: 'password123', nisn_or_nip: '1985003' },
-      { name: 'Student 1', email: 'student1@student.school.id', role: 'siswa', subject: 'Kelas X-IPA 1', password: 'password123', nisn_or_nip: '2026001' },
-      { name: 'Student 2', email: 'student2@student.school.id', role: 'siswa', subject: 'Kelas X-IPA 2', password: 'password123', nisn_or_nip: '2026002' },
-      { name: 'Student 3', email: 'student3@student.school.id', role: 'siswa', subject: 'Kelas XI-IPA 1', password: 'password123', nisn_or_nip: '2026003' },
-      { name: 'Student 4', email: 'student4@student.school.id', role: 'siswa', subject: 'Kelas XII-IPA 1', password: 'password123', nisn_or_nip: '2026004' }
-    ];
+    const usersToImport = parsedImportUsers.length > 0 ? parsedImportUsers : [];
+
+    if (usersToImport.length === 0) {
+      alert('Tidak ada data untuk diimpor.');
+      return;
+    }
 
     try {
       const { api } = await import('@/lib/api');
@@ -751,11 +757,43 @@ export default function AdminUserManagementPage() {
                       className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 cursor-pointer"
                     >
                       <Upload className="w-4 h-4" />
-                      <span>{parsedImportUsers.length > 0 ? `Proses Import (${parsedImportUsers.length} Data)` : 'Proses Import Data Demo (10 User)'}</span>
+                      <span>{parsedImportUsers.length > 0 ? `Proses Import (${parsedImportUsers.length} Data)` : 'Proses Import Data'}</span>
                     </button>
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Konfirmasi Hapus Modal */}
+      {isDeleteModalOpen && itemToDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[28px] max-w-sm w-full p-6 text-center shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8 text-rose-600" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Hapus Pengguna</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Apakah Anda yakin ingin menghapus pengguna <span className="font-bold text-slate-900">{itemToDelete.name}</span>? Data tidak dapat dikembalikan.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setItemToDelete(null);
+                }}
+                className="flex-1 py-3 text-sm font-bold text-slate-600 bg-[#F8FAFC] hover:bg-slate-100 rounded-2xl transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 py-3 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-2xl shadow-lg shadow-rose-500/25 transition cursor-pointer"
+              >
+                Hapus Permanen
+              </button>
             </div>
           </div>
         </div>

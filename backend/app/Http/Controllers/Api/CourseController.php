@@ -16,21 +16,18 @@ class CourseController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Course::with(['teacher', 'students'])->withCount(['materials', 'assignments', 'students']);
+        
+        $courses = app(\App\Services\CourseService::class)->getCoursesForUser($user);
 
-        if ($user && $user->role === 'guru') {
-            $query->where('teacher_id', $user->id);
-        } elseif ($user && $user->role === 'siswa') {
-            $query->whereHas('students', fn ($q) => $q->where('users.id', $user->id)
-                ->where('course_student.status', 'active'));
-        }
-
-        return response()->json($query->latest()->get());
+        return response()->json($courses);
     }
 
     public function show(Request $request, $id)
     {
-        $course = Course::with(['teacher', 'students'])->findOrFail($id);
+        $course = Course::with([
+            'teacher',
+            'students' => fn ($q) => $q->wherePivot('status', 'active')
+        ])->findOrFail($id);
         $this->authorize('view', $course);
 
         return response()->json($course);

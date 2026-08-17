@@ -106,10 +106,7 @@ class CourseIsolationTest extends TestCase
         $response = $this->actingAs($guruB)
             ->getJson("/api/v1/assignments/{$assignment->id}/submissions");
 
-        $response->assertOk();
-        $submissions = $response->json();
-        
-        $this->assertEmpty($submissions);
+        $response->assertStatus(403);
     }
 
     public function test_attendance_isolated_per_course(): void

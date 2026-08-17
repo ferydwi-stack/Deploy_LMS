@@ -19,34 +19,39 @@ export default function AdminCoursesPage() {
       const { api } = await import('@/lib/api');
       
       // Fetch Courses & Students from MySQL API
-      const [coursesData, studentsData] = await Promise.all([
-        api.getCourses().catch(() => []),
-        api.getUsers('siswa').catch(() => [])
-      ]);
+    const [coursesData, studentsData] = await Promise.all([
+      api.getCourses().catch(() => []),
+      api.getUsers('siswa').catch(() => [])
+    ]);
 
-      const formattedStudents = Array.isArray(studentsData) ? studentsData.map((s: any) => ({
+    const formattedStudents = Array.isArray(studentsData) ? studentsData.map((s: any) => ({
+      id: s.nisn_or_nip || `USR-00${s.id}`,
+      name: s.name,
+      email: s.email,
+      status: 'Aktif • Hadir'
+    })) : [];
+
+    setStudents(formattedStudents);
+
+    if (Array.isArray(coursesData) && coursesData.length > 0) {
+        const formattedCourses = coursesData.map((c: any) => ({
+      id: c.id,
+      code: c.code || 'MTK-X',
+      joinCode: c.code ? `${c.code}-JOIN` : 'MTK-X-89A',
+      title: c.title,
+      teacher: c.teacher ? c.teacher.name : 'Teacher',
+      studentsCount: c.students_count || 0,
+      materi: c.materials_count || 0,
+      tugas: c.assignments_count || 0,
+      studentsList: Array.isArray(c.students) ? c.students.map((s: any) => ({
         id: s.nisn_or_nip || `USR-00${s.id}`,
         name: s.name,
         email: s.email,
-        status: 'Aktif • Hadir'
-      })) : [];
-
-      setStudents(formattedStudents);
-
-      if (Array.isArray(coursesData) && coursesData.length > 0) {
-          const formattedCourses = coursesData.map((c: any) => ({
-          id: c.id,
-          code: c.code || 'MTK-X',
-          joinCode: c.code ? `${c.code}-JOIN` : 'MTK-X-89A',
-          title: c.title,
-          teacher: c.teacher ? c.teacher.name : 'Teacher',
-          studentsCount: formattedStudents.length,
-          materi: c.materials_count || 0,
-          tugas: c.assignments_count || 0,
-          studentsList: formattedStudents
-        }));
-        setCourses(formattedCourses);
-      } else {
+        status: s.pivot?.status === 'active' ? 'Aktif • Terdaftar' : 'Nonaktif'
+      })) : []
+    }));
+    setCourses(formattedCourses);
+  } else {
         // Fallback default courses enriched with REAL MySQL students
         const defaultCourses = [
           {

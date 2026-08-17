@@ -28,6 +28,8 @@ function GuruTugasContent() {
   const [dragActive, setDragActive] = useState(false);
   const [modalFiles, setModalFiles] = useState<File[]>([]);
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [tugasList, setTugasList] = useState<any[]>([]);
   const [realStudentsCount, setRealStudentsCount] = useState<number>(8);
   const [isLoading, setIsLoading] = useState(true);
@@ -196,6 +198,20 @@ function GuruTugasContent() {
     setSelectedSubmission(null);
   };
 
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      await api.deleteAssignment(itemToDelete.id);
+      notifyDataChanged('lms_assignments_updated');
+      await loadDataFromApi();
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+    } catch (err: any) {
+      console.error('Delete assignment error:', err);
+      alert(err.message || 'Gagal menghapus tugas');
+    }
+  };
+
   const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
 
   return (
@@ -304,6 +320,15 @@ function GuruTugasContent() {
 
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => {
+                      setItemToDelete(tugas);
+                      setIsDeleteModalOpen(true);
+                    }}
+                    className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
+                  >
+                    <span>Hapus</span>
+                  </button>
+                  <button
                     onClick={() => setPreviewTask(tugas)}
                     className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2563EB] font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
                   >
@@ -340,6 +365,44 @@ function GuruTugasContent() {
           </div>
         )}
       </div>
+
+      {isDeleteModalOpen && itemToDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">Hapus Tugas</h3>
+              <button
+                onClick={() => { setIsDeleteModalOpen(false); setItemToDelete(null); }}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">Tugas ini akan dihapus permanen dan tidak bisa dikembalikan.</p>
+              <p className="text-sm font-bold text-slate-900">{itemToDelete.title}</p>
+            </div>
+
+            <div className="pt-4 mt-6 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setIsDeleteModalOpen(false); setItemToDelete(null); }}
+                className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-rose-500/25 transition cursor-pointer"
+              >
+                Hapus Permanen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Periksa & Beri Nilai */}
       {selectedTask && (

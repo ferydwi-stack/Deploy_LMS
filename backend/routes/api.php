@@ -28,7 +28,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/admin/stats', [AdminController::class, 'stats']);
 
         Route::get('/courses', [CourseController::class, 'index']);
-        Route::get('/courses/available', [EnrollmentController::class, 'available']);
+        Route::get('/available-courses', [EnrollmentController::class, 'available']);
         Route::get('/courses/{id}', [CourseController::class, 'show']);
         Route::post('/courses', [CourseController::class, 'store']);
         Route::put('/courses/{id}', [CourseController::class, 'update']);

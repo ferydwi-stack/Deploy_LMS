@@ -201,7 +201,7 @@ export const api = {
   leaveCourse: (id: number): Promise<ApiResponse> => fetchApi(`/courses/${id}/leave`, { method: 'POST' }),
   getCourseStudents: (id: number): Promise<User[]> => fetchApi(`/courses/${id}/students`),
   getCourseReport: (id: number): Promise<any> => fetchApi(`/courses/${id}/report`),
-  getAvailableCourses: (): Promise<Course[]> => fetchApi('/courses/available'),
+  getAvailableCourses: (): Promise<Course[]> => fetchApi('/available-courses'),
   kickStudent: (courseId: number, studentId: number): Promise<ApiResponse> => fetchApi(`/courses/${courseId}/students/${studentId}`, { method: 'DELETE' }),
   updateStudentGrade: (courseId: number, studentId: number, data: { uts_score: number; uas_score: number }): Promise<ApiResponse> =>
     fetchApi(`/courses/${courseId}/students/${studentId}/grades`, { method: 'PUT', body: JSON.stringify(data) }),

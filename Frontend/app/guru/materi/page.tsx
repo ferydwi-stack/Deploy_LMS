@@ -25,6 +25,9 @@ function GuruMateriContent() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
+
   const [newMateri, setNewMateri] = useState({
     title: '',
     desc: '',
@@ -91,17 +94,6 @@ function GuruMateriContent() {
     }
   };
 
-  const handleDelete = async (id: string | number) => {
-    try {
-      if (typeof id === 'number' || !String(id).startsWith('demo')) {
-        await api.deleteMaterial(id);
-        await refreshMaterials();
-      }
-    } catch (e) {
-      console.error('Failed to delete material:', e);
-    }
-  };
-
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -125,6 +117,19 @@ function GuruMateriContent() {
     if (category.includes('Presentation')) return <Presentation className="w-5 h-5 text-amber-600" />;
     if (category.includes('Link')) return <Link2 className="w-5 h-5 text-blue-600" />;
     return <FileText className="w-5 h-5 text-emerald-600" />;
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      await api.deleteMaterial(itemToDelete.id);
+      await refreshMaterials();
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+    } catch (e: any) {
+      console.error('Failed to delete material:', e);
+      alert(e.message || 'Gagal menghapus materi');
+    }
   };
 
   const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
@@ -251,7 +256,10 @@ function GuruMateriContent() {
                 </div>
 
                 <button
-                  onClick={() => handleDelete(materi.id)}
+                  onClick={() => {
+                    setItemToDelete(materi);
+                    setIsDeleteModalOpen(true);
+                  }}
                   className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
                   title="Hapus Materi"
                 >
@@ -277,6 +285,44 @@ function GuruMateriContent() {
             <Upload className="w-4 h-4" />
             <span>Unggah Materi Baru</span>
           </button>
+        </div>
+      )}
+
+      {isDeleteModalOpen && itemToDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">Hapus Materi</h3>
+              <button
+                onClick={() => { setIsDeleteModalOpen(false); setItemToDelete(null); }}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">Materi ini akan dihapus permanen dan tidak bisa dikembalikan.</p>
+              <p className="text-sm font-bold text-slate-900">{itemToDelete.title}</p>
+            </div>
+
+            <div className="pt-4 mt-6 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setIsDeleteModalOpen(false); setItemToDelete(null); }}
+                className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-rose-500/25 transition cursor-pointer"
+              >
+                Hapus Permanen
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
