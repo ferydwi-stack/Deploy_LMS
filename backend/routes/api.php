@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\TeacherStatsController;
 
 Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
@@ -76,5 +78,8 @@ Route::prefix('v1')->group(function () {
         Route::put('/users/{id}/reset-password', [AdminController::class, 'resetPassword']);
         Route::delete('/users/{id}', [AdminController::class, 'destroyUser']);
         Route::post('/users/bulk-import', [AdminController::class, 'bulkImport']);
+        
+        Route::get('/settings', [AdminController::class, 'getSettings']);
+        Route::put('/settings', [AdminController::class, 'updateSettings']);
     });
 });

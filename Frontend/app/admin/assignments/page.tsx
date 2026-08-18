@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { FileEdit, Clock, Search, CheckCircle2 } from 'lucide-react';
+import { FileEdit, Clock, Search, CheckCircle2, ChevronDown } from 'lucide-react';
 
 export default function AdminAssignmentsPage() {
   const [search, setSearch] = useState('');
@@ -163,16 +163,19 @@ export default function AdminAssignmentsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <select
-            value={selectedCourseFilter}
-            onChange={(e) => setSelectedCourseFilter(e.target.value)}
-            className="px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          >
-            <option value="all">Semua Mata Pelajaran</option>
-            <option value="matematika">Matematika</option>
-            <option value="fisika">Fisika</option>
-            <option value="kimia">Kimia</option>
-          </select>
+          <div className="relative">
+            <select
+              value={selectedCourseFilter}
+              onChange={(e) => setSelectedCourseFilter(e.target.value)}
+              className="px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none pr-10"
+            >
+              <option className="bg-white text-slate-900" value="all">Semua Mata Pelajaran</option>
+              <option className="bg-white text-slate-900" value="matematika">Matematika</option>
+              <option className="bg-white text-slate-900" value="fisika">Fisika</option>
+              <option className="bg-white text-slate-900" value="kimia">Kimia</option>
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Download, Calendar, CheckCircle2, UserCheck, Users, Printer, FileSpreadsheet } from 'lucide-react';
+import { Download, Calendar, CheckCircle2, UserCheck, Users, Printer, FileSpreadsheet, ChevronDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { api } from '@/lib/api';
 
@@ -73,57 +73,56 @@ export default function AdminReportsPage() {
 
   const handleExport = (type: string) => {
     const rows = reportData.map((row) => ({
+      'Grup / Kelas': row.class,
+      'Wali Kelas / Penanggung Jawab': row.teacher,
+      'Total': row.total,
+      'Hadir': row.hadir,
+      'Izin': row.izin,
+      'Sakit': row.sakit,
+      'Alpa': row.alpa,
+      'Persentase': row.percent,
+    }));
 
-    'Grup / Kelas': row.class,
-    'Wali Kelas / Penanggung Jawab': row.teacher,
-    'Total': row.total,
-    'Hadir': row.hadir,
-    'Izin': row.izin,
-    'Sakit': row.sakit,
-    'Alpa': row.alpa,
-    'Persentase': row.percent,
-  }));
-
-  if (type === 'excel') {
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Laporan Presensi');
-    XLSX.writeFile(wb, `laporan-presensi-admin-${range}.xlsx`);
-    setDownloadNotice('Laporan Excel berhasil diunduh.');
-  }
-
-  if (type === 'pdf') {
-    const content = document.getElementById('report-print-area');
-    if (content) {
-      const printWindow = window.open('', '_blank', 'width=1200,height=900');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>Laporan Presensi Admin</title>
-              <style>
-                body { font-family: Arial, sans-serif; padding: 24px; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-                th { background: #f3f4f6; text-align: left; }
-              </style>
-            </head>
-            <body>
-              ${content.innerHTML}
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }
+    if (type === 'excel') {
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Laporan Presensi');
+      XLSX.writeFile(wb, `laporan-presensi-admin-${range}.xlsx`);
+      setDownloadNotice('Laporan Excel berhasil diunduh.');
     }
-    setDownloadNotice('Laporan PDF siap dicetak.');
-  }
 
-  setTimeout(() => setDownloadNotice(''), 3000);
-};
+    if (type === 'pdf') {
+      const content = document.getElementById('report-print-area');
+      if (content) {
+        const printWindow = window.open('', '_blank', 'width=1200,height=900');
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head>
+                <title>Laporan Presensi Admin</title>
+                <style>
+                  body { font-family: Arial, sans-serif; padding: 24px; }
+                  table { width: 100%; border-collapse: collapse; }
+                  th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+                  th { background: #f3f4f6; text-align: left; }
+                </style>
+              </head>
+              <body>
+                ${content.innerHTML}
+              </body>
+            </html>
+          `);
+          printWindow.document.close();
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+        }
+      }
+      setDownloadNotice('Laporan PDF siap dicetak.');
+    }
+
+    setTimeout(() => setDownloadNotice(''), 3000);
+  };
 
 return (
   <>
@@ -197,15 +196,18 @@ return (
 
           <div className="flex items-center gap-3">
             {/* Rentang Filter */}
-            <select
-              value={range}
-              onChange={(e) => setRange(e.target.value)}
-              className="px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-            >
-              <option value="minggu">Minggu Ini</option>
-              <option value="bulan">Bulan Ini</option>
-              <option value="semester">Semester Ini</option>
-            </select>
+            <div className="relative">
+              <select
+                value={range}
+                onChange={(e) => setRange(e.target.value)}
+                className="px-3.5 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none pr-10"
+              >
+                <option className="bg-white text-slate-900" value="minggu">Minggu Ini</option>
+                <option className="bg-white text-slate-900" value="bulan">Bulan Ini</option>
+                <option className="bg-white text-slate-900" value="semester">Semester Ini</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
             {/* Export Actions */}
             <button

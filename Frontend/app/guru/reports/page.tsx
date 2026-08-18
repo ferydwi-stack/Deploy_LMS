@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Download, FileSpreadsheet, FileText, CheckCircle2, Search, Filter, Edit3, X, Save, Calculator } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, CheckCircle2, Search, Filter, Edit3, X, Save, Calculator, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function GuruReportsPage() {
@@ -348,21 +348,24 @@ export default function GuruReportsPage() {
         {/* Filter Controls */}
         <div className="flex items-center gap-3 mb-6">
           <label className="text-xs font-bold text-slate-600">Pilih Kelas:</label>
-          <select
-            value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
-            className="px-4 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 min-w-[220px]"
-          >
-            {courses.length > 0 ? (
-              courses.map((c: any) => (
-                <option key={c.id} value={c.id.toString()}>
-                  {c.title || c.name || `Kelas ID ${c.id}`}
-                </option>
-              ))
-            ) : (
-              <option value="">Belum ada kelas</option>
-            )}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 min-w-[220px] appearance-none pr-10"
+            >
+              {courses.length > 0 ? (
+                courses.map((c: any) => (
+                  <option className="bg-white text-slate-900" key={c.id} value={c.id.toString()}>
+                    {c.title || c.name || `Kelas ID ${c.id}`}
+                  </option>
+                ))
+              ) : (
+                <option className="bg-white text-slate-900" value="">Belum ada kelas</option>
+              )}
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
 
         {/* Summary Table */}

@@ -99,8 +99,72 @@ export default function SiswaReportsPage() {
   }, [user]);
 
   const handleExport = (type: 'pdf' | 'excel') => {
-    const msg = `Rapor Laporan Akademik berhasil diunduh dalam format ${type.toUpperCase()}!`;
-    setExportNotice(msg);
+    const selected = enrolledClassesReports[0];
+    if (!selected) return;
+
+    if (type === 'excel') {
+      const csvContent = [
+        ['Nama Siswa', 'NIS', 'Kelas', 'Guru', 'Tugas', 'UTS', 'UAS', 'Kehadiran', 'Nilai Akhir', 'Status'],
+        ...enrolledClassesReports.map((row) => [
+          user?.name || '-',
+          user?.nisn_or_nip || '-',
+          row.title,
+          row.teacher,
+          row.tugasScore ?? '-',
+          row.utsScore ?? '-',
+          row.uasScore ?? '-',
+          row.absensiPercent,
+          row.finalScore ?? '-',
+          row.status,
+        ])
+      ].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Rapor_Akademik_${String(user?.name || 'siswa').replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setExportNotice('Rapor Excel berhasil diunduh.');
+      setTimeout(() => setExportNotice(null), 4000);
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <html>
+        <head>
+          <title>Rapor Akademik Siswa</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #1e293b; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; font-size: 12px; }
+            th { background: #f1f5f9; text-align: left; }
+          </style>
+        </head>
+        <body>
+          <h1>Rapor Akademik Siswa</h1>
+          <p>Nama: ${user?.name || '-'}</p>
+          <p>NISN/NIP: ${user?.nisn_or_nip || '-'}</p>
+          <table>
+            <thead><tr><th>Kelas</th><th>Guru</th><th>Tugas</th><th>UTS</th><th>UAS</th><th>Kehadiran</th><th>Nilai Akhir</th><th>Status</th></tr></thead>
+            <tbody>
+              ${enrolledClassesReports.map((row) => `<tr><td>${row.title}</td><td>${row.teacher}</td><td>${row.tugasScore ?? '-'}</td><td>${row.utsScore ?? '-'}</td><td>${row.uasScore ?? '-'}</td><td>${row.absensiPercent}</td><td>${row.finalScore ?? '-'}</td><td>${row.status}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>`;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+    setExportNotice('Rapor PDF siap dicetak.');
     setTimeout(() => setExportNotice(null), 4000);
   };
 

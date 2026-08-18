@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Mail, Lock, Shield, Phone, MapPin, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, User, Mail, Lock, Shield, Phone, MapPin, CheckCircle2, ChevronDown } from 'lucide-react';
 
 export default function AdminAddUserPage() {
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function AdminAddUserPage() {
                 placeholder="Contoh: Dr. Budi Prasetyo, M.Pd"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
               />
             </div>
 
@@ -65,7 +65,7 @@ export default function AdminAddUserPage() {
                 placeholder="user@edulearn.id"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
               />
             </div>
 
@@ -79,7 +79,7 @@ export default function AdminAddUserPage() {
                 placeholder="19820315..."
                 value={formData.nip}
                 onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
               />
             </div>
 
@@ -87,29 +87,35 @@ export default function AdminAddUserPage() {
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Role Pengguna *
               </label>
-              <select
+<div className="relative">
+<select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition appearance-none pr-10"
               >
-                <option value="guru">Guru / Pengajar</option>
-                <option value="siswa">Siswa / Pelajar</option>
-                <option value="admin">Administrator</option>
+                <option className="bg-white text-slate-900" value="guru">Guru / Pengajar</option>
+                <option className="bg-white text-slate-900" value="siswa">Siswa / Pelajar</option>
+                <option className="bg-white text-slate-900" value="admin">Administrator</option>
               </select>
+<ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+</div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Jenis Kelamin
               </label>
-              <select
+<div className="relative">
+<select
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition appearance-none pr-10"
               >
-                <option value="Laki-laki">Laki-laki</option>
-                <option value="Perempuan">Perempuan</option>
+                <option className="bg-white text-slate-900" value="Laki-laki">Laki-laki</option>
+                <option className="bg-white text-slate-900" value="Perempuan">Perempuan</option>
               </select>
+<ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+</div>
             </div>
 
             <div>
@@ -121,7 +127,7 @@ export default function AdminAddUserPage() {
                 placeholder="08123456789"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
               />
             </div>
           </div>
@@ -135,7 +141,7 @@ export default function AdminAddUserPage() {
               placeholder="Alamat rumah / domisili..."
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
             />
           </div>
 

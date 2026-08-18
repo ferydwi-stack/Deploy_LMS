@@ -14,7 +14,8 @@ import {
   Layers, 
   FileText,
   Building,
-  GraduationCap
+  GraduationCap,
+  ChevronDown
 } from 'lucide-react';
 
 export default function GuruTambahKelasPage() {
@@ -124,15 +125,18 @@ export default function GuruTambahKelasPage() {
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Tingkat / Kelas <span className="text-rose-500">*</span>
               </label>
-              <select
-                value={formData.tingkat}
-                onChange={(e) => setFormData({ ...formData, tingkat: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition bg-white"
-              >
-                <option value="Kelas X">Kelas X (Tingkat 10)</option>
-                <option value="Kelas XI">Kelas XI (Tingkat 11)</option>
-                <option value="Kelas XII">Kelas XII (Tingkat 12)</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={formData.tingkat}
+                  onChange={(e) => setFormData({ ...formData, tingkat: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition appearance-none pr-10"
+                >
+                  <option className="bg-white text-slate-900" value="Kelas X">Kelas X (Tingkat 10)</option>
+                  <option className="bg-white text-slate-900" value="Kelas XI">Kelas XI (Tingkat 11)</option>
+                  <option className="bg-white text-slate-900" value="Kelas XII">Kelas XII (Tingkat 12)</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             {/* Jurusan Dropdown */}
@@ -140,16 +144,19 @@ export default function GuruTambahKelasPage() {
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Jurusan / Peminatan <span className="text-rose-500">*</span>
               </label>
-              <select
-                value={formData.jurusan}
-                onChange={(e) => setFormData({ ...formData, jurusan: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition bg-white"
-              >
-                <option value="MIPA (IPA)">MIPA (Matematika & IPA)</option>
-                <option value="IPS">IPS (Ilmu Pengetahuan Sosial)</option>
-                <option value="Bahasa">Bahasa & Budaya</option>
-                <option value="Umum">Umum / Lintas Peminatan</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={formData.jurusan}
+                  onChange={(e) => setFormData({ ...formData, jurusan: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition appearance-none pr-10"
+                >
+                  <option className="bg-white text-slate-900" value="MIPA (IPA)">MIPA (Matematika & IPA)</option>
+                  <option className="bg-white text-slate-900" value="IPS">IPS (Ilmu Pengetahuan Sosial)</option>
+                  <option className="bg-white text-slate-900" value="Bahasa">Bahasa & Budaya</option>
+                  <option className="bg-white text-slate-900" value="Umum">Umum / Lintas Peminatan</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             {/* Jadwal */}

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Mail, Lock, Key, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, User, Mail, Lock, Key, CheckCircle2, ChevronDown } from 'lucide-react';
 
 export default function AdminEditUserPage() {
   const router = useRouter();
@@ -89,15 +89,18 @@ export default function AdminEditUserPage() {
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Role Pengguna *
               </label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
-              >
-                <option value="guru">Guru / Pengajar</option>
-                <option value="siswa">Siswa / Pelajar</option>
-                <option value="admin">Administrator</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition appearance-none pr-10"
+                >
+                  <option className="bg-white text-slate-900" value="guru">Guru / Pengajar</option>
+                  <option className="bg-white text-slate-900" value="siswa">Siswa / Pelajar</option>
+                  <option className="bg-white text-slate-900" value="admin">Administrator</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 

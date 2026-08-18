@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\Course;
 use App\Models\Submission;
 use App\Models\User;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -157,6 +158,40 @@ class AdminController extends Controller
             'total_assignments' => $totalAssignments,
             'submissions_today' => $submissionsToday,
             'attendance_rate' => $attendanceRate,
+        ]);
+    }
+
+    public function getSettings()
+    {
+        $settings = Setting::all()->pluck('value', 'key');
+        return response()->json($settings);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $allowedKeys = [
+            'allow_user_reset_password',
+            'email_notifications',
+            'school_name',
+            'admin_email',
+            'academic_year',
+            'semester',
+        ];
+
+        $data = $request->only($allowedKeys);
+
+        foreach ($data as $key => $value) {
+            if ($value === null) continue;
+            $storeValue = is_bool($value) ? ($value ? 'true' : 'false') : (string) $value;
+            Setting::updateOrCreate(
+                ['key' => $key],
+                ['value' => $storeValue]
+            );
+        }
+
+        return response()->json([
+            'message' => 'Settings updated successfully.',
+            'settings' => Setting::all()->pluck('value', 'key')
         ]);
     }
 }

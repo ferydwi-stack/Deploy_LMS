@@ -13,7 +13,8 @@ import {
   BookOpen, 
   CheckCircle2,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  ChevronDown
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useLms } from '@/context/LmsContext';
@@ -165,17 +166,20 @@ function GuruBuatTugasContent() {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                   Kategori Tugas <span className="text-rose-500">*</span>
                 </label>
-                <select
-                  value={formData.mataPelajaran}
-                  onChange={(e) => setFormData({ ...formData, mataPelajaran: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
-                >
-                  <option value="Tugas Harian">Tugas Harian</option>
-                  <option value="UTS">UTS (Ujian Tengah Semester)</option>
-                  <option value="UAS">UAS (Ujian Akhir Semester)</option>
-                  <option value="Remedi UTS">Remedial UTS</option>
-                  <option value="Remedi UAS">Remedial UAS</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={formData.mataPelajaran}
+                    onChange={(e) => setFormData({ ...formData, mataPelajaran: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition appearance-none pr-10"
+                  >
+                    <option className="bg-white text-slate-900" value="Tugas Harian">Tugas Harian</option>
+                    <option className="bg-white text-slate-900" value="UTS">UTS (Ujian Tengah Semester)</option>
+                    <option className="bg-white text-slate-900" value="UAS">UAS (Ujian Akhir Semester)</option>
+                    <option className="bg-white text-slate-900" value="Remedi UTS">Remedial UTS</option>
+                    <option className="bg-white text-slate-900" value="Remedi UAS">Remedial UAS</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             </div>
 

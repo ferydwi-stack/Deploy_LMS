@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GraduationCap, ArrowRight, Mail, Lock, Eye, EyeOff, ShieldCheck, UserCheck, BookOpen } from 'lucide-react';
 
 import TypewriterText from '@/components/TypewriterText';
+import { api } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +16,35 @@ export default function LoginPage() {
 
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleForgotPassword = async () => {
+    setForgotMsg(null);
+    if (!forgotEmail.trim()) {
+      setForgotMsg({ type: 'error', text: 'Masukkan alamat email Anda.' });
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await api.forgotPassword(forgotEmail.trim());
+      setForgotMsg({ type: 'success', text: res.message || 'Tautan reset password telah dikirim ke email Anda.' });
+    } catch (err: any) {
+      setForgotMsg({ type: 'error', text: err.message || 'Gagal mengirim tautan reset. Periksa email Anda.' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const closeForgotModal = () => {
+    setShowForgotModal(false);
+    setForgotEmail('');
+    setForgotMsg(null);
+    setForgotLoading(false);
+  };
 
   // Helper: clear previous user's cached profile data on new login
   const clearPreviousUserCache = () => {
@@ -197,9 +227,13 @@ export default function LoginPage() {
                   />
                   <span>Ingat saya</span>
                 </label>
-                <a href="#" className="font-bold text-[#1D4ED8] hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(true)}
+                  className="font-bold text-[#1D4ED8] hover:underline cursor-pointer"
+                >
                   Lupa password?
-                </a>
+                </button>
               </div>
 
               <button
@@ -274,6 +308,54 @@ export default function LoginPage() {
         </div>
 
       </div>
+
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 relative">
+            <h3 className="text-lg font-bold text-slate-900 mb-1">Reset Password</h3>
+            <p className="text-xs text-slate-500 font-medium mb-5">Masukkan email terdaftar untuk menerima tautan reset password.</p>
+
+            {forgotMsg && (
+              <div className={`mb-4 p-3 rounded-xl text-xs font-semibold border ${forgotMsg.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-600'}`}>
+                {forgotMsg.text}
+              </div>
+            )}
+
+            <label htmlFor="forgot-email" className="block text-xs font-bold text-slate-700 mb-1.5">Email</label>
+            <div className="relative mb-5">
+              <input
+                id="forgot-email"
+                type="email"
+                required
+                placeholder="nama@EduSchool.sch.id"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleForgotPassword(); }}
+                className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB] transition shadow-xs pl-10 font-medium"
+              />
+              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" aria-hidden="true" />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={closeForgotModal}
+                className="flex-1 py-3 border border-slate-300 text-slate-700 font-bold text-xs rounded-2xl hover:bg-slate-50 transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={forgotLoading}
+                className="flex-1 py-3 bg-[#2563EB] hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-500/25 transition disabled:opacity-50 cursor-pointer"
+              >
+                {forgotLoading ? 'Mengirim...' : 'Kirim Tautan Reset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Auth\UpdateProfileRequest;
 use App\Models\User;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -82,5 +86,61 @@ class AuthController extends Controller
             'message' => 'Profile berhasil diperbarui',
             'user' => $user,
         ]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $setting = Setting::where('key', 'allow_user_reset_password')->first();
+        if ($setting && $setting->value === 'false') {
+            return response()->json([
+                'message' => 'Reset password is not allowed by administrator.'
+            ], 403);
+        }
+
+        $request->validate(['email' => 'required|email']);
+
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json([
+                'message' => __($status)
+            ]);
+        }
+
+        return response()->json([
+            'message' => __($status)
+        ], 400);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password)
+                ])->setRememberToken(Str::random(60));
+
+                $user->save();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => __($status)
+            ]);
+        }
+
+        return response()->json([
+            'message' => __($status)
+        ], 400);
     }
 }

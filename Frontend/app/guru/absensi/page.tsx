@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, CheckCircle2, UserCheck, Calendar, RefreshCw, Clock } from 'lucide-react';
+import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, CheckCircle2, UserCheck, Calendar, RefreshCw, Clock, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { api } from '@/lib/api';
@@ -315,15 +315,18 @@ function GuruAbsensiContent() {
       <div className="bg-white border border-slate-100 rounded-3xl p-5 mb-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <label className="text-xs font-bold text-slate-700">Pilih Tanggal Presensi:</label>
-          <select
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          >
-            {dateOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none pr-10"
+            >
+              {dateOptions.map((opt) => (
+                <option className="bg-white text-slate-900" key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

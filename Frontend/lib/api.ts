@@ -223,6 +223,15 @@ export const api = {
   // Profile
   updateProfile: (data: Partial<User>): Promise<ApiResponse<User>> => fetchApi('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
 
+  // Password Reset
+  forgotPassword: (email: string): Promise<ApiResponse> => fetchApi('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetPassword: (data: { email: string; token: string; password: string; password_confirmation: string }): Promise<ApiResponse> =>
+    fetchApi('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Admin Settings
+  getAdminSettings: (): Promise<ApiResponse<any>> => fetchApi('/admin/settings'),
+  updateAdminSettings: (data: Record<string, any>): Promise<ApiResponse<any>> => fetchApi('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
+
   // Stats
   getAdminStats: (): Promise<StatsResponse> => fetchApi('/admin/stats'),
   getGuruStats: (): Promise<StatsResponse> => fetchApi('/guru/stats'),

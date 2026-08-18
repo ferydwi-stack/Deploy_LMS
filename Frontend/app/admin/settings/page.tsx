@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Save, CheckCircle2, Building2, Calendar, Mail, Bell, ShieldCheck } from 'lucide-react';
+import { Save, CheckCircle2, Building2, Calendar, Mail, Bell, ShieldCheck, ChevronDown } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const [schoolName, setSchoolName] = useState('SMA EduSchool Nusantara');
@@ -11,12 +11,45 @@ export default function AdminSettingsPage() {
   const [semester, setSemester] = useState('Ganjil');
   const [allowStudentSelfEnroll, setAllowStudentSelfEnroll] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
+  const [allowUserResetPassword, setAllowUserResetPassword] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [loadingSettings, setLoadingSettings] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const response: any = await api.getAdminSettings();
+        const settings = response?.settings || response?.data || response || {};
+        if (settings.allow_user_reset_password !== undefined) {
+          setAllowUserResetPassword(settings.allow_user_reset_password === 'true');
+        }
+      } catch (error) {
+        console.error('Gagal memuat pengaturan admin:', error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      const { api } = await import('@/lib/api');
+      await api.updateAdminSettings({
+        allow_user_reset_password: allowUserResetPassword,
+        email_notifications: emailNotifications,
+        school_name: schoolName,
+        admin_email: adminEmail,
+        academic_year: academicYear,
+        semester,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error: any) {
+      console.error('Gagal menyimpan pengaturan admin:', error);
+    }
   };
 
   return (
@@ -50,27 +83,33 @@ export default function AdminSettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-2">Tahun Ajaran</label>
-                <select
-                  value={academicYear}
-                  onChange={(e) => setAcademicYear(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  <option value="2024/2025">2024/2025</option>
-                  <option value="2025/2026">2025/2026 (Aktif)</option>
-                  <option value="2026/2027">2026/2027</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={academicYear}
+                    onChange={(e) => setAcademicYear(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none pr-10"
+                  >
+                    <option className="bg-white text-slate-900" value="2024/2025">2024/2025</option>
+                    <option className="bg-white text-slate-900" value="2025/2026">2025/2026 (Aktif)</option>
+                    <option className="bg-white text-slate-900" value="2026/2027">2026/2027</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-2">Semester Aktif</label>
-                <select
-                  value={semester}
-                  onChange={(e) => setSemester(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  <option value="Ganjil">Semester Ganjil</option>
-                  <option value="Genap">Semester Genap</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={semester}
+                    onChange={(e) => setSemester(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none pr-10"
+                  >
+                    <option className="bg-white text-slate-900" value="Ganjil">Semester Ganjil</option>
+                    <option className="bg-white text-slate-900" value="Genap">Semester Genap</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             </div>
           </div>
@@ -134,6 +173,19 @@ export default function AdminSettingsPage() {
                   type="checkbox"
                   checked={allowStudentSelfEnroll}
                   onChange={(e) => setAllowStudentSelfEnroll(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded-md focus:ring-blue-500"
+                />
+              </label>
+
+              <label className="flex items-center justify-between p-4 bg-[#F8FAFC] border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-100/60 transition">
+                <div>
+                  <p className="text-xs font-bold text-slate-900">Izinkan Reset Password via Email</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Guru dan siswa dapat reset password sendiri menggunakan verifikasi email</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={allowUserResetPassword}
+                  onChange={(e) => setAllowUserResetPassword(e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded-md focus:ring-blue-500"
                 />
               </label>

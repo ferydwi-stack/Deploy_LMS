@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Plus, FileSpreadsheet, Edit3, Trash2, X, Search, Key, ShieldCheck, Upload, CheckCircle2 } from 'lucide-react';
+import { Plus, FileSpreadsheet, Edit3, Trash2, X, Search, Key, ShieldCheck, Upload, CheckCircle2, ChevronDown } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function AdminUserManagementPage() {
@@ -45,6 +45,12 @@ export default function AdminUserManagementPage() {
           username: u.email ? u.email.split('@')[0] : 'user',
           role: u.role === 'guru' ? 'Teacher' : (u.role === 'siswa' ? 'Student' : 'Admin'),
           meta: u.class_name || (u.role === 'guru' ? (u.subject || 'Guru Pengajar') : (u.role === 'siswa' ? 'Kelas X-IPA 1' : 'Admin System')),
+          nisn_or_nip: u.nisn_or_nip || '',
+          class_name: u.class_name || '',
+          subject: u.subject || '',
+          specialization: u.specialization || '',
+          phone: u.phone || '',
+          bio: u.bio || '',
           pass: '••••••••'
         }));
         setUsers(formatted);
@@ -112,8 +118,14 @@ export default function AdminUserManagementPage() {
         name: editingUser.name,
         email: editingUser.email,
         role: editingUser.role === 'Teacher' ? 'guru' : (editingUser.role === 'Student' ? 'siswa' : 'admin'),
-        subject: editingUser.meta
-      });
+        nisn_or_nip: editingUser.nisn_or_nip,
+        class_name: editingUser.class_name,
+        subject: editingUser.subject,
+        specialization: editingUser.specialization,
+        phone: editingUser.phone,
+        bio: editingUser.bio,
+        password: editingUser.password || undefined
+      } as any);
       setEditingUser(null);
       await loadUsersFromApi();
     } catch (err) {
@@ -341,16 +353,19 @@ export default function AdminUserManagementPage() {
           {/* Class Filter */}
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
             <span>Filter Kelas:</span>
-            <select
-              value={classFilter}
-              onChange={(e) => setClassFilter(e.target.value)}
-              className="px-3 py-2 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
-            >
-              <option value="all">Semua Kelas / Mapel</option>
-              {availableClasses.map((cls) => (
-                <option key={cls} value={cls}>{cls}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={classFilter}
+                onChange={(e) => setClassFilter(e.target.value)}
+                className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 cursor-pointer appearance-none pr-10"
+              >
+                <option className="bg-white text-slate-900" value="all">Semua Kelas / Mapel</option>
+                {availableClasses.map((cls) => (
+                  <option className="bg-white text-slate-900" key={cls} value={cls}>{cls}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
         </div>
       </div>
@@ -486,7 +501,7 @@ export default function AdminUserManagementPage() {
                   placeholder="e.g. USR-011 atau 20260010"
                   value={newUser.id}
                   onChange={(e) => setNewUser({ ...newUser, id: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
 
@@ -498,7 +513,7 @@ export default function AdminUserManagementPage() {
                   placeholder="e.g. Alexandra Chen"
                   value={newUser.name}
                   onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
 
@@ -510,20 +525,23 @@ export default function AdminUserManagementPage() {
                   placeholder="e.g. user@school.edu"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">Peran (Role)</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                >
-                  <option value="Teacher">Guru / Pengajar</option>
-                  <option value="Student">Siswa / Peserta Didik</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none pr-10"
+                  >
+                    <option className="bg-white text-slate-900" value="Teacher">Guru / Pengajar</option>
+                    <option className="bg-white text-slate-900" value="Student">Siswa / Peserta Didik</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div>
@@ -535,7 +553,7 @@ export default function AdminUserManagementPage() {
                   placeholder={newUser.role === 'Teacher' ? 'e.g. Guru Matematika' : 'e.g. Kelas X-IPA 1'}
                   value={newUser.meta}
                   onChange={(e) => setNewUser({ ...newUser, meta: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
 
@@ -546,7 +564,7 @@ export default function AdminUserManagementPage() {
                   placeholder="Default: password123"
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
 
@@ -592,7 +610,7 @@ export default function AdminUserManagementPage() {
                   required
                   value={editingUser.name}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
 
@@ -603,7 +621,98 @@ export default function AdminUserManagementPage() {
                   required
                   value={editingUser.email}
                   onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Peran (Role)</label>
+                <div className="relative">
+                  <select
+                    value={editingUser.role}
+                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none pr-10"
+                  >
+                    <option className="bg-white text-slate-900" value="Admin">Admin</option>
+                    <option className="bg-white text-slate-900" value="Teacher">Guru / Pengajar</option>
+                    <option className="bg-white text-slate-900" value="Student">Siswa / Peserta Didik</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">NISN / NIP</label>
+                  <input
+                    type="text"
+                    value={editingUser.nisn_or_nip || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, nisn_or_nip: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Kontak / No. HP</label>
+                  <input
+                    type="text"
+                    value={editingUser.phone || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                </div>
+              </div>
+
+              {editingUser.role === 'Teacher' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Mata Pelajaran</label>
+                    <input
+                      type="text"
+                      value={editingUser.subject || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, subject: e.target.value })}
+                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Spesialisasi</label>
+                    <input
+                      type="text"
+                      value={editingUser.specialization || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, specialization: e.target.value })}
+                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    />
+                  </div>
+                </div>
+              ) : editingUser.role === 'Student' ? (
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Kelas</label>
+                  <input
+                    type="text"
+                    value={editingUser.class_name || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, class_name: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                </div>
+              ) : null}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Bio / Catatan Khusus</label>
+                <textarea
+                  rows={2}
+                  value={editingUser.bio || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, bio: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-none"
+                />
+              </div>
+
+              <div className="pt-2">
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Ganti Kata Sandi (Opsional)</label>
+                <input
+                  type="password"
+                  placeholder="Kosongkan jika tidak ingin diubah"
+                  value={editingUser.password || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
 

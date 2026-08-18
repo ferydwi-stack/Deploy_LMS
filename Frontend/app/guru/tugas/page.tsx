@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Plus, ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, X, Download, Award, CheckCircle2, Clock, Filter, ExternalLink, FileText, UploadCloud, Eye } from 'lucide-react';
+import { Plus, ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, X, Download, Award, CheckCircle2, Clock, Filter, ExternalLink, FileText, UploadCloud, Eye, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { api, notifyDataChanged } from '@/lib/api';
@@ -664,17 +664,20 @@ function GuruTugasContent() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">Kategori</label>
-                <select
-                  value={newTask.category}
-                  onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  <option value="Tugas Harian">Tugas Harian</option>
-                  <option value="UTS">UTS</option>
-                  <option value="UAS">UAS</option>
-                  <option value="Remedi UTS">Remedi UTS</option>
-                  <option value="Remedi UAS">Remedi UAS</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={newTask.category}
+                    onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none pr-10"
+                  >
+                    <option className="bg-white text-slate-900" value="Tugas Harian">Tugas Harian</option>
+                    <option className="bg-white text-slate-900" value="UTS">UTS</option>
+                    <option className="bg-white text-slate-900" value="UAS">UAS</option>
+                    <option className="bg-white text-slate-900" value="Remedi UTS">Remedi UTS</option>
+                    <option className="bg-white text-slate-900" value="Remedi UAS">Remedi UAS</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div>

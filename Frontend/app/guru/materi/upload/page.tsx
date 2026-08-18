@@ -14,7 +14,8 @@ import {
   CheckCircle2, 
   X, 
   AlertCircle,
-  Upload
+  Upload,
+  ChevronDown
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -168,16 +169,19 @@ function GuruUnggahMateriContent() {
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Jenis File / Format <span className="text-rose-500">*</span>
               </label>
-              <select
-                value={formData.jenis}
-                onChange={(e) => setFormData({ ...formData, jenis: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition bg-white font-medium"
-              >
-                <option value="PDF">Dokumen PDF (.pdf)</option>
-                <option value="PPT">Presentasi Slides (.ppt / .pptx)</option>
-                <option value="Video">Video Pembelajaran (.mp4 / .mkv)</option>
-                <option value="Dokumen">Dokumen Word (.doc / .docx)</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={formData.jenis}
+                  onChange={(e) => setFormData({ ...formData, jenis: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition appearance-none pr-10"
+                >
+                  <option className="bg-white text-slate-900" value="PDF">Dokumen PDF (.pdf)</option>
+                  <option className="bg-white text-slate-900" value="PPT">Presentasi Slides (.ppt / .pptx)</option>
+                  <option className="bg-white text-slate-900" value="Video">Video Pembelajaran (.mp4 / .mkv)</option>
+                  <option className="bg-white text-slate-900" value="Dokumen">Dokumen Word (.doc / .docx)</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 
