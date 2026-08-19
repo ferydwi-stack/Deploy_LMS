@@ -1,105 +1,82 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Users, Search, X, Eye } from 'lucide-react';
+import { Users, Search, X, Eye, Copy, CheckCircle2 } from 'lucide-react';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { api } from '@/lib/api';
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+  const [copyToast, setCopyToast] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
 
+  const handleCopyJoinCode = (code: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(code);
+    }
+    setCopyToast(`Kode Akses (${code}) berhasil disalin!`);
+    setTimeout(() => setCopyToast(''), 3000);
+  };
+
   // Load Courses and Real Students from MySQL Database
-  const loadDataFromApi = async () => {
-    setIsLoading(true);
+  const loadDataFromApi = useCallback(async () => {
     try {
-      const { api } = await import('@/lib/api');
-      
-      // Fetch Courses & Students from MySQL API
-    const [coursesData, studentsData] = await Promise.all([
-      api.getCourses().catch(() => []),
-      api.getUsers('siswa').catch(() => [])
-    ]);
+      const [coursesData, studentsData] = await Promise.all([
+        api.getCourses().catch(() => []),
+        api.getUsers('siswa').catch(() => [])
+      ]);
 
-    const formattedStudents = Array.isArray(studentsData) ? studentsData.map((s: any) => ({
-      id: s.nisn_or_nip || `USR-00${s.id}`,
-      name: s.name,
-      email: s.email,
-      status: 'Aktif • Hadir'
-    })) : [];
-
-    setStudents(formattedStudents);
-
-    if (Array.isArray(coursesData) && coursesData.length > 0) {
-        const formattedCourses = coursesData.map((c: any) => ({
-      id: c.id,
-      code: c.code || 'MTK-X',
-      joinCode: c.code ? `${c.code}-JOIN` : 'MTK-X-89A',
-      title: c.title,
-      teacher: c.teacher ? c.teacher.name : 'Teacher',
-      studentsCount: c.students_count || 0,
-      materi: c.materials_count || 0,
-      tugas: c.assignments_count || 0,
-      studentsList: Array.isArray(c.students) ? c.students.map((s: any) => ({
+      const formattedStudents = Array.isArray(studentsData) ? studentsData.map((s: any) => ({
         id: s.nisn_or_nip || `USR-00${s.id}`,
         name: s.name,
         email: s.email,
-        status: s.pivot?.status === 'active' ? 'Aktif • Terdaftar' : 'Nonaktif'
-      })) : []
-    }));
-    setCourses(formattedCourses);
-  } else {
-        // Fallback default courses enriched with REAL MySQL students
-        const defaultCourses = [
-          {
-            id: 1,
-            code: 'MTK-X',
-            joinCode: 'MTK-X-89A',
-            title: 'Matematika – X IPA 1',
-            teacher: 'Teacher A',
-            studentsCount: formattedStudents.length,
-            materi: 3,
-            tugas: 2,
-            studentsList: formattedStudents
-          },
-          {
-            id: 2,
-            code: 'FIS-XI',
-            joinCode: 'FIS-XI-42B',
-            title: 'Fisika Kelas XI',
-            teacher: 'Teacher B',
-            studentsCount: formattedStudents.length,
-            materi: 2,
-            tugas: 1,
-            studentsList: formattedStudents
-          },
-          {
-            id: 3,
-            code: 'KIM-XII',
-            joinCode: 'KIM-XII-77C',
-            title: 'Kimia Dasar Kelas XII',
-            teacher: 'Teacher C',
-            studentsCount: formattedStudents.length,
-            materi: 4,
-            tugas: 3,
-            studentsList: formattedStudents
-          }
-        ];
-        setCourses(defaultCourses);
+        status: 'Aktif • Hadir'
+      })) : [];
+
+      setStudents(formattedStudents);
+
+      if (Array.isArray(coursesData) && coursesData.length > 0) {
+        const formattedCourses = coursesData.map((c: any) => {
+          const studentsList = Array.isArray(c.students) ? c.students.map((s: any) => ({
+            id: s.nisn_or_nip || `USR-00${s.id}`,
+            name: s.name,
+            email: s.email,
+            status: s.pivot?.status === 'active' ? 'Aktif • Terdaftar' : 'Nonaktif'
+          })) : [];
+
+          return {
+            id: c.id,
+            code: c.code || 'MTK-X',
+            joinCode: c.code ? `${c.code}-JOIN` : 'MTK-X-89A',
+            title: c.title,
+            teacher: c.teacher ? (typeof c.teacher === 'object' ? c.teacher.name : c.teacher) : 'Teacher',
+            studentsCount: c.students_count || studentsList.length,
+            materi: c.materials_count || 0,
+            tugas: c.assignments_count || 0,
+            studentsList
+          };
+        });
+        setCourses(formattedCourses);
+        return formattedCourses;
+      } else {
+        setCourses([]);
+        return [];
       }
     } catch (e) {
       console.error('Failed to load courses from API:', e);
-    } finally {
-      setIsLoading(false);
+      return [];
     }
-  };
-
-  useEffect(() => {
-    loadDataFromApi();
   }, []);
+
+  const { loading: isLoading, refresh: refreshCourses } = useRealtimeData(
+    loadDataFromApi,
+    4000,
+    [],
+    'lms_courses_updated'
+  );
 
 
   const filteredCourses = courses.filter(c =>
@@ -115,6 +92,13 @@ export default function AdminCoursesPage() {
       title="Monitoring Kelas"
       subtitle="Pemantauan daftar kelas aktif buatan Guru dan status pendaftaran siswa mandiri"
     >
+      {/* Toast Notification */}
+      {copyToast && (
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-2xl flex items-center gap-3 animate-in fade-in">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <span>{copyToast}</span>
+        </div>
+      )}
 
       {/* Top Filter Bar */}
       <div className="bg-white border border-[#D6DEE7] rounded-[22px] p-5 mb-6 shadow-none flex flex-wrap items-center justify-between gap-4">
@@ -170,7 +154,20 @@ export default function AdminCoursesPage() {
               <p className="text-xs text-slate-400 font-medium mb-2">
                 Pengajar: <strong className="text-slate-700">{course.teacher}</strong>
               </p>
-              <div className="mt-4 rounded-2xl bg-white border border-slate-200 px-3 py-2.5 flex items-center justify-between gap-3"><span className="text-[10px] text-slate-400 font-bold uppercase">Kode Akses Siswa<br /><strong className="text-xs text-[#0F172E] font-mono normal-case">{course.joinCode}</strong></span><span className="px-3 py-1.5 bg-[#2563EB] text-white font-bold rounded-xl text-xs">Salin</span></div>
+              <div className="mt-4 rounded-2xl bg-white border border-slate-200 px-3 py-2.5 flex items-center justify-between gap-3">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">
+                  Kode Akses Siswa<br />
+                  <strong className="text-xs text-[#0F172E] font-mono normal-case">{course.joinCode}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyJoinCode(course.joinCode)}
+                  className="px-3 py-1.5 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1 transition cursor-pointer active:scale-95 shadow-sm"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Salin</span>
+                </button>
+              </div>
             </div>
 
             {/* Clickable Total Siswa Pill */}

@@ -19,9 +19,25 @@ export default function AdminAddUserPage() {
     status: 'Aktif',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/admin/users');
+    try {
+      const { api, notifyDataChanged } = await import('@/lib/api');
+      await api.createUser({
+        name: formData.name,
+        email: formData.email,
+        nisn_or_nip: formData.nip,
+        role: formData.role as 'admin' | 'guru' | 'siswa',
+        gender: formData.gender,
+        phone: formData.phone,
+        address: formData.address,
+        password: 'password123',
+      });
+      notifyDataChanged('lms_courses_updated');
+      router.push('/admin/users');
+    } catch (err: any) {
+      alert(err.message || 'Gagal menambahkan user baru.');
+    }
   };
 
   return (

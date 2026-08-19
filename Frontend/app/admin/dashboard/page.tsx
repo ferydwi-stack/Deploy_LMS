@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { Users, BookOpen, GraduationCap, ArrowRight, ShieldCheck, UserCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { api } from '@/lib/api';
 
 export default function AdminDashboardPage() {
   const [counts, setCounts] = useState({
@@ -14,14 +16,11 @@ export default function AdminDashboardPage() {
   });
 
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadDashboardData = async () => {
-    setIsLoading(true);
+  const loadDashboardData = useCallback(async () => {
     setError(null);
     try {
-      const { api } = await import('@/lib/api');
       const [usersData, coursesData] = await Promise.all([
         api.getUsers().catch(() => []),
         api.getCourses().catch(() => [])
@@ -50,17 +49,20 @@ export default function AdminDashboardPage() {
         }));
         setRecentUsers(latest);
       }
+      return { usersList, coursesList };
     } catch (e: any) {
       console.error('Failed to load dashboard data from MySQL:', e);
       setError(e.message || 'Gagal memuat data dashboard. Silakan coba lagi.');
-    } finally {
-      setIsLoading(false);
+      throw e;
     }
-  };
-
-  useEffect(() => {
-    loadDashboardData();
   }, []);
+
+  const { loading: isLoading, refresh: refreshDashboard } = useRealtimeData(
+    loadDashboardData,
+    4000,
+    [],
+    'lms_courses_updated'
+  );
 
   const stats = [
     {

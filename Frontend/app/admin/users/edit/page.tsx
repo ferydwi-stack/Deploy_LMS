@@ -1,27 +1,81 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Save, User, Mail, Lock, Key, CheckCircle2, ChevronDown } from 'lucide-react';
+import { api, notifyDataChanged } from '@/lib/api';
 
-export default function AdminEditUserPage() {
+function EditUserContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const userId = searchParams.get('id');
+
   const [formData, setFormData] = useState({
-    name: 'Ahmad Fauzi, S.Pd',
-    email: 'fauzi.guru@edulearn.id',
-    nip: '198506122010011005',
+    name: '',
+    email: '',
+    nip: '',
     role: 'guru',
     gender: 'Laki-laki',
-    phone: '081298765432',
-    address: 'Jl. Merdeka No. 45, Jakarta Selatan',
+    phone: '',
+    address: '',
     status: 'Aktif',
+    newPassword: ''
   });
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadUser = async () => {
+      if (!userId) return;
+      try {
+        const usersData = await api.getUsers().catch(() => []);
+        const usersList = Array.isArray(usersData) ? usersData : ((usersData as any)?.users || []);
+        const found = usersList.find((u: any) => String(u.id) === String(userId));
+        if (found) {
+          setFormData({
+            name: found.name || '',
+            email: found.email || '',
+            nip: found.nisn_or_nip || '',
+            role: found.role || 'guru',
+            gender: found.gender || 'Laki-laki',
+            phone: found.phone || '',
+            address: found.address || '',
+            status: 'Aktif',
+            newPassword: ''
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load user detail:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUser();
+  }, [userId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/admin/users');
+    if (!userId) return;
+    try {
+      const payload: any = {
+        name: formData.name,
+        email: formData.email,
+        nisn_or_nip: formData.nip,
+        role: formData.role,
+        gender: formData.gender,
+        phone: formData.phone,
+        address: formData.address,
+      };
+      if (formData.newPassword) {
+        payload.password = formData.newPassword;
+      }
+      await api.updateUser(Number(userId), payload);
+      notifyDataChanged('lms_courses_updated');
+      router.push('/admin/users');
+    } catch (err: any) {
+      alert(err.message || 'Gagal memperbarui data user.');
+    }
   };
 
   return (
@@ -113,6 +167,8 @@ export default function AdminEditUserPage() {
             <input
               type="password"
               placeholder="Masukkan password baru..."
+              value={formData.newPassword}
+              onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
               className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
             />
           </div>
@@ -135,5 +191,13 @@ export default function AdminEditUserPage() {
         </form>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function AdminEditUserPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading...</div>}>
+      <EditUserContent />
+    </Suspense>
   );
 }

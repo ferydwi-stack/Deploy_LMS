@@ -22,8 +22,9 @@ export default function GuruDashboardPage() {
         throw e;
       }
     },
-    45000,
-    [currentUser?.id]
+    4000,
+    [currentUser?.id],
+    'lms_courses_updated'
   );
 
   const isLoading = authLoading || dataLoading;

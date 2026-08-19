@@ -21,31 +21,44 @@ import {
 
 function SubmitTugasContent() {
   const searchParams = useSearchParams();
+  const assignmentId = searchParams.get('assignment_id') || searchParams.get('id') || '1';
   const courseId = searchParams.get('course_id') || '1';
-  const courseTitle = searchParams.get('title') || 'Kelas';
-  const courseTeacher = searchParams.get('teacher') || 'Guru';
-  const courseCode = searchParams.get('code') || 'COURSE';
+  const courseTitle = searchParams.get('title') || 'Kelas Pembelajaran';
+  const courseTeacher = searchParams.get('teacher') || 'Guru Pengajar';
+  const courseCode = searchParams.get('code') || 'MAPEL';
   const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
+  
   const [comment, setComment] = useState('');
-  const [selectedFile, setSelectedFile] = useState<{ name: string; size: string } | null>({
-    name: 'BudiSantoso_Tugas1_PersamaanKuadrat.pdf',
-    size: '1.4 MB',
-  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [taskDetail, setTaskDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  React.useEffect(() => {
+    const loadAssignment = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const assignments = await api.getAssignments(courseId).catch(() => []);
+        if (Array.isArray(assignments)) {
+          const found = assignments.find((a: any) => String(a.id) === String(assignmentId)) || assignments[0];
+          if (found) {
+            setTaskDetail(found);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load assignment:', e);
+      }
+    };
+    loadAssignment();
+  }, [assignmentId, courseId]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      setSelectedFile({
-        name: file.name,
-        size: `${sizeMB} MB`,
-      });
+      setSelectedFile(e.target.files[0]);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
       alert('Harap upload file tugas Anda terlebih dahulu!');
@@ -53,11 +66,25 @@ function SubmitTugasContent() {
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const { api, notifyDataChanged } = await import('@/lib/api');
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      if (comment) formData.append('note', comment);
+
+      await api.submitAssignment(Number(taskDetail?.id || assignmentId), formData);
+      notifyDataChanged('lms_courses_updated');
       setIsSuccess(true);
-    }, 1200);
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengumpulkan tugas. Silakan coba lagi.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const displayTaskTitle = taskDetail?.title || searchParams.get('task_title') || 'Tugas Pembelajaran';
+  const displayDueDate = taskDetail?.due_date ? new Date(taskDetail.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+  const displayInstruction = taskDetail?.instruction || 'Silakan kerjakan tugas sesuai instruksi dan unggah file jawaban Anda di bawah.';
 
   return (
     <DashboardLayout
@@ -82,7 +109,7 @@ function SubmitTugasContent() {
             <div className="flex-1">
               <h4 className="font-extrabold text-base text-emerald-900">Tugas Berhasil Dikumpulkan!</h4>
               <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-                Hasil pekerjaan Anda telah terkirim kepada Bapak Ahmad Fauzi, S.Pd pada {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} pukul 23:22 WIB.
+                Hasil pekerjaan Anda telah terkirim kepada Guru {courseTeacher} pada {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}.
               </p>
               <div className="mt-3 flex items-center gap-3">
                 <Link
@@ -95,7 +122,7 @@ function SubmitTugasContent() {
                   onClick={() => setIsSuccess(false)}
                   className="text-xs font-bold text-emerald-700 hover:underline"
                 >
-                  Edit Pengiriman
+                  Kirim Ulang
                 </button>
               </div>
             </div>
@@ -105,38 +132,34 @@ function SubmitTugasContent() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
             <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-extrabold text-xs rounded-lg uppercase tracking-wider">
-              Tugas #1
+              {courseCode}
             </span>
             <span className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
-              Tenggat: 25 Jul 2026, 23:59 WIB
+              Tenggat: {displayDueDate}
             </span>
           </div>
 
           <div>
             <h2 className="text-xl font-extrabold text-slate-900">
-              Tugas 1 Persamaan Kuadrat
+              {displayTaskTitle}
             </h2>
             <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500 font-medium">
               <span className="flex items-center gap-1.5 text-slate-700 font-semibold">
                 <BookOpen className="w-4 h-4 text-indigo-600" />
-                Matematika Wajib
+                {courseTitle}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1.5">
                 <User className="w-4 h-4 text-slate-400" />
-                Guru: <strong className="text-slate-800">Ahmad Fauzi, S.Pd</strong>
+                Guru: <strong className="text-slate-800">{courseTeacher}</strong>
               </span>
             </div>
           </div>
 
           <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2 text-xs text-slate-600">
             <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Petunjuk Pengerjaan:</h4>
-            <ul className="list-disc list-inside space-y-1 text-slate-600 leading-relaxed">
-              <li>Kerjakan seluruh soal nomor 1 sampai 10 dari Modul 3 Persamaan Kuadrat.</li>
-              <li>Tuliskan langkah penyelesaian secara lengkap dan sistematis.</li>
-              <li>Upload berkas jawaban Anda dalam format <strong>PDF, DOCX, atau ZIP</strong> (Maksimal 10 MB).</li>
-            </ul>
+            <p className="text-slate-600 leading-relaxed whitespace-pre-line">{displayInstruction}</p>
           </div>
         </div>
 
@@ -179,7 +202,7 @@ function SubmitTugasContent() {
                     <p className="font-bold text-slate-900 text-xs sm:text-sm truncate">
                       {selectedFile.name}
                     </p>
-                    <p className="text-[11px] text-slate-500 font-medium">Ukuran: {selectedFile.size}</p>
+                    <p className="text-[11px] text-slate-500 font-medium">Ukuran: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
                   </div>
                 </div>
                 <button

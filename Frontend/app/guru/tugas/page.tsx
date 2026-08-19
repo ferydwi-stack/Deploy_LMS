@@ -13,10 +13,10 @@ function GuruTugasContent() {
   const searchParams = useSearchParams();
   const { user: currentUser } = useAuth();
 
-  const courseTitle = searchParams.get('title') || 'Biologi Sel & Genetik Kelas XII';
-  const courseTeacher = searchParams.get('teacher') || (currentUser?.name || '');
-  const courseCode = searchParams.get('code') || 'BIO-XII';
-  const courseId = searchParams.get('course_id') || '2';
+  const courseTitle = searchParams.get('title') || 'Kelas Pembelajaran';
+  const courseTeacher = searchParams.get('teacher') || (currentUser?.name || 'Guru');
+  const courseCode = searchParams.get('code') || 'MAPEL';
+  const courseId = searchParams.get('course_id') || '1';
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);

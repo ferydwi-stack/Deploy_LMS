@@ -112,38 +112,46 @@ export default function SiswaDashboardPage() {
           <h3 className="text-base font-bold text-slate-900">Card Notifikasi Pembelajaran (Klik Untuk Buka Kelas)</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {notifications.map((notif) => (
-            <Link
-              key={notif.id}
-              href={notif.link}
-              className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs hover:shadow-md hover:border-blue-200 transition group flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`p-2.5 rounded-2xl ${notif.iconBg}`}>
-                    {notif.icon}
+        {notifications.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {notifications.map((notif) => (
+              <Link
+                key={notif.id}
+                href={notif.link}
+                className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs hover:shadow-md hover:border-blue-200 transition group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-2.5 rounded-2xl ${notif.iconBg}`}>
+                      {notif.icon}
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${notif.badgeBg}`}>
+                      {notif.badge}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${notif.badgeBg}`}>
-                    {notif.badge}
-                  </span>
+
+                  <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#2563EB] transition leading-snug mb-1">
+                    {notif.title}
+                  </h4>
+                  <p className="text-xs text-slate-400 font-medium">{notif.course}</p>
                 </div>
 
-                <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#2563EB] transition leading-snug mb-1">
-                  {notif.title}
-                </h4>
-                <p className="text-xs text-slate-400 font-medium">{notif.course}</p>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#2563EB]">
-                <span className="text-[11px] text-slate-400 font-medium">{notif.time}</span>
-                <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Buka kelas <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#2563EB]">
+                  <span className="text-[11px] text-slate-400 font-medium">{notif.time}</span>
+                  <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    Buka kelas <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center shadow-xs">
+            <Bell className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-xs font-bold text-slate-700">Belum Ada Notifikasi Baru</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Pengumuman tugas, materi modul baru, atau penilaian ujian dari Guru akan tampil di sini.</p>
+          </div>
+        )}
       </div>
 
       {/* Stat Cards Row */}

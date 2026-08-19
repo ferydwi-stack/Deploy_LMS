@@ -176,8 +176,8 @@ export default function GuruProfilePage() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   Pengajar Aktif
                 </span>
-                <span className="px-3.5 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-2xl text-xs border border-slate-200/80">
-                  Wali Kelas XII IPA
+                <span className="px-3.5 py-1.5 bg-blue-50 text-[#2563EB] font-bold rounded-2xl text-xs border border-blue-200/80">
+                  {formData.subject || 'Guru Pengajar'}
                 </span>
               </div>
 
@@ -337,22 +337,22 @@ export default function GuruProfilePage() {
 
               <div className="space-y-4 text-xs">
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-slate-400 font-medium">Pendidikan Terakhir</span>
-                  <strong className="text-slate-800 font-bold">S2 Pend. Biologi / Sains</strong>
+                  <span className="text-slate-400 font-medium">Mata Pelajaran Utama</span>
+                  <strong className="text-slate-800 font-bold">{formData.subject || 'Guru Pengajar'}</strong>
                 </div>
                 <div className="flex items-center justify-between py-1 border-t border-slate-100">
-                  <span className="text-slate-400 font-medium">Status Kepegawaian</span>
+                  <span className="text-slate-400 font-medium">Status Akun</span>
                   <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg text-[11px]">
-                    Guru Tetap (PNS)
+                    Aktif Terverifikasi
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1 border-t border-slate-100">
-                  <span className="text-slate-400 font-medium">Unit Kerja</span>
-                  <strong className="text-slate-800 font-bold">SMA EduSchool</strong>
+                  <span className="text-slate-400 font-medium">Role Sistem</span>
+                  <strong className="text-slate-800 font-bold font-mono">GURU (TEACHER)</strong>
                 </div>
                 <div className="flex items-center justify-between py-1 border-t border-slate-100">
-                  <span className="text-slate-400 font-medium">Sertifikasi Pendidik</span>
-                  <span className="text-emerald-600 font-bold">Sertifikasi Biologi (Lulus)</span>
+                  <span className="text-slate-400 font-medium">Total Kelas Diampu</span>
+                  <span className="text-blue-600 font-bold">{profileStats.courses} Kelas Terdaftar</span>
                 </div>
               </div>
             </div>

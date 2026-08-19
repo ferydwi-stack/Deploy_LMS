@@ -40,8 +40,9 @@ export default function GuruCoursesPage() {
       if (!user) return Promise.resolve([]);
       return api.getCourses().catch(() => []);
     },
-    30000,
-    [user?.id]
+    4000,
+    [user?.id],
+    'lms_courses_updated'
   );
 
   useEffect(() => {
@@ -195,7 +196,7 @@ export default function GuruCoursesPage() {
                 </button>
 
                 <Link
-                  href={`/guru/materi?course_id=${course.id}&title=${encodeURIComponent(course.title)}&teacher=${encodeURIComponent(course.teacher)}`}
+                  href={`/guru/materi?course_id=${course.id}&title=${encodeURIComponent(course.title)}&teacher=${encodeURIComponent(course.teacher)}&code=${encodeURIComponent(course.code)}`}
                   className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-[#2563EB] font-bold rounded-xl transition flex items-center gap-1 cursor-pointer"
                 >
                   <span>Masuk Kelas</span>

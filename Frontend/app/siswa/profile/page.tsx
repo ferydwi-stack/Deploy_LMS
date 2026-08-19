@@ -354,17 +354,17 @@ export default function SiswaProfilePage() {
 
               <div className="space-y-3 text-xs">
                 <div className="flex items-center justify-between p-3 bg-[#F8FAFC] rounded-2xl">
-                  <span className="text-slate-500 font-medium">Instansi</span>
-                  <span className="font-bold text-slate-800">SMA EduSchool</span>
+                  <span className="text-slate-500 font-medium">Kelas / Rombel</span>
+                  <span className="font-bold text-slate-800">{user?.class_name || formData.class || user?.specialization || 'Siswa Reguler'}</span>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-[#F8FAFC] rounded-2xl">
-                  <span className="text-slate-500 font-medium">Jurusan / Peminatan</span>
-                  <span className="font-bold text-slate-800">IPA (Sains)</span>
+                  <span className="text-slate-500 font-medium">Kelas Diikuti</span>
+                  <span className="font-bold text-slate-800 font-mono">{profileStats.coursesCount} Kelas</span>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-[#F8FAFC] rounded-2xl">
-                  <span className="text-slate-500 font-medium">Status Pelajar</span>
+                  <span className="text-slate-500 font-medium">Status Akun</span>
                   <span className="font-bold text-emerald-600">Aktif Terdaftar</span>
                 </div>
               </div>

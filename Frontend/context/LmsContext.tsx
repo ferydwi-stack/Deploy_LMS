@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { api, notifyDataChanged } from '@/lib/api';
 import type { Course as ApiCourse, User } from '@/types/api';
 
 export interface Course {
@@ -106,10 +106,16 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
       refreshCourses();
     };
 
+    const handleCoursesUpdated = () => {
+      refreshCourses();
+    };
+
     if (typeof window !== 'undefined') {
       window.addEventListener('lms_user_updated', handleUserUpdated);
+      window.addEventListener('lms_courses_updated', handleCoursesUpdated);
       return () => {
         window.removeEventListener('lms_user_updated', handleUserUpdated);
+        window.removeEventListener('lms_courses_updated', handleCoursesUpdated);
       };
     }
   }, []);
@@ -127,6 +133,7 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
       const apiCourse = (response as any).data || response;
       const newCourse = mapApiCourseToLocal(apiCourse as ApiCourse);
       setEnrolledCourses(prev => [newCourse, ...prev]);
+      notifyDataChanged('lms_courses_updated');
       return newCourse;
     } catch (error) {
       console.error('Failed to create course:', error);
@@ -138,6 +145,7 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.updateCourse(Number(id), updatedData as any);
       await refreshCourses();
+      notifyDataChanged('lms_courses_updated');
     } catch (error) {
       console.error('Failed to update course:', error);
       throw error;
@@ -149,6 +157,7 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
       await api.deleteCourse(id);
       setEnrolledCourses(prev => prev.filter(c => c.id !== id));
       setMyCourseIds(prev => prev.filter(cId => cId !== id));
+      notifyDataChanged('lms_courses_updated');
     } catch (error) {
       console.error('Failed to delete course:', error);
       throw error;
@@ -164,6 +173,7 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
       setMutatingCourseId(id);
       await api.enrollCourse(Number(id));
       await refreshCourses();
+      notifyDataChanged('lms_courses_updated');
       return { success: true, message: 'Berhasil bergabung ke kelas!' };
     } catch (error: any) {
       return { success: false, message: error.message || 'Gagal bergabung ke kelas.' };
@@ -177,6 +187,7 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
       setMutatingCourseId(id);
       await api.leaveCourse(Number(id));
       await refreshCourses();
+      notifyDataChanged('lms_courses_updated');
     } catch (error) {
       console.error('Failed to leave course:', error);
       throw error;
@@ -191,6 +202,7 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await api.enrollByCode(cleanCode);
       await refreshCourses();
+      notifyDataChanged('lms_courses_updated');
       
       return { 
         success: true, 
@@ -209,6 +221,7 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.kickStudent(Number(courseId), Number(studentId));
       await refreshCourses();
+      notifyDataChanged('lms_courses_updated');
     } catch (error) {
       console.error('Failed to kick student:', error);
       throw error;

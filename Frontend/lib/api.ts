@@ -53,9 +53,26 @@ export const getCurrentUser = (): any | null => {
   return null;
 };
 
+let realtimeChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    realtimeChannel = new BroadcastChannel('lms_realtime_sync');
+    realtimeChannel.onmessage = (event) => {
+      if (event.data && typeof event.data === 'string') {
+        window.dispatchEvent(new CustomEvent(event.data));
+      }
+    };
+  } catch (e) {}
+}
+
 export const notifyDataChanged = (eventName: string): void => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(eventName));
+    if (realtimeChannel) {
+      try {
+        realtimeChannel.postMessage(eventName);
+      } catch (e) {}
+    }
   }
 };
 

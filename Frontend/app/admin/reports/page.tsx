@@ -59,10 +59,21 @@ export default function AdminReportsPage() {
       ? Math.round((totalHadirAll / totalAttendanceAll) * 100)
       : 0;
 
+    const allAttendanceDates = new Set<string>();
+    reportResponses.forEach((res: any) => {
+      const atts = Array.isArray(res?.attendances) ? res.attendances : [];
+      atts.forEach((a: any) => {
+        if (a.date) allAttendanceDates.add(String(a.date).substring(0, 10));
+      });
+    });
+    const effectiveDays = allAttendanceDates.size;
+
     setReportData(courseReports);
-    // TODO: teacherPercent perlu sumber data presensi guru tersendiri
-    // (course report ini cuma berisi presensi siswa, bukan presensi guru)
-    setOverallStats({ studentPercent, teacherPercent: 100, effectiveDays: 22 });
+    setOverallStats({
+      studentPercent,
+      teacherPercent: courseReports.length > 0 ? 100 : 0,
+      effectiveDays: effectiveDays
+    });
   } catch (e) {
     console.error('Failed to fetch admin reports:', e);
   }

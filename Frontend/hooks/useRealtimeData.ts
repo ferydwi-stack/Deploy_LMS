@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 
 export function useRealtimeData<T>(
   fetchData: () => Promise<T>,
-  refreshInterval = 45000,
+  refreshInterval = 4000,
   deps: readonly unknown[] = [],
   eventName?: string
 ) {

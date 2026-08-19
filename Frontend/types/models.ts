@@ -5,8 +5,11 @@ export interface User {
   email: string;
   role: 'admin' | 'guru' | 'siswa';
   nisn_or_nip: string;
+  class_name?: string;
   specialization?: string;
   subject?: string;
+  gender?: string;
+  address?: string;
   phone?: string;
   bio?: string;
 }

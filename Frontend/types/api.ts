@@ -14,6 +14,8 @@ export interface User {
   class_name?: string;
   subject?: string;
   specialization?: string;
+  gender?: string;
+  address?: string;
   phone?: string;
   bio?: string;
 }

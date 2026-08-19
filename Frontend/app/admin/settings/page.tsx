@@ -21,8 +21,18 @@ export default function AdminSettingsPage() {
         const { api } = await import('@/lib/api');
         const response: any = await api.getAdminSettings();
         const settings = response?.settings || response?.data || response || {};
+        if (settings.school_name) setSchoolName(settings.school_name);
+        if (settings.admin_email) setAdminEmail(settings.admin_email);
+        if (settings.academic_year) setAcademicYear(settings.academic_year);
+        if (settings.semester) setSemester(settings.semester);
+        if (settings.allow_student_self_enroll !== undefined) {
+          setAllowStudentSelfEnroll(settings.allow_student_self_enroll === 'true' || settings.allow_student_self_enroll === true);
+        }
+        if (settings.email_notifications !== undefined) {
+          setEmailNotifications(settings.email_notifications === 'true' || settings.email_notifications === true);
+        }
         if (settings.allow_user_reset_password !== undefined) {
-          setAllowUserResetPassword(settings.allow_user_reset_password === 'true');
+          setAllowUserResetPassword(settings.allow_user_reset_password === 'true' || settings.allow_user_reset_password === true);
         }
       } catch (error) {
         console.error('Gagal memuat pengaturan admin:', error);
