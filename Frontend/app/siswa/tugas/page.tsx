@@ -215,60 +215,61 @@ function SiswaTugasContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6 border-b border-slate-200 text-sm font-bold pt-2">
+        {/* Sub-Navigation Tabs */}
+        <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 text-xs sm:text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-none">
           <Link
             href={`/siswa/materi${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
+            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition shrink-0"
           >
-            <BookOpen className="w-4 h-4 text-slate-400" />
+            <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
             <span>Materi Pembelajaran</span>
           </Link>
           <Link
             href={`/siswa/tugas${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-[#2563EB] border-b-2 border-[#2563EB]"
+            className="flex items-center gap-2 pb-3 text-[#2563EB] border-b-2 border-[#2563EB] shrink-0"
           >
-            <FileCheck2 className="w-4 h-4 text-[#2563EB]" />
+            <FileCheck2 className="w-4 h-4 text-[#2563EB] shrink-0" />
             <span>Tugas Kelas</span>
           </Link>
           <Link
             href={`/siswa/absensi${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
+            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition shrink-0"
           >
-            <CalendarCheck className="w-4 h-4 text-slate-400" />
+            <CalendarCheck className="w-4 h-4 text-slate-400 shrink-0" />
             <span>Kehadiran / Absensi</span>
           </Link>
         </div>
       </div>
 
       {/* Section Header & Filter Pills */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <h3 className="text-lg font-bold text-slate-900 tracking-tight">Daftar Penugasan</h3>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Daftar Penugasan</h3>
 
-        <div className="flex items-center gap-1.5 bg-[#F8FAFC] p-1.5 rounded-2xl border border-slate-200/80">
+        <div className="flex items-center gap-1.5 bg-[#F8FAFC] p-1.5 rounded-2xl border border-slate-200/80 overflow-x-auto whitespace-nowrap scrollbar-none max-w-full">
           <button
             onClick={() => setFilterStatus('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${filterStatus === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${filterStatus === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
               }`}
           >
             Semua ({tasks.length})
           </button>
           <button
             onClick={() => setFilterStatus('pending')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${filterStatus === 'pending' ? 'bg-amber-500 text-white' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${filterStatus === 'pending' ? 'bg-amber-500 text-white' : 'text-slate-500 hover:text-slate-900'
               }`}
           >
             Perlu Dikerjakan ({tasks.filter(t => t.status === 'Belum Dikumpulkan').length})
           </button>
           <button
             onClick={() => setFilterStatus('submitted')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${filterStatus === 'submitted' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${filterStatus === 'submitted' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-900'
               }`}
           >
             Sudah Dikirim ({tasks.filter(t => t.status === 'Sudah Dikumpul').length})
           </button>
           <button
             onClick={() => setFilterStatus('graded')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${filterStatus === 'graded' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${filterStatus === 'graded' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-900'
               }`}
           >
             Sudah Dinilai ({tasks.filter(t => t.status === 'Sudah Dinilai').length})

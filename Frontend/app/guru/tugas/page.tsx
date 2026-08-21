@@ -238,73 +238,77 @@ function GuruTugasContent() {
         </div>
 
         {/* Sub-Navigation Tabs */}
-        <div className="flex items-center gap-6 border-b border-slate-200 text-sm font-bold pt-2">
+        <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 text-xs sm:text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-none">
           <Link
             href={`/guru/materi${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
+            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition shrink-0"
           >
-            <BookOpen className="w-4 h-4 text-slate-400" />
+            <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
             <span>Materi Pembelajaran</span>
           </Link>
           <Link
             href={`/guru/tugas${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-[#2563EB] border-b-2 border-[#2563EB]"
+            className="flex items-center gap-2 pb-3 text-[#2563EB] border-b-2 border-[#2563EB] shrink-0"
           >
-            <FileCheck2 className="w-4 h-4 text-[#2563EB]" />
+            <FileCheck2 className="w-4 h-4 text-[#2563EB] shrink-0" />
             <span>Tugas Kelas</span>
           </Link>
           <Link
             href={`/guru/absensi${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
+            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition shrink-0"
           >
-            <CalendarCheck className="w-4 h-4 text-slate-400" />
+            <CalendarCheck className="w-4 h-4 text-slate-400 shrink-0" />
             <span>Kehadiran / Absensi</span>
           </Link>
         </div>
       </div>
 
       {/* Action Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-slate-900 tracking-tight">Daftar Tugas Aktif</h3>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Daftar Tugas Aktif</h3>
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="px-5 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center gap-2 cursor-pointer"
+          className="px-4 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Buat Tugas Baru</span>
         </button>
       </div>
 
-      {/* Task List Grid */}
+      {/* Task List */}
       <div className="space-y-4">
         {isLoading ? (
           [1, 2].map((n) => (
-            <div key={n} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs animate-pulse space-y-3">
-              <div className="h-5 w-1/3 bg-slate-200 rounded-md"></div>
-              <div className="h-4 w-1/4 bg-slate-100 rounded-md"></div>
+            <div key={n} className="p-5 bg-white border border-slate-100 rounded-3xl animate-pulse flex items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="h-4 w-20 bg-slate-200 rounded-md"></div>
+                <div className="h-5 w-48 bg-slate-200 rounded-md"></div>
+                <div className="h-3 w-32 bg-slate-100 rounded-md"></div>
+              </div>
+              <div className="h-10 w-28 bg-slate-200 rounded-2xl"></div>
             </div>
           ))
         ) : tugasList.length > 0 ? (
           tugasList.map((tugas) => (
             <div
               key={tugas.id}
-              className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="flex flex-col md:flex-row md:items-center justify-between p-4 sm:p-5 bg-white border border-slate-100 rounded-3xl gap-4 hover:border-blue-200 transition shadow-xs"
             >
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 mt-0.5">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
                   <FileEdit className="w-5 h-5" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="px-2.5 py-0.5 bg-blue-100/70 text-[#2563EB] font-bold rounded-full text-[10px] uppercase">
                       {tugas.category}
                     </span>
                     <span className="text-xs text-slate-400 font-mono">Tenggat: {tugas.deadline}</span>
                   </div>
-                  <h4 className="text-base font-bold text-slate-900 leading-snug">{tugas.title}</h4>
+                  <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-snug break-words">{tugas.title}</h4>
                   {tugas.attachment && (
-                    <p className="text-xs text-slate-400 font-mono mt-1">Lampiran: {String(tugas.attachment).split('/').pop()}</p>
+                    <p className="text-xs text-slate-400 font-mono mt-1 truncate max-w-xs sm:max-w-md">Lampiran: {String(tugas.attachment).split('/').pop()}</p>
                   )}
                   {!tugas.attachment && tugas.instruction && (
                     <p className="text-xs text-slate-400 mt-1 line-clamp-1">{tugas.instruction.replace(/https?:\/\/\S+/g, '').trim()}</p>
@@ -312,32 +316,32 @@ function GuruTugasContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                <div className="text-right hidden sm:block">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between md:justify-end gap-3 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+                <div className="text-left sm:text-right">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status Pengumpulan</p>
                   <p className="text-xs font-bold text-slate-900 font-mono">{tugas.submittedCount} / {tugas.totalStudents} Siswa</p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                   <button
                     onClick={() => {
                       setItemToDelete(tugas);
                       setIsDeleteModalOpen(true);
                     }}
-                    className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-2xl text-xs flex items-center gap-1.5 transition cursor-pointer"
                   >
                     <span>Hapus</span>
                   </button>
                   <button
                     onClick={() => setPreviewTask(tugas)}
-                    className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2563EB] font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-50 hover:bg-blue-100 text-[#2563EB] font-bold rounded-2xl text-xs flex items-center gap-1.5 transition cursor-pointer"
                   >
                     <Eye className="w-4 h-4" />
-                    <span className="hidden sm:inline">Preview</span>
+                    <span>Preview</span>
                   </button>
                   <button
                     onClick={() => handleOpenTaskModal(tugas)}
-                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs flex items-center gap-1.5 transition cursor-pointer"
                   >
                     <Award className="w-4 h-4 text-amber-400" />
                     <span>Periksa & Beri Nilai</span>
@@ -518,28 +522,28 @@ function GuruTugasContent() {
 
       {/* Modal Preview Tugas */}
       {previewTask && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
                   <FileEdit className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">{previewTask.title}</h3>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-slate-900 truncate">{previewTask.title}</h3>
                   <p className="text-xs text-slate-400 font-medium">Tenggat: {previewTask.deadline}</p>
                 </div>
               </div>
               <button
                 onClick={() => setPreviewTask(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0 ml-2"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4">
-              <div className="bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-6 space-y-3">
+              <div className="bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-4 sm:p-6 space-y-3">
                 <p className="text-xs font-bold text-slate-800 uppercase tracking-wider">Deskripsi & Instruksi:</p>
                 <p className="text-xs text-slate-600 font-medium whitespace-pre-wrap break-words">
                   {previewTask.instruction || 'Tidak ada deskripsi.'}
@@ -547,16 +551,16 @@ function GuruTugasContent() {
               </div>
 
               {previewTask.attachmentPath && (
-                <div className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-700 max-w-[200px] truncate">{previewTask.attachment}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-xl border border-slate-200 bg-slate-50 gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <FileText className="w-5 h-5 text-slate-400 shrink-0" />
+                    <span className="text-xs font-bold text-slate-700 truncate">{previewTask.attachment}</span>
                   </div>
                   <a
                     href={getStorageUrl(previewTask.attachmentPath)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-700 transition"
+                    className="px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-700 transition text-center shrink-0"
                   >
                     Unduh File
                   </a>
@@ -564,10 +568,10 @@ function GuruTugasContent() {
               )}
             </div>
 
-            <div className="pt-6 mt-4 border-t border-slate-100 flex justify-end">
+            <div className="pt-5 mt-4 border-t border-slate-100 flex justify-end">
               <button
                 onClick={() => setPreviewTask(null)}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer text-center"
               >
                 Tutup Pratinjau
               </button>
@@ -578,13 +582,13 @@ function GuruTugasContent() {
 
       {/* Modal Form Input Nilai */}
       {selectedSubmission && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-60 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">Beri Nilai: {selectedSubmission.name}</h3>
+              <h3 className="text-base font-bold text-slate-900 truncate">Beri Nilai: {selectedSubmission.name}</h3>
               <button
                 onClick={() => setSelectedSubmission(null)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 shrink-0 ml-2"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -615,17 +619,17 @@ function GuruTugasContent() {
                 ></textarea>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setSelectedSubmission(null)}
-                  className="px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-2xl transition cursor-pointer text-center"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-md transition cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-md transition cursor-pointer text-center"
                 >
                   Simpan Nilai
                 </button>
@@ -637,10 +641,10 @@ function GuruTugasContent() {
 
       {/* Modal Form Buat Tugas Baru */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">Buat Tugas Baru</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Buat Tugas Baru</h3>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
                 className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
@@ -700,7 +704,7 @@ function GuruTugasContent() {
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
-                  Gunakan field ini untuk share link tugas (Google Drive, MediaFire, dll) jika tidak upload file
+                  Gunakan field ini untuk share link tugas jika tidak upload file
                 </p>
               </div>
 
@@ -731,7 +735,7 @@ function GuruTugasContent() {
                   <div className="mt-3 space-y-1">
                     {modalFiles.map((file, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 bg-slate-100 rounded-lg text-xs">
-                        <span className="truncate text-slate-700">{file.name}</span>
+                        <span className="truncate text-slate-700 max-w-[200px]">{file.name}</span>
                         <button
                           type="button"
                           onClick={() => removeModalFile(idx)}
@@ -745,17 +749,17 @@ function GuruTugasContent() {
                 )}
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => { setIsCreateModalOpen(false); setModalFiles([]); }}
-                  className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer text-center"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition cursor-pointer text-center"
                 >
                   Simpan Tugas
                 </button>
