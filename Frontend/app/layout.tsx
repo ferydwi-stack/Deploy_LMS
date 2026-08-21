@@ -5,6 +5,11 @@ import { LmsProvider } from '@/context/LmsContext';
 export const metadata: Metadata = {
   title: 'EduSchool - School Platform',
   description: 'Platform Pembelajaran & Manajemen Sekolah Terpadu untuk Admin, Guru, dan Siswa',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export const viewport: Viewport = {

@@ -311,7 +311,7 @@ export default function AdminUserManagementPage() {
     <DashboardLayout
       role="admin"
       title="User Management"
-      subtitle="Kelola akun pengguna: edit, hapus, reset sandi, import massal, dan filter data Guru & Siswa"
+      subtitle="Kelola dan pantau seluruh akun pengguna sistem"
     >
       {/* Banner / Success Toast */}
       {resetSuccessMsg && (

@@ -18,9 +18,7 @@ import {
   BookOpen,
   Settings,
   Loader2,
-  Crown,
-  Database,
-  Server
+  Crown
 } from 'lucide-react';
 
 export default function AdminProfilePage() {
@@ -347,18 +345,8 @@ export default function AdminProfilePage() {
                   <span className="text-blue-600 font-bold" suppressHydrationWarning>{stats.totalCourses} Kelas Aktif</span>
                 </div>
                 <div className="flex items-center justify-between py-1 border-t border-slate-100">
-                  <span className="text-slate-400 font-medium">Database</span>
-                  <span className="text-emerald-600 font-bold flex items-center gap-1">
-                    <Database className="w-3 h-3" />
-                    MySQL Cloud (Aiven)
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-1 border-t border-slate-100">
-                  <span className="text-slate-400 font-medium">Hosting</span>
-                  <span className="text-slate-700 font-bold flex items-center gap-1">
-                    <Server className="w-3 h-3" />
-                    Vercel Serverless
-                  </span>
+                  <span className="text-slate-400 font-medium">Tingkat Akses</span>
+                  <span className="text-purple-600 font-bold">Penuh (Full Control)</span>
                 </div>
               </div>
             </div>
