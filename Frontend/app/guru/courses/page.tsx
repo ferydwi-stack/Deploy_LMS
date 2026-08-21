@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
-import { Plus, Users, BookOpen, X, Copy, CheckCircle2, Edit3, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Users, BookOpen, X, Copy, CheckCircle2, Edit3, Trash2, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { api } from '@/lib/api';
@@ -15,6 +15,7 @@ export default function GuruCoursesPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [selectedStudentCourse, setSelectedStudentCourse] = useState<any>(null);
   const [copyToast, setCopyToast] = useState('');
@@ -83,6 +84,7 @@ export default function GuruCoursesPage() {
     e.preventDefault();
     if (!newCourse.name) return;
 
+    setIsCreating(true);
     try {
       const { api } = await import('@/lib/api');
       const generatedCode = newCourse.code ? newCourse.code.toUpperCase() : `KLS-${Math.floor(100 + Math.random() * 900)}`;
@@ -99,6 +101,8 @@ export default function GuruCoursesPage() {
     } catch (err: any) {
       console.error('Create course error:', err);
       alert(err.message || 'Gagal membuat kelas baru');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -326,9 +330,11 @@ export default function GuruCoursesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition cursor-pointer"
+                  disabled={isCreating}
+                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  Simpan Kelas
+                  {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{isCreating ? 'Menyimpan...' : 'Simpan Kelas'}</span>
                 </button>
               </div>
             </form>

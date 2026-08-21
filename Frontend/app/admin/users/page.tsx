@@ -116,11 +116,16 @@ export default function AdminUserManagementPage() {
     }
   };
 
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // 3. Handler: Update User (Realtime PUT to MySQL)
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser || !editingUser.dbId) return;
 
+    setIsUpdating(true);
     try {
       const { api } = await import('@/lib/api');
       await api.updateUser(editingUser.dbId, {
@@ -135,6 +140,8 @@ export default function AdminUserManagementPage() {
       await loadUsersFromApi();
     } catch (err) {
       console.error('MySQL Update User Error:', err);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -145,6 +152,7 @@ export default function AdminUserManagementPage() {
     const targetDbId = resetPassUser.dbId;
     const targetName = resetPassUser.name;
 
+    setIsResetting(true);
     try {
       const { api } = await import('@/lib/api');
       await api.resetUserPassword(targetDbId, newPassword);
@@ -155,6 +163,8 @@ export default function AdminUserManagementPage() {
       setTimeout(() => setResetSuccessMsg(''), 3000);
     } catch (err) {
       console.error('MySQL Reset Password Error:', err);
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -168,6 +178,7 @@ export default function AdminUserManagementPage() {
     if (!itemToDelete || !itemToDelete.dbId) return;
     const targetDbId = itemToDelete.dbId;
 
+    setIsDeleting(true);
     try {
       const { api } = await import('@/lib/api');
       await api.deleteUser(targetDbId);
@@ -177,6 +188,8 @@ export default function AdminUserManagementPage() {
     } catch (e: any) {
       console.error('MySQL Delete User Error:', e);
       alert(e.message || 'Gagal menghapus user dari database MySQL.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -606,9 +619,11 @@ export default function AdminUserManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition cursor-pointer"
+                  disabled={isAdding}
+                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  Simpan Pengguna
+                  {isAdding && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{isAdding ? 'Menyimpan...' : 'Simpan Pengguna'}</span>
                 </button>
               </div>
             </form>
@@ -754,9 +769,11 @@ export default function AdminUserManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition cursor-pointer"
+                  disabled={isUpdating}
+                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  Simpan Perubahan
+                  {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{isUpdating ? 'Menyimpan Perubahan...' : 'Simpan Perubahan'}</span>
                 </button>
               </div>
             </form>
@@ -813,9 +830,11 @@ export default function AdminUserManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-amber-500/20 transition cursor-pointer"
+                  disabled={isResetting}
+                  className="px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-xs font-bold rounded-2xl shadow-lg shadow-amber-500/20 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  Simpan Password Baru
+                  {isResetting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{isResetting ? 'Menyimpan Sandi...' : 'Simpan Password Baru'}</span>
                 </button>
               </div>
             </form>
@@ -969,9 +988,11 @@ export default function AdminUserManagementPage() {
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 py-3 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-2xl shadow-lg shadow-rose-500/25 transition cursor-pointer"
+                disabled={isDeleting}
+                className="flex-1 py-3 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 rounded-2xl shadow-lg shadow-rose-500/25 transition flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
-                Hapus Permanen
+                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>{isDeleting ? 'Menghapus...' : 'Hapus Permanen'}</span>
               </button>
             </div>
           </div>

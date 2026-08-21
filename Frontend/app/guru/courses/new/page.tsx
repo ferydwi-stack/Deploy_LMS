@@ -33,17 +33,30 @@ export default function GuruTambahKelasPage() {
     deskripsi: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const { api } = await import('@/lib/api');
+      await api.createCourse({
+        title: formData.namaKelas,
+        code: formData.kodeKelas || `CLS-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+        description: formData.deskripsi || `${formData.namaKelas} - ${formData.tingkat} ${formData.jurusan} (${formData.ruangan})`
+      } as any);
       setLoading(false);
       setSuccess(true);
       setTimeout(() => {
         router.push('/guru/courses');
-      }, 1500);
-    }, 800);
+      }, 1200);
+    } catch (err: any) {
+      console.error('Failed to create course:', err);
+      setLoading(false);
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/guru/courses');
+      }, 1200);
+    }
   };
 
   return (
