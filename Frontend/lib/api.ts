@@ -11,7 +11,7 @@ import type {
   ApiResponse
 } from '@/types/api';
 
-const PRODUCTION_API_URL = 'https://lms-backend-api-xi.vercel.app/api/v1';
+const PRODUCTION_API_URL = 'https://deploylms-production.up.railway.app/api/v1';
 
 const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
