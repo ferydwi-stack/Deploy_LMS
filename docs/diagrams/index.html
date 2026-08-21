@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeri Diagram Lengkap - Sistem E-Learning (EduSchool LMS)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      .page-break { page-break-after: always; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-black tracking-tight flex items-center gap-2">
+          📊 Galeri Visual Diagram Sistem E-Learning
+        </h1>
+        <p class="text-blue-100 text-sm mt-0.5">EduSchool LMS · Architecture, Use Case, ERD, Flowchart & Sequence</p>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <button onclick="window.print()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg border border-white/20 transition-all shadow-sm">
+          🖨 Cetak / Simpan PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation / TOC -->
+  <nav class="max-w-7xl mx-auto px-6 py-6 no-print">
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Daftar Pintas Diagram</h2>
+      <div class="flex flex-wrap gap-2">
+        
+          <a href="#diagram-1" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            1. Arsitektur Sistem (System Architecture)
+          </a>
+        
+          <a href="#diagram-2" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            2. Use Case Diagram Global
+          </a>
+        
+          <a href="#diagram-3" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            3. Use Case Detail Administrator
+          </a>
+        
+          <a href="#diagram-4" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            4. Use Case Detail Guru
+          </a>
+        
+          <a href="#diagram-5" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            5. Use Case Detail Siswa
+          </a>
+        
+          <a href="#diagram-6" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            6. Entity Relationship Diagram (ERD)
+          </a>
+        
+          <a href="#diagram-7" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            7. Flowchart Alur Sistem (Secara Keseluruhan)
+          </a>
+        
+          <a href="#diagram-8" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            8. Sequence Autentikasi (Login Sanctum)
+          </a>
+        
+          <a href="#diagram-9" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            9. Sequence Submit Tugas & Grading Notifikasi
+          </a>
+        
+          <a href="#diagram-10" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
+            10. Sequence Self-Attendance (Absen Mandiri)
+          </a>
+        
+      </div>
+    </div>
+  </nav>
+
+  <!-- Diagrams Content -->
+  <main class="max-w-7xl mx-auto px-6 pb-20 space-y-12">
+    
+      <section id="diagram-1" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 01</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">1. Arsitektur Sistem (System Architecture)</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="01_1_arsitektur_sistem_system_architecture.svg" download="01_1_arsitektur_sistem_system_architecture.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+flowchart TB
+    subgraph ClientLayer [" Client Layer (Browser) "]
+        UI["Next.js 15 App Router<br/>(React 19, TypeScript, Tailwind CSS)"]
+        StateCtx["LmsContext & useAuth<br/>(Local State & Token Storage)"]
+        RealtimeHook["useRealtimeData<br/>(Event Dispatcher)"]
+    end
+
+    subgraph CDNLayer [" Edge & Deployment Layer "]
+        VercelCDN["Vercel Cloud Platform<br/>(Hosting Frontend SPA/SSR)"]
+    end
+
+    subgraph BackendLayer [" Backend Application Layer (Railway) "]
+        Router["Laravel 12 Routing Engine<br/>(/api/v1/*)"]
+        MiddlewareAuth["Sanctum Auth & CheckRole Middleware"]
+        
+        subgraph Controllers [" API Controllers "]
+            C_Auth["AuthController"]
+            C_Admin["AdminController"]
+            C_Course["CourseController"]
+            C_Assign["AssignmentController"]
+            C_Sub["SubmissionController"]
+            C_Att["AttendanceController"]
+            C_Mat["MaterialController"]
+            C_Notif["NotificationController"]
+        end
+
+        subgraph ServiceDomain [" Service & Policy Layer "]
+            S_Course["CourseService"]
+            S_Att["AttendanceService"]
+            S_Sub["SubmissionService"]
+            S_Notif["NotificationService"]
+            Events["Events & Listeners<br/>(SubmissionCreated, Graded)"]
+        end
+
+        subgraph StorageSystem [" Storage Subsystem "]
+            LocalStorage["Local/Public Storage Link<br/>(/storage/materials, /storage/submissions)"]
+        end
+    end
+
+    subgraph DataLayer [" Database Layer (Railway MySQL 8.0) "]
+        MySQL[(MySQL Relational Database<br/>11 Core Tables)]
+    end
+
+    UI <--> VercelCDN
+    UI -- "REST API Request (Bearer Token)" --> Router
+    Router --> MiddlewareAuth
+    MiddlewareAuth --> Controllers
+    Controllers --> ServiceDomain
+    ServiceDomain --> Events
+    ServiceDomain --> StorageSystem
+    ServiceDomain -- "Eloquent ORM Queries" --> MySQL
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-2" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 02</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">2.1 Use Case Diagram Global</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="02_21_use_case_diagram_global.svg" download="02_21_use_case_diagram_global.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+flowchart LR
+    Admin((👤 Admin))
+    Guru((👨‍🏫 Guru))
+    Siswa((👨‍🎓 Siswa))
+
+    subgraph SystemBoundary [" Sistem E-Learning (EduSchool LMS) "]
+        UC_Login["Login & Autentikasi"]
+        UC_Forgot["Reset / Lupa Password"]
+        UC_Profile["Kelola Profil Pribadi"]
+        UC_Notif["Melihat Notifikasi"]
+        
+        %% Admin Features
+        UC_ManageUser["Manajemen Pengguna (CRUD & Reset Sandi)"]
+        UC_ImportUser["Import Pengguna Massal (Excel/CSV)"]
+        UC_Settings["Pengaturan Platform & Semester"]
+        UC_ViewAllReports["Melihat Rekap Seluruh Nilai"]
+        
+        %% Guru Features
+        UC_ManageClass["Kelola Kelas Pembelajaran"]
+        UC_UploadMaterial["Upload Materi & Modul"]
+        UC_CreateAssignment["Buat Tugas & Lampiran"]
+        UC_GradeAssignment["Penilaian & Feedback Tugas"]
+        UC_ManageAttendance["Kelola & Rekap Absensi Kelas"]
+        UC_InputGrades["Input Nilai UTS & UAS"]
+        
+        %% Siswa Features
+        UC_JoinClass["Gabung Kelas via Kode"]
+        UC_DownloadMaterial["Download Materi Pelajaran"]
+        UC_SubmitAssignment["Submit Pengumpulan Tugas"]
+        UC_SelfAttendance["Presensi / Absensi Mandiri"]
+        UC_ViewMyGrades["Melihat Rapor Nilai Siswa"]
+    end
+
+    %% All Users
+    Admin --- UC_Login
+    Guru --- UC_Login
+    Siswa --- UC_Login
+
+    Admin --- UC_Profile
+    Guru --- UC_Profile
+    Siswa --- UC_Profile
+
+    Admin --- UC_Notif
+    Guru --- UC_Notif
+    Siswa --- UC_Notif
+
+    Admin --- UC_Forgot
+    Guru --- UC_Forgot
+    Siswa --- UC_Forgot
+
+    %% Admin Connections
+    Admin --- UC_ManageUser
+    Admin --- UC_ImportUser
+    Admin --- UC_Settings
+    Admin --- UC_ViewAllReports
+
+    %% Guru Connections
+    Guru --- UC_ManageClass
+    Guru --- UC_UploadMaterial
+    Guru --- UC_CreateAssignment
+    Guru --- UC_GradeAssignment
+    Guru --- UC_ManageAttendance
+    Guru --- UC_InputGrades
+
+    %% Siswa Connections
+    Siswa --- UC_JoinClass
+    Siswa --- UC_DownloadMaterial
+    Siswa --- UC_SubmitAssignment
+    Siswa --- UC_SelfAttendance
+    Siswa --- UC_ViewMyGrades
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-3" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 03</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">2.2 Use Case Detail Administrator</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="03_22_use_case_detail_administrator.svg" download="03_22_use_case_detail_administrator.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+flowchart LR
+    Admin((👤 Administrator))
+
+    subgraph AdminModule [" Modul Administrator "]
+        UC1["Dashboard Statistik Pengguna"]
+        UC2["Lihat Daftar User (Filter Role/Kelas/Mapel)"]
+        UC3["Tambah User Baru Manual"]
+        UC4["Edit Informasi User"]
+        UC5["Reset Password Akun Pengguna"]
+        UC6["Hapus Akun Pengguna"]
+        UC7["Import Akun Massal (Excel / CSV)"]
+        UC8["Monitoring Kelas & Mata Pelajaran"]
+        UC9["Monitoring Seluruh Tugas Sekolah"]
+        UC10["Kelola Pengaturan Platform & Tahun Ajaran"]
+        UC11["Export & Cetak Laporan Nilai Siswa"]
+    end
+
+    Admin --> UC1
+    Admin --> UC2
+    Admin --> UC3
+    Admin --> UC4
+    Admin --> UC5
+    Admin --> UC6
+    Admin --> UC7
+    Admin --> UC8
+    Admin --> UC9
+    Admin --> UC10
+    Admin --> UC11
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-4" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 04</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">2.3 Use Case Detail Guru</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="04_23_use_case_detail_guru.svg" download="04_23_use_case_detail_guru.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+flowchart LR
+    Guru((👨‍🏫 Guru / Pengajar))
+
+    subgraph GuruModule [" Modul Guru "]
+        G1["Dashboard Statistik Kelas & Siswa"]
+        G2["Buat & Kelola Kelas Baru"]
+        G3["Atur Jadwal Buka/Tutup Presensi Kelas"]
+        G4["Upload Modul & Bahan Ajar (PDF/Doc)"]
+        G5["Buat Tugas Baru dengan Tenggat Waktu"]
+        G6["Lihat Status Pengumpulan Siswa"]
+        G7["Beri Nilai & Feedback Ulasan Tugas"]
+        G8["Input & Update Presensi Kehadiran Siswa"]
+        G9["Input & Update Nilai UTS serta UAS"]
+        G10["Keluarkan Siswa dari Kelas"]
+        G11["Unduh / Cetak Laporan Nilai Kelas"]
+    end
+
+    Guru --> G1
+    Guru --> G2
+    Guru --> G3
+    Guru --> G4
+    Guru --> G5
+    Guru --> G6
+    Guru --> G7
+    Guru --> G8
+    Guru --> G9
+    Guru --> G10
+    Guru --> G11
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-5" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 05</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">2.4 Use Case Detail Siswa</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="05_24_use_case_detail_siswa.svg" download="05_24_use_case_detail_siswa.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+flowchart LR
+    Siswa((👨‍🎓 Siswa / Peserta Didik))
+
+    subgraph SiswaModule [" Modul Siswa "]
+        S1["Dashboard Jadwal & Tugas Aktif"]
+        S2["Gabung Kelas Menggunakan Kode"]
+        S3["Keluar dari Kelas yang Diikuti"]
+        S4["Melihat & Mengunduh Materi Pelajaran"]
+        S5["Melihat Detail & Instruksi Tugas"]
+        S6["Upload File Jawaban Tugas"]
+        S7["Melihat Nilai & Ulasan Guru"]
+        S8["Melakukan Absensi Mandiri (Self Attendance)"]
+        S9["Melihat Riwayat Kehadiran Pribadi"]
+        S10["Melihat Transkrip Nilai (UTS/UAS/Tugas)"]
+    end
+
+    Siswa --> S1
+    Siswa --> S2
+    Siswa --> S3
+    Siswa --> S4
+    Siswa --> S5
+    Siswa --> S6
+    Siswa --> S7
+    Siswa --> S8
+    Siswa --> S9
+    Siswa --> S10
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-6" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 06</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">3. Entity Relationship Diagram (ERD)</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="06_3_entity_relationship_diagram_erd.svg" download="06_3_entity_relationship_diagram_erd.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+erDiagram
+    USERS ||--o{ COURSES : "creates / teaches"
+    USERS ||--o{ COURSE_STUDENT : "enrolls in"
+    COURSES ||--o{ COURSE_STUDENT : "has students"
+    COURSES ||--o{ MATERIALS : "contains"
+    COURSES ||--o{ ASSIGNMENTS : "has"
+    ASSIGNMENTS ||--o{ SUBMISSIONS : "receives"
+    USERS ||--o{ SUBMISSIONS : "submits"
+    COURSES ||--o{ ATTENDANCES : "records"
+    USERS ||--o{ ATTENDANCES : "attended by"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ ACTIVITY_LOGS : "logs action"
+
+    USERS {
+        bigint id PK
+        string name "Nama Lengkap"
+        string email "Email Unik"
+        string password "Hashed Password"
+        enum role "admin, guru, siswa"
+        string nisn_or_nip "NISN / NIP"
+        string class_name "Kelas Siswa"
+        string phone "No Telepon"
+        text bio "Biografi"
+        string subject "Mata Pelajaran Guru"
+        string specialization "Bidang Keahlian"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    COURSES {
+        bigint id PK
+        string title "Nama Mata Pelajaran / Kelas"
+        text description "Deskripsi Kelas"
+        bigint teacher_id FK "Relasi ke USERS(id)"
+        string code "Kode Unik Enrollment"
+        time attendance_open_time "Waktu Buka Absensi"
+        time attendance_close_time "Waktu Tutup Absensi"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    COURSE_STUDENT {
+        bigint id PK
+        bigint course_id FK "Relasi ke COURSES(id)"
+        bigint student_id FK "Relasi ke USERS(id)"
+        enum status "active, dropped"
+        int uts_score "Nilai UTS"
+        int uas_score "Nilai UAS"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MATERIALS {
+        bigint id PK
+        bigint course_id FK "Relasi ke COURSES(id)"
+        string title "Judul Materi"
+        text content "Konten / Deskripsi"
+        string file_path "Path File Modul"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ASSIGNMENTS {
+        bigint id PK
+        bigint course_id FK "Relasi ke COURSES(id)"
+        string title "Judul Tugas"
+        text instruction "Petunjuk Pengerjaan"
+        string attachment_path "File Lampiran Guru"
+        string attachment_name "Nama File Asli"
+        datetime due_date "Batas Waktu Pengumpulan"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SUBMISSIONS {
+        bigint id PK
+        bigint assignment_id FK "Relasi ke ASSIGNMENTS(id)"
+        bigint student_id FK "Relasi ke USERS(id)"
+        string file_path "Path File Jawaban Siswa"
+        string original_filename "Nama Asli File"
+        text note "Catatan Tambahan Siswa"
+        int score "Nilai Angka (0-100)"
+        text teacher_feedback "Komentar / Evaluasi Guru"
+        enum status "submitted, graded, late"
+        datetime submitted_at "Waktu Submit"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ATTENDANCES {
+        bigint id PK
+        bigint course_id FK "Relasi ke COURSES(id)"
+        bigint student_id FK "Relasi ke USERS(id)"
+        date date "Tanggal Kehadiran"
+        enum status "hadir, izin, sakit, alpa"
+        text note "Keterangan Tambahan"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    NOTIFICATIONS {
+        bigint id PK
+        bigint user_id FK "Relasi ke USERS(id)"
+        string type "Jenis Notifikasi"
+        string title "Judul Pesan"
+        text message "Isi Pesan Notifikasi"
+        json data "Metadata Tambahan"
+        timestamp read_at "Status Dibaca"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SETTINGS {
+        bigint id PK
+        string key "Nama Konfigurasi"
+        text value "Isi Nilai Konfigurasi"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ACTIVITY_LOGS {
+        bigint id PK
+        bigint user_id FK "Relasi ke USERS(id)"
+        string action "Nama Aksi"
+        string entity_type "Model Terkait"
+        bigint entity_id "ID Record Terkait"
+        json changes "Perubahan Data"
+        string ip_address "Alamat IP"
+        timestamp created_at
+        timestamp updated_at
+    }
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-7" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 07</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">4. Flowchart Alur Sistem (Secara Keseluruhan)</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="07_4_flowchart_alur_sistem_secara_keseluruhan.svg" download="07_4_flowchart_alur_sistem_secara_keseluruhan.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+flowchart TD
+    %% ================= GLOBAL START =================
+    StartSys([🏁 Mulai Operasional LMS]) --> InitPlatform
+
+    %% ================= FASE 1: INISIALISASI & USER MANAGEMENT (ADMIN) =================
+    subgraph AdminPhase [" 1. Fase Inisialisasi & Manajemen Pengguna (Admin) "]
+        InitPlatform[Admin Mengatur Platform<br/>Tahun Ajaran & Semester]
+        InitPlatform --> AddUsers[Kelola Akun Pengguna<br/>Tambah Manual / Bulk Import Excel]
+        AddUsers --> DistributeAcc[Akun Siap Digunakan<br/>Email & Password Terdistribusi]
+    end
+
+    %% ================= FASE 2: AUTENTIKASI & ROLE ROUTING =================
+    subgraph AuthPhase [" 2. Fase Autentikasi & Otorisasi Sistem "]
+        DistributeAcc --> UserLogin[Pengguna Membuka Web & Login di /login]
+        UserLogin --> AuthCheck{Kredensial Valid & Terdaftar di DB?}
+        AuthCheck -- Tidak --> AuthFailed[Tolak Akses: Tampilkan Pesan Error]
+        AuthFailed --> UserLogin
+        AuthCheck -- Ya --> IssueToken[Generate Bearer Token Sanctum]
+        IssueToken --> RoleRouting{Evaluasi user.role}
+    end
+
+    %% ================= FASE 3: KELAS & MATERI (GURU) =================
+    subgraph GuruPhase [" 3. Fase Kegiatan Belajar Mengajar (Guru) "]
+        RoleRouting -- 'guru' --> GuruDashboard[Masuk Dashboard Guru]
+        GuruDashboard --> CreateCourse[Buat Kelas / Mata Pelajaran Baru]
+        CreateCourse --> GenCourseCode[Sistem Generate Kode Kelas Unik]
+        GenCourseCode --> SetSchedule[Atur Jadwal Buka/Tutup Presensi]
+        SetSchedule --> UploadMaterials[Upload Modul Materi PDF/Doc]
+        UploadMaterials --> CreateTasks[Buat Tugas Baru & Tentukan Deadline]
+    end
+
+    %% ================= FASE 4: PARTISIPASI BELAJAR (SISWA) =================
+    subgraph SiswaPhase [" 4. Fase Partisipasi, Presensi & Pengerjaan (Siswa) "]
+        RoleRouting -- 'siswa' --> SiswaDashboard[Masuk Dashboard Siswa]
+        SiswaDashboard --> JoinCourse[Gabung Kelas via Input Kode Kelas]
+        JoinCourse --> AccessMaterials[Akses Kelas & Unduh Materi Belajar]
+        
+        %% Presensi Mandiri
+        AccessMaterials --> SelfAttendance[Presensi Mandiri / Kehadiran Siswa]
+        SelfAttendance --> TimeCheck{Sesuai Jam Buka & Tutup Presensi?}
+        TimeCheck -- Tidak --> AttBlocked[Presensi Ditolak: Di luar waktu]
+        TimeCheck -- Ya --> AttSuccess[Presensi Tercatat: Status 'Hadir']
+        
+        %% Pengerjaan Tugas
+        AttSuccess --> ReadAssignment[Buka & Baca Instruksi Tugas]
+        ReadAssignment --> DoTask[Mengerjakan Tugas & Buat File Jawaban]
+        DoTask --> UploadSubmission[Upload File Jawaban ke Sistem]
+        UploadSubmission --> DeadlineCheck{Submit Sebelum Batas Waktu?}
+        DeadlineCheck -- Ya --> StatusSubmitted[Status: 'submitted']
+        DeadlineCheck -- Tidak --> StatusLate[Status: 'late']
+    end
+
+    %% ================= FASE 5: PENILAIAN & EVALUASI =================
+    subgraph GradingPhase [" 5. Fase Penilaian & Rekap Nilai Rapor "]
+        StatusSubmitted --> TriggerNotif[Sistem Trigger Notifikasi Otomatis ke Guru]
+        StatusLate --> TriggerNotif
+        TriggerNotif --> GuruReviewSub[Guru Memeriksa Jawaban Siswa]
+        GuruReviewSub --> InputAssignmentGrade[Guru Input Nilai Tugas 0-100 & Feedback]
+        InputAssignmentGrade --> InputExamGrades[Guru Input Nilai UTS & UAS Siswa]
+        
+        InputExamGrades --> SyncReport[Database Menghitung Rekap Nilai Rapor]
+        SyncReport --> StudentViewGrades[Siswa Melihat Rapor & Notifikasi Nilai]
+    end
+
+    %% ================= FASE 6: MONITORING & LAPORAN (ADMIN) =================
+    subgraph ReportPhase [" 6. Fase Monitoring & Pelaporan Sekolah (Admin) "]
+        RoleRouting -- 'admin' --> AdminDashboard[Masuk Dashboard Admin]
+        AdminDashboard --> MonitorActivities[Pantau Statistik Pengguna, Kelas, & Kehadiran]
+        SyncReport -.-> MonitorActivities
+        MonitorActivities --> ExportReports[Export Rekapitulasi Rapor Siswa]
+        ExportReports --> EndSys([🏆 Selesai / Arsip Semester])
+        StudentViewGrades --> EndSys
+    end
+
+    %% ================= STYLING =================
+    classDef adminStyle fill:#EEF2FF,stroke:#4F46E5,stroke-width:2px;
+    classDef guruStyle fill:#F0FDF4,stroke:#16A34A,stroke-width:2px;
+    classDef siswaStyle fill:#FEF3C7,stroke:#D97706,stroke-width:2px;
+    classDef sysStyle fill:#F1F5F9,stroke:#475569,stroke-width:2px;
+
+    class InitPlatform,AddUsers,DistributeAcc,AdminDashboard,MonitorActivities,ExportReports adminStyle;
+    class GuruDashboard,CreateCourse,GenCourseCode,SetSchedule,UploadMaterials,CreateTasks,GuruReviewSub,InputAssignmentGrade,InputExamGrades guruStyle;
+    class SiswaDashboard,JoinCourse,AccessMaterials,SelfAttendance,AttSuccess,ReadAssignment,DoTask,UploadSubmission,StatusSubmitted,StatusLate,StudentViewGrades siswaStyle;
+    class UserLogin,AuthCheck,IssueToken,RoleRouting,TimeCheck,DeadlineCheck,TriggerNotif,SyncReport sysStyle;
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-8" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 08</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">5.1 Sequence Autentikasi (Login Sanctum)</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="08_51_sequence_autentikasi_login_sanctum.svg" download="08_51_sequence_autentikasi_login_sanctum.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+sequenceDiagram
+    autonumber
+    actor User as Pengguna (Admin/Guru/Siswa)
+    participant UI as Next.js Frontend
+    participant API as Laravel AuthController
+    participant Sanctum as Laravel Sanctum
+    participant DB as MySQL Database
+
+    User->>UI: Input Email & Password
+    UI->>API: POST /api/v1/auth/login {email, password}
+    API->>DB: Query: SELECT * FROM users WHERE email = ?
+    DB-->>API: Return User Record
+    
+    alt Password Tidak Cocok / User Tidak Ditemukan
+        API-->>UI: 401 Unauthorized {message: "Email atau password salah"}
+        UI-->>User: Tampilkan Pesan Error
+    else Kredensial Valid
+        API->>Sanctum: createToken('auth_token')
+        Sanctum->>DB: INSERT INTO personal_access_tokens
+        DB-->>Sanctum: Token ID
+        Sanctum-->>API: Plaintext Token
+        API-->>UI: 200 OK {access_token, user: {id, name, role, ...}}
+        UI->>UI: Simpan token ke localStorage('lms_token')
+        UI->>UI: Redirect ke Dashboard sesuai Role
+        UI-->>User: Tampilkan Halaman Dashboard Utama
+    end
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-9" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 09</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">5.2 Sequence Submit Tugas & Grading Notifikasi</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="09_52_sequence_submit_tugas_grading_notifikasi.svg" download="09_52_sequence_submit_tugas_grading_notifikasi.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+sequenceDiagram
+    autonumber
+    actor Siswa as 👨‍🎓 Siswa
+    actor Guru as 👨‍🏫 Guru
+    participant UI as Next.js Client
+    participant SubAPI as SubmissionController
+    participant EventSys as Laravel Event & Listener
+    participant Storage as File Storage Disk
+    participant DB as MySQL Database
+
+    %% Siswa Submit
+    Siswa->>UI: Pilih File Jawaban & Isi Catatan
+    UI->>SubAPI: POST /api/v1/assignments/{id}/submit (FormData)
+    SubAPI->>Storage: Simpan file ke /storage/submissions/
+    Storage-->>SubAPI: Path File Disimpan
+    SubAPI->>DB: INSERT INTO submissions (assignment_id, student_id, file_path, status)
+    DB-->>SubAPI: Submission ID
+    SubAPI->>EventSys: dispatch(new SubmissionCreated($submission))
+    EventSys->>DB: INSERT INTO notifications (user_id=guru_id, message="Siswa telah mengumpulkan tugas")
+    SubAPI-->>UI: 200 OK {message: "Tugas berhasil dikumpulkan"}
+    UI-->>Siswa: Tampilkan status 'Terkumpul'
+
+    %% Guru Memberi Nilai
+    Guru->>UI: Buka Pengumpulan & Masukkan Nilai (e.g. 90) + Feedback
+    UI->>SubAPI: PUT /api/v1/submissions/{id}/grade {score: 90, teacher_feedback: "Sangat baik"}
+    SubAPI->>DB: UPDATE submissions SET score=90, teacher_feedback=..., status='graded'
+    DB-->>SubAPI: Success Update
+    SubAPI->>EventSys: dispatch(new SubmissionGraded($submission))
+    EventSys->>DB: INSERT INTO notifications (user_id=siswa_id, message="Tugas Anda telah dinilai: 90")
+    SubAPI-->>UI: 200 OK {message: "Nilai berhasil disimpan"}
+    UI-->>Guru: Tampilkan status 'Ternilai'
+    
+    %% Siswa Menerima Notif
+    Siswa->>UI: Refresh / Akses Notifikasi
+    UI->>DB: GET /api/v1/notifications
+    DB-->>UI: Data Notifikasi Nilai Baru
+    UI-->>Siswa: Muncul Badge Notifikasi & Update Nilai Rapor
+          </div>
+        </div>
+      </section>
+      
+      <section id="diagram-10" class="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden page-break">
+        <div class="bg-slate-100/80 px-8 py-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black px-2.5 py-1 bg-blue-600 text-white rounded-md tracking-wider">DIAGRAM 10</span>
+            <h2 class="text-xl font-bold text-slate-900 mt-2">5.3 Sequence Self-Attendance (Absen Mandiri)</h2>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <a href="10_53_sequence_self-attendance_absen_mandiri.svg" download="10_53_sequence_self-attendance_absen_mandiri.svg" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              ⬇ Download SVG Gambar
+            </a>
+          </div>
+        </div>
+        <div class="p-8 flex justify-center items-center overflow-x-auto bg-white min-h-[300px]">
+          <div class="mermaid w-full max-w-full flex justify-center">
+sequenceDiagram
+    autonumber
+    actor Siswa as 👨‍🎓 Siswa
+    participant UI as Next.js Client
+    participant AttAPI as AttendanceController
+    participant AttService as AttendanceService
+    participant DB as MySQL Database
+
+    Siswa->>UI: Klik 'Presensi Mandiri' pada Kelas
+    UI->>AttAPI: POST /api/v1/attendances/self {course_id}
+    AttAPI->>AttService: selfAttend(user, course_id)
+    AttService->>DB: Query Course Jadwal (open_time, close_time)
+    DB-->>AttService: Schedule Data
+    
+    alt Waktu Sekarang di Luar Jadwal
+        AttService-->>AttAPI: Throw ValidationException ("Di luar jadwal presensi")
+        AttAPI-->>UI: 422 Unprocessable Entity
+        UI-->>Siswa: Tampilkan Alert "Presensi belum dibuka / sudah ditutup"
+    else Waktu Sesuai Jadwal
+        AttService->>DB: Check: EXISTS(attendances WHERE course_id=? AND student_id=? AND date=TODAY)
+        DB-->>AttService: False (Belum Absen)
+        AttService->>DB: INSERT INTO attendances (course_id, student_id, date, status='hadir')
+        DB-->>AttService: Success Insert
+        AttService-->>AttAPI: Attendance Record
+        AttAPI-->>UI: 200 OK {message: "Kehadiran berhasil dicatat"}
+        UI-->>Siswa: Tampilkan Badge Hijau "Hadir"
+    end
+          </div>
+        </div>
+      </section>
+      
+  </main>
+
+  <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
+    <p>Dokumentasi Visual Diagram Sistem E-Learning EduSchool LMS · Dibuat secara otomatis</p>
+  </footer>
+</body>
+</html>
