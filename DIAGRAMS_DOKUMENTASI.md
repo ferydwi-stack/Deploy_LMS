@@ -17,157 +17,83 @@ Dokumen ini berisi **3 Diagram Utama Terpadu** yang memodelkan fungsionalitas us
 Diagram Use Case ini menyatukan seluruh aktor (**Administrator**, **Guru Pengajar**, dan **Peserta Didik / Siswa**) ke dalam satu batasan sistem terpadu yang mencakup seluruh modul fungsional:
 
 ```mermaid
-flowchart LR
-    %% ================= LEFT ACTORS =================
-    subgraph LeftActors [" 👥 PENGELOLA "]
-        Admin((👤 Administrator))
-        Guru((👨‍🏫 Guru Pengajar))
+flowchart TD
+    %% ================= 1. TOP SHARED CORE MODULE =================
+    subgraph CoreBox [" 🔐 FITUR INTI BERSAMA (SEMUA AKUN / SHARED CORE) "]
+        direction LR
+        UC_Login(["🔑 Login & Autentikasi (Sanctum)"])
+        UC_Forgot(["🔄 Reset Password Mandiri"])
+        UC_Profile(["👤 Kelola Profil Pribadi & WhatsApp"])
+        UC_Notif(["🔔 Lonceng Notifikasi Real-time"])
+        UC_Logout(["🚪 Logout / Keluar Sesi"])
     end
 
-    %% ================= RIGHT ACTOR =================
-    subgraph RightActors [" 👥 PENGGUNA "]
-        Siswa((👨‍🎓 Peserta Didik))
-    end
+    %% ================= 2. THREE ROLE COLUMNS =================
+    CoreBox -.-> AdminActor
+    CoreBox -.-> GuruActor
+    CoreBox -.-> SiswaActor
 
-    %% ================= CENTER SYSTEM BOUNDARY =================
-    subgraph SystemBoundary [" 🏫 SISTEM E-LEARNING (EDUSCHOOL LMS) "]
+    %% ================= COLUMN 1: ADMIN =================
+    subgraph AdminCol [" 👑 ROLE ADMINISTRATOR (SUPER USER) "]
+        direction TB
+        AdminActor((👤 Administrator))
         
-        %% Kolom 1: Core
-        subgraph ColCore [" 🔐 Modul Akun & Sesi "]
-            direction TB
-            UC_Login(["🔑 Login & Autentikasi (Sanctum)"])
-            UC_Forgot(["🔄 Lupa / Reset Password Mandiri"])
-            UC_Profile(["👤 Kelola Profil Pribadi & Kontak"])
-            UC_Notif(["🔔 Terima Notifikasi Real-time"])
-            UC_MarkNotif(["✔ Tandai Notifikasi Dibaca"])
-            UC_Logout(["🚪 Logout / Keluar Sesi"])
-            
-            UC_Login ~~~ UC_Forgot ~~~ UC_Profile ~~~ UC_Notif ~~~ UC_MarkNotif ~~~ UC_Logout
-        end
-
-        %% Kolom 2: Admin
-        subgraph ColAdmin [" 🛡️ Modul Administrator "]
-            direction TB
-            UC_AdmDashboard(["📊 Dashboard Statistik Global"])
-            UC_ListUsers(["👥 Kelola Data Pengguna (CRUD)"])
-            UC_ResetPassUser(["🔑 Reset Password User Lain"])
-            UC_BulkImport(["📥 Bulk Import Akun (Excel/CSV)"])
-            UC_MonitorCourse(["📚 Monitoring Seluruh Kelas"])
-            UC_MonitorAssign(["📝 Monitoring Tugas Sekolah"])
-            UC_Settings(["⚙️ Konfigurasi Identitas Sekolah"])
-            UC_ExportReports(["📑 Rekap & Ekspor Laporan Excel"])
-            
-            UC_AdmDashboard ~~~ UC_ListUsers ~~~ UC_ResetPassUser ~~~ UC_BulkImport ~~~ UC_MonitorCourse ~~~ UC_MonitorAssign ~~~ UC_Settings ~~~ UC_ExportReports
-        end
-
-        %% Kolom 3: Guru
-        subgraph ColGuru [" 📚 Modul Guru Pengajar "]
-            direction TB
-            UC_GuruDashboard(["📊 Dashboard Guru & Siswa"])
-            UC_CreateCourse(["➕ Buat Kelas & Terbitkan Kode"])
-            UC_ManageStudents(["👥 Kelola Siswa di Kelas"])
-            UC_KickStudent(["🚫 Keluarkan Siswa dari Kelas"])
-            UC_SetAttendanceSched(["⏰ Atur Jam Buka-Tutup Presensi"])
-            UC_UploadMaterial(["📄 Upload Modul Bahan Ajar (PDF/Link)"])
-            UC_CreateTask(["📝 Terbitkan Tugas / LKPD & Deadline"])
-            UC_ReviewSubmissions(["📥 Periksa Lembar Jawaban Siswa"])
-            UC_GradeTask(["⭐ Beri Nilai Tugas & Feedback"])
-            UC_InputExams(["🏆 Input Nilai UTS & UAS"])
-            UC_ManageClassAttendance(["📋 Rekap Presensi Harian"])
-            UC_ExportClassReport(["🖨️ Cetak & Unduh Rapor Kelas"])
-            
-            UC_GuruDashboard ~~~ UC_CreateCourse ~~~ UC_ManageStudents ~~~ UC_KickStudent ~~~ UC_SetAttendanceSched ~~~ UC_UploadMaterial ~~~ UC_CreateTask ~~~ UC_ReviewSubmissions ~~~ UC_GradeTask ~~~ UC_InputExams ~~~ UC_ManageClassAttendance ~~~ UC_ExportClassReport
-        end
-
-        %% Kolom 4: Siswa
-        subgraph ColSiswa [" 🎒 Modul Peserta Didik "]
-            direction TB
-            UC_SiswaDashboard(["📊 Dashboard Jadwal & Tugas"])
-            UC_BrowseCourses(["🔍 Jelajahi Katalog Kelas"])
-            UC_JoinCourseCode(["🔑 Gabung Kelas via Kode Unik"])
-            UC_LeaveCourse(["🚪 Keluar dari Kelas"])
-            UC_ReadMaterial(["📖 Akses Modul Bahan Ajar"])
-            UC_SelfAttend(["✅ Presensi / Absensi Mandiri"])
-            UC_ViewAttHistory(["📅 Cek Riwayat Kehadiran"])
-            UC_ViewTaskList(["📝 Lihat Daftar Tugas & Deadline"])
-            UC_SubmitTask(["📤 Kumpulkan Lembar Jawaban"])
-            UC_ReceiveGradeNotif(["🔔 Notifikasi Nilai & Feedback"])
-            UC_ViewGrades(["📊 Lihat Transkrip Rapor Nilai"])
-            
-            UC_SiswaDashboard ~~~ UC_BrowseCourses ~~~ UC_JoinCourseCode ~~~ UC_LeaveCourse ~~~ UC_ReadMaterial ~~~ UC_SelfAttend ~~~ UC_ViewAttHistory ~~~ UC_ViewTaskList ~~~ UC_SubmitTask ~~~ UC_ReceiveGradeNotif ~~~ UC_ViewGrades
-        end
-
+        AdminActor --> UC_AdmDashboard(["📊 Dashboard Statistik Global LMS"])
+        UC_AdmDashboard --> UC_ListUsers(["👥 Kelola Data Pengguna (CRUD)"])
+        UC_ListUsers --> UC_ResetPassUser(["🔑 Reset Password Akun User Lain"])
+        UC_ResetPassUser --> UC_BulkImport(["📥 Bulk Import Akun (Excel/CSV 50+ User)"])
+        UC_BulkImport --> UC_MonitorCourse(["📚 Monitoring Seluruh Kelas Mapel"])
+        UC_MonitorCourse --> UC_MonitorAssign(["📝 Monitoring Tugas & LKPD Sekolah"])
+        UC_MonitorAssign --> UC_Settings(["⚙️ Konfigurasi Identitas Sekolah"])
+        UC_Settings --> UC_ExportReports(["📑 Rekap & Ekspor Laporan Excel/CSV"])
     end
 
-    %% ================= ACTOR CONNECTIONS =================
-    %% Shared Connections
-    Admin --- UC_Login
-    Admin --- UC_Forgot
-    Admin --- UC_Profile
-    Admin --- UC_Notif
-    Admin --- UC_MarkNotif
-    Admin --- UC_Logout
+    %% ================= COLUMN 2: GURU =================
+    subgraph GuruCol [" 👨‍🏫 ROLE GURU PENGAJAR (TENAGA PENDIDIK) "]
+        direction TB
+        GuruActor((👨‍🏫 Guru Pengajar))
+        
+        GuruActor --> UC_GuruDashboard(["📊 Dashboard Guru & Ringkasan Siswa"])
+        UC_GuruDashboard --> UC_CreateCourse(["➕ Buat Kelas Mapel & Terbitkan Kode"])
+        UC_CreateCourse --> UC_ManageStudents(["👥 Kelola Siswa Terdaftar di Kelas"])
+        UC_ManageStudents --> UC_KickStudent(["🚫 Keluarkan (Kick) Siswa dari Kelas"])
+        UC_KickStudent --> UC_SetAttendanceSched(["⏰ Atur Jam Buka-Tutup Presensi"])
+        UC_SetAttendanceSched --> UC_UploadMaterial(["📄 Upload Modul Bahan Ajar (PDF/Link)"])
+        UC_UploadMaterial --> UC_CreateTask(["📝 Terbitkan Tugas/LKPD, File & Deadline"])
+        UC_CreateTask --> UC_ReviewSubmissions(["📥 Periksa Berkas Lembar Jawaban"])
+        UC_ReviewSubmissions --> UC_GradeTask(["⭐ Beri Nilai Tugas (0-100) & Feedback"])
+        UC_GradeTask --> UC_InputExams(["🏆 Input Nilai Ujian Semester (UTS & UAS)"])
+        UC_InputExams --> UC_ManageClassAttendance(["📋 Rekap Presensi Harian (H/I/S/A)"])
+        UC_ManageClassAttendance --> UC_ExportClassReport(["🖨️ Cetak & Unduh Rapor Nilai Kelas"])
+    end
 
-    Guru --- UC_Login
-    Guru --- UC_Forgot
-    Guru --- UC_Profile
-    Guru --- UC_Notif
-    Guru --- UC_MarkNotif
-    Guru --- UC_Logout
+    %% ================= COLUMN 3: SISWA =================
+    subgraph SiswaCol [" 👨‍🎓 ROLE PESERTA DIDIK (SISWA PEMBELAJAR) "]
+        direction TB
+        SiswaActor((👨‍🎓 Peserta Didik))
+        
+        SiswaActor --> UC_SiswaDashboard(["📊 Dashboard Siswa, Jadwal & Tugas"])
+        UC_SiswaDashboard --> UC_BrowseCourses(["🔍 Jelajahi Katalog Kelas Terbuka"])
+        UC_BrowseCourses --> UC_JoinCourseCode(["🔑 Gabung Kelas via Input Kode Unik"])
+        UC_JoinCourseCode --> UC_LeaveCourse(["🚪 Keluar (Leave) dari Kelas"])
+        UC_LeaveCourse --> UC_ReadMaterial(["📖 Akses & Unduh Modul Bahan Ajar"])
+        UC_ReadMaterial --> UC_SelfAttend(["✅ Presensi / Absensi Mandiri Hari Ini"])
+        UC_SelfAttend --> UC_ViewAttHistory(["📅 Cek Riwayat Kehadiran (H/I/S/A)"])
+        UC_ViewAttHistory --> UC_ViewTaskList(["📝 Lihat Daftar Tugas & Batas Deadline"])
+        UC_ViewTaskList --> UC_SubmitTask(["📤 Kumpulkan Tugas (Upload / Teks)"])
+        UC_SubmitTask --> UC_ReceiveGradeNotif(["🔔 Terima Notifikasi Nilai dari Guru"])
+        UC_ReceiveGradeNotif --> UC_ViewGrades(["📊 Lihat Transkrip Rapor Nilai Siswa"])
+    end
 
-    Siswa --- UC_Login
-    Siswa --- UC_Forgot
-    Siswa --- UC_Profile
-    Siswa --- UC_Notif
-    Siswa --- UC_MarkNotif
-    Siswa --- UC_Logout
-
-    %% Admin Connections
-    Admin --- UC_AdmDashboard
-    Admin --- UC_ListUsers
-    Admin --- UC_ResetPassUser
-    Admin --- UC_BulkImport
-    Admin --- UC_MonitorCourse
-    Admin --- UC_MonitorAssign
-    Admin --- UC_Settings
-    Admin --- UC_ExportReports
-
-    %% Guru Connections
-    Guru --- UC_GuruDashboard
-    Guru --- UC_CreateCourse
-    Guru --- UC_ManageStudents
-    Guru --- UC_KickStudent
-    Guru --- UC_SetAttendanceSched
-    Guru --- UC_UploadMaterial
-    Guru --- UC_CreateTask
-    Guru --- UC_ReviewSubmissions
-    Guru --- UC_GradeTask
-    Guru --- UC_InputExams
-    Guru --- UC_ManageClassAttendance
-    Guru --- UC_ExportClassReport
-
-    %% Siswa Connections
-    Siswa --- UC_SiswaDashboard
-    Siswa --- UC_BrowseCourses
-    Siswa --- UC_JoinCourseCode
-    Siswa --- UC_LeaveCourse
-    Siswa --- UC_ReadMaterial
-    Siswa --- UC_SelfAttend
-    Siswa --- UC_ViewAttHistory
-    Siswa --- UC_ViewTaskList
-    Siswa --- UC_SubmitTask
-    Siswa --- UC_ReceiveGradeNotif
-    Siswa --- UC_ViewGrades
-
-    %% ================= STYLING =================
+    %% ================= STYLING (IDENTICAL TO FLOWCHART) =================
     classDef actorStyle fill:#0F172A,stroke:#0284C7,stroke-width:2px,color:#FFFFFF;
     classDef coreStyle fill:#EFF6FF,stroke:#3B82F6,stroke-width:1.5px,color:#1E3A8A;
     classDef adminStyle fill:#F5F3FF,stroke:#7C3AED,stroke-width:1.5px,color:#5B21B6;
     classDef guruStyle fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#166534;
     classDef siswaStyle fill:#FFFBEB,stroke:#D97706,stroke-width:1.5px,color:#92400E;
 
-    class Admin,Guru,Siswa actorStyle;
-    class UC_Login,UC_Forgot,UC_Profile,UC_Notif,UC_MarkNotif,UC_Logout coreStyle;
+    class AdminActor,GuruActor,SiswaActor actorStyle;
+    class UC_Login,UC_Forgot,UC_Profile,UC_Notif,UC_Logout coreStyle;
     class UC_AdmDashboard,UC_ListUsers,UC_ResetPassUser,UC_BulkImport,UC_MonitorCourse,UC_MonitorAssign,UC_Settings,UC_ExportReports adminStyle;
     class UC_GuruDashboard,UC_CreateCourse,UC_ManageStudents,UC_KickStudent,UC_SetAttendanceSched,UC_UploadMaterial,UC_CreateTask,UC_ReviewSubmissions,UC_GradeTask,UC_InputExams,UC_ManageClassAttendance,UC_ExportClassReport guruStyle;
     class UC_SiswaDashboard,UC_BrowseCourses,UC_JoinCourseCode,UC_LeaveCourse,UC_ReadMaterial,UC_SelfAttend,UC_ViewAttHistory,UC_ViewTaskList,UC_SubmitTask,UC_ReceiveGradeNotif,UC_ViewGrades siswaStyle;
