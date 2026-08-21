@@ -29,6 +29,6 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-EXPOSE 80 8000
+EXPOSE 80 8000 9000
 
-CMD ["sh", "-c", "php artisan migrate --force || true; php artisan db:seed --force || true; php artisan config:clear || true; php artisan route:clear || true; php artisan serve --host=0.0.0.0 --port=${PORT:-80}"]
+CMD ["sh", "-c", "php artisan migrate --force || true; php artisan db:seed --force || true; php artisan config:clear || true; php artisan route:clear || true; php artisan serve --host=0.0.0.0 --port=${PORT:-9000}"]
