@@ -121,10 +121,15 @@ export interface PaginatedResponse<T> {
 }
 
 export interface StatsResponse {
+  total_users?: number;
+  total_teachers?: number;
+  total_students?: number;
+  total_courses?: number;
+  total_assignments?: number;
+  submissions_today?: number;
   active_courses?: number;
   pending_tasks?: number;
   attendance_rate?: number;
-  total_students?: number;
   pending_assignments?: number;
   courses?: Course[];
 }

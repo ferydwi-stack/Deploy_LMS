@@ -46,7 +46,7 @@ export default function AdminUserManagementPage() {
           email: u.email,
           username: u.email ? u.email.split('@')[0] : 'user',
           role: u.role === 'guru' ? 'Teacher' : (u.role === 'siswa' ? 'Student' : 'Admin'),
-          meta: u.class_name || (u.role === 'guru' ? (u.subject || 'Guru Pengajar') : (u.role === 'siswa' ? 'Kelas X-IPA 1' : 'Admin System')),
+          meta: u.role === 'guru' ? (u.subject || 'Guru Pengajar') : (u.role === 'siswa' ? (u.class_name || 'Kelas X-IPA 1') : 'Admin System'),
           nisn_or_nip: u.nisn_or_nip || '',
           class_name: u.class_name || '',
           subject: u.subject || '',
@@ -281,30 +281,53 @@ export default function AdminUserManagementPage() {
     }
   };
 
-  // Dynamic Class / Subject options extracted from users (only student classes, not guru subjects)
-  const availableClasses = Array.from(
-    new Set(users.map(u => u.meta).filter(Boolean))
+  // Dynamic Class / Subject options — separated by role for accurate filtering
+  const availableStudentClasses = Array.from(
+    new Set(users.filter(u => u.role === 'Student' && u.meta).map(u => u.meta))
   ).sort();
 
-  // Users filtered by class only (for dynamic role counts)
+  const availableGuruSubjects = Array.from(
+    new Set(users.filter(u => u.role === 'Teacher' && u.meta).map(u => u.meta))
+  ).sort();
+
+  // Build dropdown options based on active role filter
+  const availableFilterOptions = (() => {
+    if (filter === 'teacher') return availableGuruSubjects;
+    if (filter === 'student') return availableStudentClasses;
+    // "all" — show both grouped
+    const all: string[] = [];
+    availableStudentClasses.forEach(c => { if (!all.includes(c)) all.push(c); });
+    availableGuruSubjects.forEach(s => { if (!all.includes(s)) all.push(s); });
+    return all.sort();
+  })();
+
+  // Reset classFilter when switching role tab if current value doesn't exist in new options
+  React.useEffect(() => {
+    if (classFilter !== 'all' && !availableFilterOptions.includes(classFilter)) {
+      setClassFilter('all');
+    }
+  }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Users filtered by class/mapel AND search
   const classFilteredUsers = users.filter(u => {
-    const metaStr = (u.meta || '').toLowerCase();
-    const matchesClass = classFilter === 'all' || metaStr === classFilter.toLowerCase() || metaStr.includes(classFilter.toLowerCase());
+    const metaStr = (u.meta || '').trim();
+    const matchesClass = classFilter === 'all' || metaStr === classFilter;
     const searchLower = (search || '').toLowerCase();
     const matchesSearch = !searchLower ||
       (u.name || '').toLowerCase().includes(searchLower) ||
       (u.email || '').toLowerCase().includes(searchLower) ||
       (u.username || '').toLowerCase().includes(searchLower) ||
       (u.meta || '').toLowerCase().includes(searchLower) ||
-      (u.id || '').toLowerCase().includes(searchLower);
+      (u.id || '').toString().toLowerCase().includes(searchLower);
     return matchesClass && matchesSearch;
   });
 
-  // Filter & Search Users
+  // Filter by role tab
   const filteredUsers = classFilteredUsers.filter(u => {
-    const roleStr = (u.role || '').toLowerCase();
-    const matchesRole = filter === 'all' || roleStr === filter.toLowerCase();
-    return matchesRole;
+    if (filter === 'all') return true;
+    if (filter === 'teacher') return u.role === 'Teacher';
+    if (filter === 'student') return u.role === 'Student';
+    return true;
   });
 
   return (
@@ -385,17 +408,19 @@ export default function AdminUserManagementPage() {
             </button>
           </div>
 
-          {/* Class Filter */}
+          {/* Class / Subject Filter */}
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-            <span>Filter Kelas:</span>
+            <span>{filter === 'teacher' ? 'Filter Mapel:' : filter === 'student' ? 'Filter Kelas:' : 'Filter Kelas / Mapel:'}</span>
             <div className="relative">
               <select
                 value={classFilter}
                 onChange={(e) => setClassFilter(e.target.value)}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 cursor-pointer appearance-none pr-10"
               >
-                <option className="bg-white text-slate-900" value="all">Semua Kelas / Mapel</option>
-                {availableClasses.map((cls) => (
+                <option className="bg-white text-slate-900" value="all">
+                  {filter === 'teacher' ? 'Semua Mata Pelajaran' : filter === 'student' ? 'Semua Kelas' : 'Semua Kelas / Mapel'}
+                </option>
+                {availableFilterOptions.map((cls) => (
                   <option className="bg-white text-slate-900" key={cls} value={cls}>{cls}</option>
                 ))}
               </select>

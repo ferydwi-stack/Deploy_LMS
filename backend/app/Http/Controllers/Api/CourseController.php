@@ -53,7 +53,7 @@ class CourseController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Nilai UTS & UAS berhasil disimpan ke database MySQL.',
+            'message' => 'Nilai UTS & UAS berhasil disimpan.',
             'uts_score' => $validated['uts_score'],
             'uas_score' => $validated['uas_score'],
         ]);

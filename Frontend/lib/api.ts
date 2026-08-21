@@ -11,19 +11,21 @@ import type {
   ApiResponse
 } from '@/types/api';
 
+const PRODUCTION_API_URL = 'https://sistem-e-learning-production.up.railway.app/api/v1';
+
 const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   if (typeof window !== 'undefined') {
-    const host = window.location.hostname || 'localhost';
+    const host = window.location.hostname || '';
     if (host === 'localhost' || host === '127.0.0.1') {
       return `http://${host}:8000/api/v1`;
     }
-    // For ngrok or any custom domain, use relative endpoint proxied by Next.js rewrites
-    return '/api/v1';
+    // When running on Vercel or any production domain, connect directly to Railway backend API
+    return PRODUCTION_API_URL;
   }
-  return 'http://127.0.0.1:8000/api/v1';
+  return PRODUCTION_API_URL;
 };
 
 export const getAuthToken = (): string | null => {
@@ -129,7 +131,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
       headers,
     });
   } catch {
-    throw new Error('Tidak dapat terhubung ke server backend. Jalankan Laravel di http://127.0.0.1:8000.');
+    throw new Error('Tidak dapat terhubung ke server backend LMS. Silakan periksa koneksi internet atau coba beberapa saat lagi.');
   }
 
   const data = await response.json().catch(() => ({}));

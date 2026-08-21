@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    const backendUrl = process.env.BACKEND_INTERNAL_URL || 'https://lms-backend-api-xi.vercel.app';
+    const backendUrl = process.env.BACKEND_INTERNAL_URL || 'https://sistem-e-learning-production.up.railway.app';
     return [
       {
         source: '/api/v1/:path*',
