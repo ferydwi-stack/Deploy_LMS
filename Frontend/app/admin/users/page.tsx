@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Plus, FileSpreadsheet, Edit3, Trash2, X, Search, Key, ShieldCheck, Upload, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Plus, FileSpreadsheet, Edit3, Trash2, X, Search, Key, ShieldCheck, Upload, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function AdminUserManagementPage() {
@@ -27,6 +27,8 @@ export default function AdminUserManagementPage() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedImportUsers, setParsedImportUsers] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
   // 1. Fetch real users directly from MySQL API
   const loadUsersFromApi = useCallback(async () => {
@@ -118,22 +120,17 @@ export default function AdminUserManagementPage() {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser || !editingUser.dbId) return;
-    const targetDbId = editingUser.dbId;
 
     try {
       const { api } = await import('@/lib/api');
-      await api.updateUser(targetDbId, {
+      await api.updateUser(editingUser.dbId, {
         name: editingUser.name,
         email: editingUser.email,
         role: editingUser.role === 'Teacher' ? 'guru' : (editingUser.role === 'Student' ? 'siswa' : 'admin'),
-        nisn_or_nip: editingUser.nisn_or_nip,
-        class_name: editingUser.class_name,
-        subject: editingUser.subject,
-        specialization: editingUser.specialization,
-        phone: editingUser.phone,
-        bio: editingUser.bio,
-        password: editingUser.password || undefined
-      } as any);
+        nisn_or_nip: editingUser.nisn_or_nip || editingUser.id,
+        subject: editingUser.role === 'Teacher' ? editingUser.meta : undefined,
+        class_name: editingUser.role === 'Student' ? editingUser.meta : undefined
+      });
       setEditingUser(null);
       await loadUsersFromApi();
     } catch (err) {
@@ -144,7 +141,7 @@ export default function AdminUserManagementPage() {
   // 4. Handler: Reset Password (Realtime PUT to MySQL)
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetPassUser || !resetPassUser.dbId || !newPassword) return;
+    if (!resetPassUser || !newPassword) return;
     const targetDbId = resetPassUser.dbId;
     const targetName = resetPassUser.name;
 
@@ -212,7 +209,6 @@ export default function AdminUserManagementPage() {
         const validEmail = (rawEmail && rawEmail.includes('@') && rawEmail.includes('.'))
           ? rawEmail
           : `user_${idx + 1}_${Math.random().toString(36).substring(2, 7)}@school.id`;
-        const avatarColors = ['bg-purple-500', 'bg-blue-500', 'bg-pink-500', 'bg-orange-500', 'bg-teal-500', 'bg-indigo-500', 'bg-rose-500', 'bg-cyan-500'];
         
         return {
           name: rawName || `User ${idx + 1}`,
@@ -232,7 +228,7 @@ export default function AdminUserManagementPage() {
     }
   };
 
-  // 7. Handler: Bulk Import (Realtime POST to MySQL)
+  // 7. Handler: Bulk Import with Animated Progress and Visual Loading
   const handleProcessImport = async () => {
     const usersToImport = parsedImportUsers.length > 0 ? parsedImportUsers : [];
 
@@ -241,9 +237,18 @@ export default function AdminUserManagementPage() {
       return;
     }
 
+    setIsImporting(true);
+    setImportProgress(15);
+
+    const progressTimer = setInterval(() => {
+      setImportProgress(prev => (prev < 85 ? prev + Math.floor(Math.random() * 15 + 10) : prev));
+    }, 250);
+
     try {
       const { api } = await import('@/lib/api');
       await api.bulkImportUsers(usersToImport);
+      clearInterval(progressTimer);
+      setImportProgress(100);
       setImportSuccessMsg(`Berhasil mengimpor ${usersToImport.length} akun pengguna ke Database MySQL!`);
       setSelectedFile(null);
       setParsedImportUsers([]);
@@ -251,8 +256,13 @@ export default function AdminUserManagementPage() {
       setTimeout(() => {
         setImportSuccessMsg('');
         setIsImportModalOpen(false);
-      }, 2000);
+        setIsImporting(false);
+        setImportProgress(0);
+      }, 1500);
     } catch (e: any) {
+      clearInterval(progressTimer);
+      setIsImporting(false);
+      setImportProgress(0);
       console.error('MySQL Bulk Import Error:', e);
       alert(e.message || 'Gagal mengimpor data user massal ke Database MySQL.');
     }
@@ -837,9 +847,40 @@ export default function AdminUserManagementPage() {
 
             <div className="flex-1 overflow-y-auto p-6">
               {importSuccessMsg ? (
-                <div className="p-6 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-center space-y-2">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-                  <p className="font-bold text-sm">{importSuccessMsg}</p>
+                <div className="p-8 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-center space-y-3 animate-in zoom-in-95 duration-200">
+                  <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 shadow-sm">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h4 className="font-bold text-base text-emerald-900">Import Berhasil!</h4>
+                  <p className="text-xs text-emerald-700 font-medium">{importSuccessMsg}</p>
+                </div>
+              ) : isImporting ? (
+                <div className="py-8 px-4 text-center space-y-6 animate-in fade-in duration-200">
+                  <div className="w-16 h-16 bg-blue-50 border-2 border-blue-200 rounded-full flex items-center justify-center mx-auto text-blue-600 animate-pulse shadow-md shadow-blue-100">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-base text-slate-800">Sedang Memproses Import Data...</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Mendaftarkan {parsedImportUsers.length} akun pengguna ke Database Cloud. Mohon tidak menutup halaman ini.
+                    </p>
+                  </div>
+
+                  {/* Animated Progress Bar */}
+                  <div className="max-w-md mx-auto space-y-2">
+                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 rounded-full transition-all duration-300 relative overflow-hidden"
+                        style={{ width: `${importProgress}%` }}
+                      >
+                        <div className="absolute inset-0 bg-white/30 animate-[shimmer_1.5s_infinite] -skew-x-12" />
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-[11px] font-bold text-slate-400">
+                      <span>Proses: {importProgress}%</span>
+                      <span>{Math.round((importProgress / 100) * parsedImportUsers.length)} / {parsedImportUsers.length} Data</span>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-5">
@@ -852,39 +893,50 @@ export default function AdminUserManagementPage() {
                     />
                     <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
                     <p className="text-xs font-bold text-slate-700 mb-1">
-                      {selectedFile ? selectedFile.name : 'Pilih File atau Tarik & Lepas File (.csv)'}
+                      {selectedFile ? selectedFile.name : 'Pilih File atau Tarik & Lepas File (.csv / .xlsx)'}
                     </p>
                     <p className="text-[11px] text-slate-400">
                       {parsedImportUsers.length > 0
                         ? `✅ Terdeteksi ${parsedImportUsers.length} baris akun dari file`
-                        : 'Mendukung format CSV dengan header: Nama Lengkap, Email, Role, Kelas/Mapel'}
+                        : 'Mendukung format CSV & Excel (.xlsx) dengan header: Nama Lengkap, Email, Role, Kelas/Mapel'}
                     </p>
                   </label>
 
                   <div className="text-[11px] text-slate-500 bg-slate-50 p-4 rounded-xl space-y-1">
-                    <p className="font-bold text-slate-700">Format kolom CSV yang disarankan:</p>
+                    <p className="font-bold text-slate-700">Format kolom CSV / Excel yang disarankan:</p>
                     <p>1. Nama Lengkap | 2. Email | 3. Role (Teacher/Student) | 4. Kelas/Mapel</p>
                   </div>
 
                   <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 sticky bottom-0 bg-white z-10">
                     <button
                       type="button"
+                      disabled={isImporting}
                       onClick={() => {
                         setIsImportModalOpen(false);
                         setSelectedFile(null);
                         setParsedImportUsers([]);
                       }}
-                      className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
+                      className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer disabled:opacity-50"
                     >
                       Batal
                     </button>
                     <button
                       type="button"
+                      disabled={isImporting || parsedImportUsers.length === 0}
                       onClick={handleProcessImport}
-                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 cursor-pointer"
+                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-2xl shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                     >
-                      <Upload className="w-4 h-4" />
-                      <span>{parsedImportUsers.length > 0 ? `Proses Import (${parsedImportUsers.length} Data)` : 'Proses Import Data'}</span>
+                      {isImporting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Sedang Mengimpor ({parsedImportUsers.length} Data)...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          <span>{parsedImportUsers.length > 0 ? `Proses Import (${parsedImportUsers.length} Data)` : 'Proses Import Data'}</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

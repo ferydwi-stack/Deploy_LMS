@@ -116,24 +116,32 @@ class AdminController extends Controller
             'users.*.role' => 'required|in:admin,guru,siswa',
         ]);
 
+        $defaultHash = Hash::make('password123');
         $imported = 0;
-        foreach ($request->users as $userData) {
-            User::updateOrCreate(
-                ['email' => $userData['email']],
-                [
-                    'name' => $userData['name'],
-                    'password' => Hash::make($userData['password'] ?? '12345678'),
-                    'role' => $userData['role'],
-                    'nisn_or_nip' => $userData['nisn_or_nip'] ?? null,
-                    'class_name' => $userData['class_name'] ?? $userData['kelas'] ?? null,
-                    'subject' => $userData['subject'] ?? null,
-                ]
-            );
-            $imported++;
-        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $defaultHash, &$imported) {
+            foreach ($request->users as $userData) {
+                $password = !empty($userData['password']) && $userData['password'] !== 'password123' && $userData['password'] !== '12345678'
+                    ? Hash::make($userData['password'])
+                    : $defaultHash;
+
+                User::updateOrCreate(
+                    ['email' => $userData['email']],
+                    [
+                        'name' => $userData['name'],
+                        'password' => $password,
+                        'role' => $userData['role'],
+                        'nisn_or_nip' => $userData['nisn_or_nip'] ?? null,
+                        'class_name' => $userData['class_name'] ?? $userData['kelas'] ?? null,
+                        'subject' => $userData['subject'] ?? null,
+                    ]
+                );
+                $imported++;
+            }
+        });
 
         return response()->json([
-            'message' => "Berhasil mengimpor {$imported} data pengguna.",
+            'message' => "Berhasil mengimpor {$imported} data pengguna ke database.",
         ]);
     }
 
