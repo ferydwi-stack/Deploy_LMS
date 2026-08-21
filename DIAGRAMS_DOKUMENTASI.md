@@ -1,85 +1,20 @@
 # 📊 Dokumentasi Diagram Sistem E-Learning (EduSchool LMS)
 
-Dokumen ini berisi kumpulan diagram visual lengkap yang memodelkan arsitektur, use case terpadu (*unified use case*), relasi database (*unified ERD*), flowchart alur sistem terpadu (*unified end-to-end flowchart*), dan sequence diagram untuk **Sistem E-Learning EduSchool LMS**.
-
-Seluruh diagram dibuat menggunakan standar **Mermaid** sehingga dapat dirender langsung di GitHub, GitLab, VS Code, maupun tools markdown viewer lainnya.
+Dokumen ini berisi **3 Diagram Utama Terpadu** yang memodelkan fungsionalitas use case, struktur relasi database (ERD), dan alur operasional sistem (Flowchart) untuk **Sistem E-Learning EduSchool LMS**.
 
 ---
 
-## 📑 Daftar Isi Diagram
+## 📑 Daftar Isi Diagram Utama
 
-1. [Diagram Arsitektur Sistem Terpadu (System Architecture)](#1-diagram-arsitektur-sistem-terpadu-system-architecture)
-2. [Diagram Use Case Lengkap Terpadu (Unified Master Use Case Diagram)](#2-diagram-use-case-lengkap-terpadu-unified-master-use-case-diagram)
-3. [Diagram Relasi Database Terpadu (Unified Entity Relationship Diagram - ERD)](#3-diagram-relasi-database-terpadu-unified-entity-relationship-diagram---erd)
-4. [Diagram Alir Sistem Terpadu (Unified End-to-End System Flowchart)](#4-diagram-alir-sistem-terpadu-unified-end-to-end-system-flowchart)
-5. [Diagram Sekuensial (Sequence Diagrams)](#5-diagram-sekuensial-sequence-diagrams)
-   - [5.1 Sequence Autentikasi (Login Sanctum)](#51-sequence-autentikasi-login-sanctum)
-   - [5.2 Sequence Submit Tugas & Grading Notifikasi](#52-sequence-submit-tugas--grading-notifikasi)
-   - [5.3 Sequence Self-Attendance (Presensi Mandiri)](#53-sequence-self-attendance-presensi-mandiri)
+1. [Diagram Use Case Terpadu (Unified Use Case Diagram)](#1-diagram-use-case-terpadu-unified-use-case-diagram)
+2. [Diagram Relasi Database Terpadu (Unified Entity Relationship Diagram - ERD)](#2-diagram-relasi-database-terpadu-unified-entity-relationship-diagram---erd)
+3. [Diagram Alir Sistem Terpadu (Unified End-to-End System Flowchart)](#3-diagram-alir-sistem-terpadu-unified-end-to-end-system-flowchart)
 
 ---
 
-## 1. Diagram Arsitektur Sistem Terpadu (System Architecture)
+## 1. Diagram Use Case Terpadu (Unified Use Case Diagram)
 
-```mermaid
-flowchart TB
-    subgraph ClientLayer [" 💻 Client Layer (Web Browser) "]
-        UI["Next.js 15 App Router<br/>(React 19, TypeScript, Tailwind CSS v4)"]
-        StateCtx["LmsContext & useAuth<br/>(Local State & Token Storage)"]
-        RealtimeHook["useRealtimeData & BroadcastChannel<br/>(Cross-Tab Sync & Focus Revalidation)"]
-    end
-
-    subgraph CDNLayer [" ☁️ Edge & Deployment Platform "]
-        VercelCDN["Vercel Global Edge Network<br/>(Hosting Frontend SPA/SSR)"]
-    end
-
-    subgraph BackendLayer [" ⚙️ Backend Application Layer (Railway Cloud) "]
-        Router["Laravel 12 Routing Engine<br/>(/api/v1/*)"]
-        MiddlewareAuth["Sanctum Auth & CheckRole Middleware<br/>(admin · guru · siswa)"]
-        
-        subgraph Controllers [" API Controllers "]
-            C_Auth["AuthController"]
-            C_Admin["AdminController"]
-            C_Course["CourseController"]
-            C_Assign["AssignmentController"]
-            C_Sub["SubmissionController"]
-            C_Att["AttendanceController"]
-            C_Mat["MaterialController"]
-            C_Notif["NotificationController"]
-        end
-
-        subgraph ServiceDomain [" Service Domain & Event Layer "]
-            S_Course["CourseService"]
-            S_Att["AttendanceService"]
-            S_Sub["SubmissionService"]
-            S_Notif["NotificationService"]
-            Events["Events & Listeners<br/>(SubmissionCreated, SubmissionGraded)"]
-        end
-
-        subgraph StorageSystem [" Storage Subsystem "]
-            LocalStorage["Public Storage Disk<br/>(/storage/materials, /storage/submissions)"]
-        end
-    end
-
-    subgraph DataLayer [" 🗄️ Database Layer (Railway MySQL 8.0) "]
-        MySQL[(MySQL Relational Database<br/>11 Core Tables)]
-    end
-
-    UI <--> VercelCDN
-    UI -- "HTTPS REST Request (Bearer Token)" --> Router
-    Router --> MiddlewareAuth
-    MiddlewareAuth --> Controllers
-    Controllers --> ServiceDomain
-    ServiceDomain --> Events
-    ServiceDomain --> StorageSystem
-    ServiceDomain -- "Eloquent ORM Queries" --> MySQL
-```
-
----
-
-## 2. Diagram Use Case Lengkap Terpadu (Unified Master Use Case Diagram)
-
-Diagram Use Case di bawah ini menyatukan seluruh aktor (**Administrator**, **Guru Pengajar**, dan **Peserta Didik / Siswa**) beserta seluruh fungsionalitas sistem ke dalam **satu diagram utuh terpadu**:
+Diagram Use Case ini menyatukan seluruh aktor (**Administrator**, **Guru Pengajar**, dan **Peserta Didik / Siswa**) ke dalam satu batasan sistem terpadu yang mencakup seluruh modul fungsional:
 
 ```mermaid
 flowchart LR
@@ -88,57 +23,56 @@ flowchart LR
     Guru((👨‍🏫 Guru Pengajar))
     Siswa((👨‍🎓 Peserta Didik))
 
-    subgraph SystemBoundary [" 🏫 Sistem E-Learning EduSchool LMS (Unified System Boundary) "]
+    subgraph SystemBoundary [" 🏫 Sistem E-Learning EduSchool LMS "]
         
-        %% ================= SHARED CORE USE CASES =================
-        subgraph CoreModule [" 🔐 Modul Inti Bersama (Shared Core) "]
-            UC_Login(["1. Login & Autentikasi Akun"])
-            UC_Forgot(["2. Lupa / Reset Password"])
-            UC_Profile(["3. Kelola Profil Pribadi"])
-            UC_Notif(["4. Notifikasi Lonceng Real-time"])
+        %% Shared Core
+        subgraph CoreModule [" 🔐 Modul Autentikasi & Akun (Shared) "]
+            UC_Login(["Login & Autentikasi"])
+            UC_Forgot(["Lupa / Reset Password"])
+            UC_Profile(["Kelola Profil Pribadi"])
+            UC_Notif(["Notifikasi Lonceng Real-time"])
         end
 
-        %% ================= ADMIN USE CASES =================
+        %% Admin
         subgraph AdminModule [" 🛡️ Modul Administrator "]
-            UC_AdmDashboard(["5. Dashboard Statistik Global"])
-            UC_ManageUser(["6. Manajemen Pengguna (CRUD)"])
-            UC_ResetPassUser(["7. Reset Sandi Pengguna Lain"])
-            UC_BulkImport(["8. Bulk Import Akun (Excel/CSV)"])
-            UC_MonitorCourse(["9. Monitoring Kelas & Mapel"])
-            UC_Settings(["10. Pengaturan Sekolah & Semester"])
-            UC_ExportReports(["11. Rekapitulasi & Ekspor Laporan"])
+            UC_AdmDashboard(["Dashboard Statistik Global"])
+            UC_ManageUser(["Manajemen Pengguna (CRUD)"])
+            UC_ResetPassUser(["Reset Sandi Akun Pengguna"])
+            UC_BulkImport(["Bulk Import Akun (Excel/CSV)"])
+            UC_MonitorCourse(["Monitoring Kelas & Mapel"])
+            UC_Settings(["Pengaturan Sekolah & Semester"])
+            UC_ExportReports(["Rekapitulasi & Ekspor Laporan"])
         end
 
-        %% ================= GURU USE CASES =================
+        %% Guru
         subgraph GuruModule [" 📚 Modul Guru Pengajar "]
-            UC_GuruDashboard(["12. Dashboard Guru & Metrik Kelas"])
-            UC_ManageCourse(["13. Buat & Kelola Kelas Mapel"])
-            UC_SetAttendanceSched(["14. Atur Jam Buka-Tutup Presensi"])
-            UC_UploadMaterial(["15. Unggah Materi (Doc/PDF/Link)"])
-            UC_CreateTask(["16. Terbitkan Tugas & LKPD"])
-            UC_ReviewSubmissions(["17. Periksa Pengumpulan Siswa"])
-            UC_GradeTask(["18. Beri Nilai & Feedback Ulasan"])
-            UC_InputExams(["19. Input Nilai UTS & UAS"])
-            UC_ManageClassAttendance(["20. Rekap Presensi Kelas"])
-            UC_KickStudent(["21. Keluarkan Siswa dari Kelas"])
+            UC_GuruDashboard(["Dashboard Guru & Statistik"])
+            UC_ManageCourse(["Buat & Kelola Kelas Mapel"])
+            UC_SetAttendanceSched(["Atur Jadwal Jam Presensi"])
+            UC_UploadMaterial(["Unggah Modul Ajar (PDF/Link)"])
+            UC_CreateTask(["Terbitkan Tugas / LKPD & Deadline"])
+            UC_ReviewSubmissions(["Periksa Jawaban Tugas Siswa"])
+            UC_GradeTask(["Beri Nilai & Feedback Ulasan"])
+            UC_InputExams(["Input Nilai Ujian UTS & UAS"])
+            UC_ManageClassAttendance(["Rekap Presensi Harian Kelas"])
+            UC_KickStudent(["Keluarkan Siswa dari Kelas"])
         end
 
-        %% ================= SISWA USE CASES =================
+        %% Siswa
         subgraph SiswaModule [" 🎒 Modul Peserta Didik (Siswa) "]
-            UC_SiswaDashboard(["22. Dashboard Jadwal & Tugas Aktif"])
-            UC_JoinCourse(["23. Gabung Kelas via Kode / Katalog"])
-            UC_LeaveCourse(["24. Keluar dari Kelas"])
-            UC_ReadMaterial(["25. Akses & Baca Modul Ajar"])
-            UC_SelfAttend(["26. Presensi Mandiri Hari Ini"])
-            UC_ViewAttHistory(["27. Cek Riwayat Kehadiran"])
-            UC_SubmitTask(["28. Kumpul Jawaban / Unggah File"])
-            UC_ViewGrades(["29. Rapor Nilai Siswa (Tugas/UTS/UAS)"])
+            UC_SiswaDashboard(["Dashboard Jadwal & Tugas Siswa"])
+            UC_JoinCourse(["Gabung Kelas (Kode / Katalog)"])
+            UC_LeaveCourse(["Keluar dari Kelas"])
+            UC_ReadMaterial(["Akses & Baca Modul Pembelajaran"])
+            UC_SelfAttend(["Presensi / Absensi Mandiri"])
+            UC_ViewAttHistory(["Cek Riwayat Kehadiran Siswa"])
+            UC_SubmitTask(["Kumpul Tugas (Teks / File)"])
+            UC_ViewGrades(["Rapor Nilai Siswa (Tugas/UTS/UAS)"])
         end
 
     end
 
-    %% ================= ACTOR CONNECTIONS =================
-    %% Shared Core Connections
+    %% Shared Connections
     Admin --- UC_Login
     Guru --- UC_Login
     Siswa --- UC_Login
@@ -202,9 +136,9 @@ flowchart LR
 
 ---
 
-## 3. Diagram Relasi Database Terpadu (Unified Entity Relationship Diagram - ERD)
+## 2. Diagram Relasi Database Terpadu (Unified Entity Relationship Diagram - ERD)
 
-Diagram ERD terpadu ini memodelkan seluruh **11 tabel basis data MySQL 8.0**, lengkap dengan atribut, *Primary Key (PK)*, *Foreign Key (FK)*, tipe data, serta kardinalitas relasi antar entitas:
+Diagram ERD terpadu ini memodelkan seluruh **11 tabel basis data MySQL 8.0**, lengkap dengan atribut, *Primary Key (PK)*, *Foreign Key (FK)*, tipe data, serta kardinalitas relasi:
 
 ```mermaid
 erDiagram
@@ -345,9 +279,9 @@ erDiagram
 
 ---
 
-## 4. Diagram Alir Sistem Terpadu (Unified End-to-End System Flowchart)
+## 3. Diagram Alir Sistem Terpadu (Unified End-to-End System Flowchart)
 
-Diagram alir terpadu ini menyajikan seluruh proses operasional pembelajaran digital secara *End-to-End* dalam satu diagram terintegrasi:
+Diagram alir terpadu ini menyajikan seluruh proses operasional pembelajaran digital secara *End-to-End* dalam satu alur komprehensif:
 
 ```mermaid
 flowchart TD
@@ -438,117 +372,4 @@ flowchart TD
 
 ---
 
-## 5. Diagram Sekuensial (Sequence Diagrams)
-
-### 5.1 Sequence Autentikasi (Login Sanctum)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Pengguna (Admin/Guru/Siswa)
-    participant UI as Next.js Frontend
-    participant API as Laravel AuthController
-    participant Sanctum as Laravel Sanctum
-    participant DB as MySQL Database
-
-    User->>UI: Input Email & Password
-    UI->>API: POST /api/v1/auth/login {email, password}
-    API->>DB: Query: SELECT * FROM users WHERE email = ?
-    DB-->>API: Return User Record
-    
-    alt Password Tidak Cocok / User Tidak Ditemukan
-        API-->>UI: 401 Unauthorized {message: "Email atau password salah"}
-        UI-->>User: Tampilkan Notifikasi Error
-    else Kredensial Valid
-        API->>Sanctum: createToken('auth_token')
-        Sanctum->>DB: INSERT INTO personal_access_tokens
-        DB-->>Sanctum: Token ID
-        Sanctum-->>API: Plaintext Token
-        API-->>UI: 200 OK {access_token, user: {id, name, role, ...}}
-        UI->>UI: Simpan token ke localStorage('lms_token')
-        UI->>UI: Redirect ke Dashboard sesuai Role
-        UI-->>User: Tampilkan Halaman Dashboard Utama
-    end
-```
-
----
-
-### 5.2 Sequence Submit Tugas & Grading Notifikasi
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Siswa as 👨‍🎓 Siswa
-    actor Guru as 👨‍🏫 Guru
-    participant UI as Next.js Client
-    participant SubAPI as SubmissionController
-    participant EventSys as Laravel Event & Listener
-    participant Storage as File Storage Disk
-    participant DB as MySQL Database
-
-    %% Siswa Submit
-    Siswa->>UI: Pilih File Jawaban / Input Teks
-    UI->>SubAPI: POST /api/v1/assignments/{id}/submit (FormData)
-    SubAPI->>Storage: Simpan file ke /storage/submissions/
-    Storage-->>SubAPI: Path File Disimpan
-    SubAPI->>DB: INSERT INTO submissions (assignment_id, student_id, file_path, status)
-    DB-->>SubAPI: Submission ID
-    SubAPI->>EventSys: dispatch(new SubmissionCreated($submission))
-    EventSys->>DB: INSERT INTO notifications (user_id=guru_id, message="Siswa telah mengumpulkan tugas")
-    SubAPI-->>UI: 200 OK {message: "Tugas berhasil dikumpulkan"}
-    UI-->>Siswa: Tampilkan status 'Terkumpul'
-
-    %% Guru Memberi Nilai
-    Guru->>UI: Buka Pengumpulan & Beri Nilai (e.g. 95) + Catatan Feedback
-    UI->>SubAPI: PUT /api/v1/submissions/{id}/grade {score: 95, teacher_feedback: "Sangat baik"}
-    SubAPI->>DB: UPDATE submissions SET score=95, teacher_feedback=..., status='graded'
-    DB-->>SubAPI: Success Update
-    SubAPI->>EventSys: dispatch(new SubmissionGraded($submission))
-    EventSys->>DB: INSERT INTO notifications (user_id=siswa_id, message="Tugas Anda telah dinilai: 95")
-    SubAPI-->>UI: 200 OK {message: "Nilai berhasil disimpan"}
-    UI-->>Guru: Tampilkan status 'Ternilai'
-    
-    %% Siswa Menerima Notif
-    Siswa->>UI: Auto-Refresh Real-time / Cek Lonceng Notifikasi
-    UI->>DB: GET /api/v1/notifications
-    DB-->>UI: Data Notifikasi Nilai Baru
-    UI-->>Siswa: Muncul Badge Notifikasi & Nilai Rapor Terbarui
-```
-
----
-
-### 5.3 Sequence Self-Attendance (Presensi Mandiri)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Siswa as 👨‍🎓 Siswa
-    participant UI as Next.js Client
-    participant AttAPI as AttendanceController
-    participant AttService as AttendanceService
-    participant DB as MySQL Database
-
-    Siswa->>UI: Klik 'Presensi Mandiri' pada Kelas
-    UI->>AttAPI: POST /api/v1/attendances/self {course_id}
-    AttAPI->>AttService: selfAttend(user, course_id)
-    AttService->>DB: Query Course Jadwal (attendance_open_time, attendance_close_time)
-    DB-->>AttService: Schedule Data
-    
-    alt Waktu Sekarang di Luar Jadwal
-        AttService-->>AttAPI: Throw ValidationException ("Di luar jadwal presensi")
-        AttAPI-->>UI: 422 Unprocessable Entity
-        UI-->>Siswa: Tampilkan Alert "Presensi belum dibuka / sudah ditutup"
-    else Waktu Sesuai Jadwal
-        AttService->>DB: Check: EXISTS(attendances WHERE course_id=? AND student_id=? AND date=TODAY)
-        DB-->>AttService: False (Belum Absen)
-        AttService->>DB: INSERT INTO attendances (course_id, student_id, date, status='hadir')
-        DB-->>AttService: Success Insert
-        AttService-->>AttAPI: Attendance Record
-        AttAPI-->>UI: 200 OK {message: "Kehadiran berhasil dicatat"}
-        UI-->>Siswa: Tampilkan Badge Hijau "Hadir"
-    end
-```
-
----
-
-*Dokumentasi Diagram Lengkap Terpadu ini disusun untuk melengkapi pelaporan teknis, skripsi/tugas akhir, dan pemahaman arsitektur sistem E-Learning.*
+*Dokumentasi 3 Diagram Utama Terpadu disusun untuk melengkapi pelaporan teknis, skripsi/tugas akhir, dan pemahaman komprehensif arsitektur sistem E-Learning.*
