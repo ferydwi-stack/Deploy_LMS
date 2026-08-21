@@ -422,8 +422,8 @@ export default function GuruReportsPage() {
                         <button
                           onClick={() => {
                             setEditingStudent(row);
-                            setInputUts(row.utsScore.toString());
-                            setInputUas(row.uasScore.toString());
+                            setInputUts(row.utsScore !== null && row.utsScore !== undefined ? String(row.utsScore) : '');
+                            setInputUas(row.uasScore !== null && row.uasScore !== undefined ? String(row.uasScore) : '');
                           }}
                           className="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-600 font-bold rounded-xl text-[11px] transition inline-flex items-center gap-1.5 cursor-pointer"
                         >
