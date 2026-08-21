@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::table('course_student', function (Blueprint $table) {
             if (!Schema::hasColumn('course_student', 'uts_score')) {
-                $table->integer('uts_score')->nullable()->default(80)->after('status');
+                $table->integer('uts_score')->nullable()->default(null)->after('status');
             }
             if (!Schema::hasColumn('course_student', 'uas_score')) {
-                $table->integer('uas_score')->nullable()->default(85)->after('uts_score');
+                $table->integer('uas_score')->nullable()->default(null)->after('uts_score');
             }
         });
     }
