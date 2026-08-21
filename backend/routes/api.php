@@ -27,8 +27,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
 
-        Route::get('/admin/stats', [AdminController::class, 'stats']);
-
         Route::get('/courses', [CourseController::class, 'index']);
         Route::get('/available-courses', [EnrollmentController::class, 'available']);
         Route::get('/courses/{id}', [CourseController::class, 'show']);
@@ -72,6 +70,7 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+        Route::get('/stats', [AdminController::class, 'stats']);
         Route::get('/users', [AdminController::class, 'indexUsers']);
         Route::post('/users', [AdminController::class, 'storeUser']);
         Route::put('/users/{id}', [AdminController::class, 'updateUser']);

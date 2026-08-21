@@ -263,7 +263,7 @@ export default function LoginPage() {
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <span className="text-slate-700 text-xs">
-                    <strong className="text-slate-900 font-bold">Admin</strong> — admin@EduSchool.sch.id
+                    <strong className="text-slate-900 font-bold">Admin</strong> — admin@lms.com
                   </span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-[#1D4ED8] opacity-0 group-hover:opacity-100 transition" />
@@ -280,7 +280,7 @@ export default function LoginPage() {
                     <UserCheck className="w-4 h-4" />
                   </div>
                   <span className="text-slate-700 text-xs">
-                    <strong className="text-slate-900 font-bold">Guru</strong> — guru@EduSchool.sch.id
+                    <strong className="text-slate-900 font-bold">Guru</strong> — guru@lms.com
                   </span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-[#1D4ED8] opacity-0 group-hover:opacity-100 transition" />
@@ -297,7 +297,7 @@ export default function LoginPage() {
                     <BookOpen className="w-4 h-4" />
                   </div>
                   <span className="text-slate-700 text-xs">
-                    <strong className="text-slate-900 font-bold">Siswa</strong> — siswa@EduSchool.sch.id
+                    <strong className="text-slate-900 font-bold">Siswa</strong> — siswa@lms.com
                   </span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-[#1D4ED8] opacity-0 group-hover:opacity-100 transition" />

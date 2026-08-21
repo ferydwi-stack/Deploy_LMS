@@ -32,10 +32,13 @@ export default function TypewriterText({
     };
   }, []);
 
-  useEffect(() => {
-    if (!phrases || phrases.length === 0) return;
+  const phrasesSerialized = JSON.stringify(phrases);
 
-    const currentPhrase = phrases[phraseIndex % phrases.length];
+  useEffect(() => {
+    const list = JSON.parse(phrasesSerialized) as string[];
+    if (!list || list.length === 0) return;
+
+    const currentPhrase = list[phraseIndex % list.length] || '';
 
     // 1. Paused after finishing phrase -> trigger smooth fade out
     if (isPaused) {
@@ -46,7 +49,7 @@ export default function TypewriterText({
         timerRef.current = setTimeout(() => {
           setCharIndex(0);
           setIsPaused(false);
-          setPhraseIndex((prev) => (prev + 1) % phrases.length);
+          setPhraseIndex((prev) => (prev + 1) % list.length);
           setFadeState('in');
         }, 380);
       }, pauseDuration);
@@ -77,10 +80,10 @@ export default function TypewriterText({
       };
     } else {
       // Finished typing current phrase
-      if (phrases.length === 1 && !loop) return;
+      if (list.length === 1 && !loop) return;
       setIsPaused(true);
     }
-  }, [charIndex, isPaused, phraseIndex, phrases, typingSpeed, pauseDuration, loop]);
+  }, [charIndex, isPaused, phraseIndex, phrasesSerialized, typingSpeed, pauseDuration, loop]);
 
   const currentPhrase = phrases[phraseIndex % phrases.length] || '';
   const displayedText = currentPhrase.slice(0, charIndex);

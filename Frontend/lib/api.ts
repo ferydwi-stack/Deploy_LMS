@@ -12,9 +12,16 @@ import type {
 } from '@/types/api';
 
 const getApiBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
   if (typeof window !== 'undefined') {
     const host = window.location.hostname || 'localhost';
-    return `http://${host}:8000/api/v1`;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return `http://${host}:8000/api/v1`;
+    }
+    // For ngrok or any custom domain, use relative endpoint proxied by Next.js rewrites
+    return '/api/v1';
   }
   return 'http://127.0.0.1:8000/api/v1';
 };
