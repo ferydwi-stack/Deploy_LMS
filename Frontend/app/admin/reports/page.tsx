@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Download, Calendar, CheckCircle2, UserCheck, Users, Printer, FileSpreadsheet, ChevronDown } from 'lucide-react';
+import { Download, Calendar, CheckCircle2, GraduationCap, Users, Printer, FileSpreadsheet, ChevronDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { api } from '@/lib/api';
 
@@ -10,74 +10,84 @@ export default function AdminReportsPage() {
   const [range, setRange] = useState('minggu');
   const [downloadNotice, setDownloadNotice] = useState('');
   const [reportData, setReportData] = useState<any[]>([]);
-  const [overallStats, setOverallStats] = useState({ studentPercent: 0, teacherPercent: 100, effectiveDays: 22 });
+  const [overallStats, setOverallStats] = useState({
+    studentPercent: 0,
+    activeCourses: 0,
+    activeTeachers: 0,
+    effectiveDays: 22
+  });
 
   useEffect(() => {
     const fetchReports = async () => {
-  try {
-    const coursesData = await api.getCourses().catch(() => []);
-    const courses = Array.isArray(coursesData) ? coursesData : [];
-    const reportResponses = await Promise.all(
-      courses.map((c: any) => api.getCourseReport(c.id).catch(() => null))
-    );
+      try {
+        const coursesData = await api.getCourses().catch(() => []);
+        const courses = Array.isArray(coursesData) ? coursesData : [];
+        const reportResponses = await Promise.all(
+          courses.map((c: any) => api.getCourseReport(c.id).catch(() => null))
+        );
 
-    let totalHadirAll = 0;
-    let totalAttendanceAll = 0;
+        let totalHadirAll = 0;
+        let totalAttendanceAll = 0;
 
-    const courseReports = reportResponses
-      .map((res: any) => {
-        if (!res?.course) return null;
-        const course = res.course;
-        const students = Array.isArray(res.students) ? res.students : [];
-        const attendances = Array.isArray(res.attendances) ? res.attendances : [];
-        const total = students.length;
-        const hadir = attendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
-        const izin = attendances.filter((a: any) => String(a.status).toLowerCase() === 'izin').length;
-        const sakit = attendances.filter((a: any) => String(a.status).toLowerCase() === 'sakit').length;
-        const alpa = attendances.filter((a: any) =>
-          String(a.status).toLowerCase() === 'alpha' || String(a.status).toLowerCase() === 'alfa'
-        ).length;
-        const percent = attendances.length > 0 ? `${Math.round((hadir / attendances.length) * 100)}%` : '0%';
+        const courseReports = reportResponses
+          .map((res: any) => {
+            if (!res?.course) return null;
+            const course = res.course;
+            const students = Array.isArray(res.students) ? res.students : [];
+            const attendances = Array.isArray(res.attendances) ? res.attendances : [];
+            const total = students.length;
+            const hadir = attendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
+            const izin = attendances.filter((a: any) => String(a.status).toLowerCase() === 'izin').length;
+            const sakit = attendances.filter((a: any) => String(a.status).toLowerCase() === 'sakit').length;
+            const alpa = attendances.filter((a: any) =>
+              String(a.status).toLowerCase() === 'alpha' || String(a.status).toLowerCase() === 'alfa'
+            ).length;
+            const percent = attendances.length > 0 ? `${Math.round((hadir / attendances.length) * 100)}%` : '0%';
 
-        totalHadirAll += hadir;
-        totalAttendanceAll += attendances.length;
+            totalHadirAll += hadir;
+            totalAttendanceAll += attendances.length;
 
-        return {
-          class: course.title,
-          teacher: course.teacher?.name || 'Guru',
-          total,
-          hadir,
-          izin,
-          sakit,
-          alpa,
-          percent,
-        };
-      })
-      .filter(Boolean);
+            return {
+              class: course.title,
+              teacher: course.teacher?.name || 'Guru',
+              total,
+              hadir,
+              izin,
+              sakit,
+              alpa,
+              percent,
+            };
+          })
+          .filter(Boolean);
 
-    const studentPercent = totalAttendanceAll > 0
-      ? Math.round((totalHadirAll / totalAttendanceAll) * 100)
-      : 0;
+        const studentPercent = totalAttendanceAll > 0
+          ? Math.round((totalHadirAll / totalAttendanceAll) * 100)
+          : 0;
 
-    const allAttendanceDates = new Set<string>();
-    reportResponses.forEach((res: any) => {
-      const atts = Array.isArray(res?.attendances) ? res.attendances : [];
-      atts.forEach((a: any) => {
-        if (a.date) allAttendanceDates.add(String(a.date).substring(0, 10));
-      });
-    });
-    const effectiveDays = allAttendanceDates.size;
+        const allAttendanceDates = new Set<string>();
+        reportResponses.forEach((res: any) => {
+          const atts = Array.isArray(res?.attendances) ? res.attendances : [];
+          atts.forEach((a: any) => {
+            if (a.date) allAttendanceDates.add(String(a.date).substring(0, 10));
+          });
+        });
+        const effectiveDays = allAttendanceDates.size;
 
-    setReportData(courseReports);
-    setOverallStats({
-      studentPercent,
-      teacherPercent: courseReports.length > 0 ? 100 : 0,
-      effectiveDays: effectiveDays
-    });
-  } catch (e) {
-    console.error('Failed to fetch admin reports:', e);
-  }
-};
+        const totalTeachers = new Set(
+          courses.map((c: any) => c.teacher?.name || c.teacher?.id || c.teacher_id).filter(Boolean)
+        ).size || (courses.length > 0 ? 1 : 0);
+
+        setReportData(courseReports);
+        setOverallStats({
+          studentPercent,
+          activeCourses: courses.length,
+          activeTeachers: totalTeachers,
+          effectiveDays: effectiveDays > 0 ? effectiveDays : 22
+        });
+      } catch (e) {
+        console.error('Failed to fetch admin reports:', e);
+      }
+    };
 
     fetchReports();
   }, [range]);
@@ -151,7 +161,7 @@ return (
     <DashboardLayout
       role="admin"
       title="Laporan & Presensi Global"
-      subtitle="Rekapitulasi persentase kehadiran harian siswa dan guru di seluruh sekolah"
+      subtitle="Rekapitulasi persentase kehadiran harian siswa dan status pembelajaran di seluruh sekolah"
     >
       {/* Toast Notification */}
       {downloadNotice && (
@@ -165,7 +175,7 @@ return (
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
   <div className="bg-[#10B981] rounded-[22px] p-6 shadow-none flex flex-col justify-between text-white">
     <div className="flex items-center justify-between mb-4">
-      <span className="text-xs font-bold uppercase opacity-90">Kehadiran Siswa</span>
+      <span className="text-xs font-bold uppercase opacity-90 tracking-wider">Kehadiran Siswa</span>
       <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
         <Users className="w-4 h-4 text-white" />
       </div>
@@ -176,18 +186,20 @@ return (
 
   <div className="bg-[#3B82F6] rounded-[22px] p-6 shadow-none flex flex-col justify-between text-white">
     <div className="flex items-center justify-between mb-4">
-      <span className="text-xs font-bold uppercase opacity-90">Kehadiran Staf Guru</span>
+      <span className="text-xs font-bold uppercase opacity-90 tracking-wider">Kelas Pembelajaran Aktif</span>
       <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-        <UserCheck className="w-4 h-4 text-white" />
+        <GraduationCap className="w-4 h-4 text-white" />
       </div>
     </div>
-    <p className="text-4xl font-extrabold tracking-tight mb-1" suppressHydrationWarning>{overallStats.teacherPercent}%</p>
-    <p className="text-xs font-medium opacity-90">Pengajar hadir sesuai jadwal</p>
+    <p className="text-4xl font-extrabold tracking-tight mb-1" suppressHydrationWarning>{overallStats.activeCourses} Kelas</p>
+    <p className="text-xs font-medium opacity-90">
+      {overallStats.activeTeachers > 0 ? `${overallStats.activeTeachers} Staf Pengajar Terdaftar` : 'Mata pelajaran aktif semester ini'}
+    </p>
   </div>
 
   <div className="bg-[#8B5CF6] rounded-[22px] p-6 shadow-none flex flex-col justify-between text-white">
     <div className="flex items-center justify-between mb-4">
-      <span className="text-xs font-bold uppercase opacity-90">Hari Efektif Belajar</span>
+      <span className="text-xs font-bold uppercase opacity-90 tracking-wider">Hari Efektif Belajar</span>
       <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
         <Calendar className="w-4 h-4 text-white" />
       </div>
