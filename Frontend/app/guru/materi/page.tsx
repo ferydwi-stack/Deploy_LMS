@@ -158,26 +158,26 @@ function GuruMateriContent() {
         </div>
 
         {/* Sub-Navigation Tabs */}
-        <div className="flex items-center gap-6 border-b border-slate-200 text-sm font-bold pt-2">
+        <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 text-xs sm:text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-none">
           <Link
             href={`/guru/materi${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-[#2563EB] border-b-2 border-[#2563EB]"
+            className="flex items-center gap-2 pb-3 text-[#2563EB] border-b-2 border-[#2563EB] shrink-0"
           >
-            <BookOpen className="w-4 h-4 text-[#2563EB]" />
+            <BookOpen className="w-4 h-4 text-[#2563EB] shrink-0" />
             <span>Materi Pembelajaran</span>
           </Link>
           <Link
             href={`/guru/tugas${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
+            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition shrink-0"
           >
-            <FileCheck2 className="w-4 h-4 text-slate-400" />
+            <FileCheck2 className="w-4 h-4 text-slate-400 shrink-0" />
             <span>Tugas Kelas</span>
           </Link>
           <Link
             href={`/guru/absensi${queryParamsStr}`}
-            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition"
+            className="flex items-center gap-2 pb-3 text-slate-500 hover:text-slate-900 transition shrink-0"
           >
-            <CalendarCheck className="w-4 h-4 text-slate-400" />
+            <CalendarCheck className="w-4 h-4 text-slate-400 shrink-0" />
             <span>Kehadiran / Absensi</span>
           </Link>
         </div>
@@ -186,18 +186,18 @@ function GuruMateriContent() {
       {/* Success Toast */}
       {successNotice && (
         <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-2xl flex items-center gap-3 animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-          <span>{successNotice}</span>
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span className="break-words">{successNotice}</span>
         </div>
       )}
 
       {/* Main Section Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-slate-900 tracking-tight">Daftar Modul & Bahan Ajar</h3>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Daftar Modul & Bahan Ajar</h3>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-5 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center gap-2 cursor-pointer"
+          className="px-4 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
         >
           <Upload className="w-4 h-4" />
           <span>Unggah Materi Baru</span>
@@ -206,7 +206,7 @@ function GuruMateriContent() {
 
       {/* Materi Cards List Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {[1, 2].map((n) => (
             <div key={n} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs animate-pulse space-y-3">
               <div className="h-5 w-1/3 bg-slate-200 rounded-md"></div>
@@ -215,28 +215,28 @@ function GuruMateriContent() {
           ))}
         </div>
       ) : materiList.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {materiList.map((materi) => (
             <div
               key={materi.id}
-              className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md transition"
+              className="bg-white border border-slate-100 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col justify-between hover:shadow-md transition overflow-hidden min-w-0"
             >
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center justify-between mb-4">
                   <span className="px-3 py-1 bg-slate-100 text-slate-600 font-bold rounded-full font-mono text-[11px]">
                     {materi.category}
                   </span>
-                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center shrink-0">
                     {getCategoryIcon(materi.category)}
                   </div>
                 </div>
 
-                <h4 className="text-base font-bold text-slate-900 leading-snug mb-1">{materi.title}</h4>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">{materi.desc}</p>
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-snug mb-1.5 break-words">{materi.title}</h4>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6 break-all whitespace-pre-wrap">{materi.desc}</p>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => setPreviewMateri(materi)}
                     className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-[#2563EB] font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
