@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\StudentStatsController;
 
 use App\Http\Controllers\Api\TeacherStatsController;
 
-Route::prefix('v1')->group(function () {
+$registerApiRoutes = function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
@@ -81,4 +81,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings', [AdminController::class, 'getSettings']);
         Route::put('/settings', [AdminController::class, 'updateSettings']);
     });
-});
+};
+
+Route::prefix('v1')->group($registerApiRoutes);
+Route::prefix('api/v1')->group($registerApiRoutes);
+Route::group([], $registerApiRoutes);
+
