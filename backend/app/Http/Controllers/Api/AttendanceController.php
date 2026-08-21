@@ -35,6 +35,17 @@ class AttendanceController extends Controller
     {
         $this->authorize('update', $course);
         
+        if ($request->has('attendances') && is_array($request->input('attendances'))) {
+            $normalizedAttendances = array_map(function ($item) {
+                if (isset($item['status'])) {
+                    $st = strtolower(trim((string)$item['status']));
+                    $item['status'] = ($st === 'alpa') ? 'alpha' : $st;
+                }
+                return $item;
+            }, $request->input('attendances'));
+            $request->merge(['attendances' => $normalizedAttendances]);
+        }
+
         $validated = $request->validate([
             'date' => 'required|date',
             'attendances' => 'required|array',
