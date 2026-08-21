@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const zlib = require('zlib');
 
 const diagramsFile = path.join(__dirname, 'DIAGRAMS_DOKUMENTASI.md');
 const outDir = path.join(__dirname, 'docs', 'diagrams');
@@ -58,7 +59,8 @@ function encodeMermaid(code) {
       theme: 'default'
     }
   });
-  return Buffer.from(json).toString('base64url');
+  const deflated = zlib.deflateSync(Buffer.from(json, 'utf8'));
+  return 'pako:' + deflated.toString('base64url');
 }
 
 function downloadUrl(url, dest) {

@@ -23,56 +23,79 @@ flowchart LR
     Guru((👨‍🏫 Guru Pengajar))
     Siswa((👨‍🎓 Peserta Didik))
 
-    subgraph SystemBoundary [" 🏫 Sistem E-Learning EduSchool LMS "]
+    subgraph SystemBoundary [" 🏫 Sistem E-Learning EduSchool LMS (Batasan Sistem Lengkap) "]
         
-        %% Shared Core
-        subgraph CoreModule [" 🔐 Modul Autentikasi & Akun (Shared) "]
-            UC_Login(["Login & Autentikasi"])
-            UC_Forgot(["Lupa / Reset Password"])
-            UC_Profile(["Kelola Profil Pribadi"])
-            UC_Notif(["Notifikasi Lonceng Real-time"])
+        %% ================= 1. CORE SHARED USE CASES =================
+        subgraph CoreModule [" 🔐 1. Modul Autentikasi & Akun Bersama (Shared Core) "]
+            UC_Login(["Login & Autentikasi Akun (Sanctum)"])
+            UC_Forgot(["Lupa / Reset Password Akun Mandiri"])
+            UC_Profile(["Lihat & Edit Profil Pribadi (No HP/Bio)"])
+            UC_Notif(["Menerima Lonceng Notifikasi Real-time"])
+            UC_MarkNotif(["Tandai Notifikasi Dibaca (Satuan / Semua)"])
+            UC_Logout(["Logout / Keluar Sesi Pengguna"])
         end
 
-        %% Admin
-        subgraph AdminModule [" 🛡️ Modul Administrator "]
-            UC_AdmDashboard(["Dashboard Statistik Global"])
-            UC_ManageUser(["Manajemen Pengguna (CRUD)"])
-            UC_ResetPassUser(["Reset Sandi Akun Pengguna"])
-            UC_BulkImport(["Bulk Import Akun (Excel/CSV)"])
-            UC_MonitorCourse(["Monitoring Kelas & Mapel"])
-            UC_Settings(["Pengaturan Sekolah & Semester"])
-            UC_ExportReports(["Rekapitulasi & Ekspor Laporan"])
+        %% ================= 2. ADMINISTRATOR USE CASES =================
+        subgraph AdminModule [" 🛡️ 2. Modul Administrator (Super User) "]
+            UC_AdmDashboard(["Dashboard Statistik Global LMS"])
+            UC_ListUsers(["Lihat Daftar Pengguna (Filter Role/Kelas/Search)"])
+            UC_AddUser(["Tambah Pengguna Baru Manual (Guru/Siswa)"])
+            UC_EditUser(["Edit Data Pengguna (NIP/NISN/Mapel/Kelas)"])
+            UC_ResetPassUser(["Reset Kata Sandi Akun Pengguna Lain"])
+            UC_DeleteUser(["Hapus Akun Pengguna"])
+            UC_BulkImport(["Bulk Import Akun Massal (Excel/CSV 50+ User)"])
+            UC_MonitorCourse(["Monitoring Seluruh Kelas & Mata Pelajaran"])
+            UC_MonitorAssign(["Monitoring Seluruh Tugas & LKPD Sekolah"])
+            UC_Settings(["Kelola Identitas Sekolah & Tahun Ajaran"])
+            UC_ExportReports(["Rekapitulasi & Ekspor Laporan ke Excel/CSV"])
         end
 
-        %% Guru
-        subgraph GuruModule [" 📚 Modul Guru Pengajar "]
-            UC_GuruDashboard(["Dashboard Guru & Statistik"])
-            UC_ManageCourse(["Buat & Kelola Kelas Mapel"])
-            UC_SetAttendanceSched(["Atur Jadwal Jam Presensi"])
-            UC_UploadMaterial(["Unggah Modul Ajar (PDF/Link)"])
-            UC_CreateTask(["Terbitkan Tugas / LKPD & Deadline"])
-            UC_ReviewSubmissions(["Periksa Jawaban Tugas Siswa"])
-            UC_GradeTask(["Beri Nilai & Feedback Ulasan"])
-            UC_InputExams(["Input Nilai Ujian UTS & UAS"])
-            UC_ManageClassAttendance(["Rekap Presensi Harian Kelas"])
-            UC_KickStudent(["Keluarkan Siswa dari Kelas"])
+        %% ================= 3. GURU USE CASES =================
+        subgraph GuruModule [" 📚 3. Modul Guru Pengajar (Tenaga Pendidik) "]
+            UC_GuruDashboard(["Dashboard Guru & Ringkasan Siswa"])
+            UC_CreateCourse(["Buat Kelas / Mapel & Terbitkan Kode Kelas"])
+            UC_EditCourse(["Edit Informasi Kelas & Silabus Mapel"])
+            UC_ManageStudents(["Lihat & Kelola Siswa di Kelas"])
+            UC_KickStudent(["Keluarkan (Kick) Siswa dari Kelas"])
+            UC_SetAttendanceSched(["Atur Jadwal Buka-Tutup Presensi Kelas"])
+            UC_UploadMaterial(["Unggah Modul Bahan Ajar (PDF/Doc/Teks)"])
+            UC_LinkMaterial(["Publikasikan Materi Tautan Web / Video"])
+            UC_DeleteMaterial(["Hapus Bahan Ajar / Modul"])
+            UC_CreateTask(["Terbitkan Tugas/LKPD, Lampiran & Deadline"])
+            UC_EditTask(["Edit & Hapus Tugas / LKPD"])
+            UC_MonitorSubmissions(["Monitoring Status Pengumpulan Jawaban Siswa"])
+            UC_ReviewSubmissions(["Unduh & Periksa Berkas Lembar Jawaban"])
+            UC_GradeTask(["Beri Nilai Tugas (0-100) & Catatan Feedback"])
+            UC_InputExams(["Input Nilai Ujian Semester (UTS & UAS)"])
+            UC_ManageClassAttendance(["Rekap Presensi Harian (Hadir/Izin/Sakit/Alpa)"])
+            UC_OverrideAttendance(["Edit / Override Presensi Manual Siswa"])
+            UC_ExportClassReport(["Unduh / Cetak Rekap Nilai & Presensi Kelas"])
         end
 
-        %% Siswa
-        subgraph SiswaModule [" 🎒 Modul Peserta Didik (Siswa) "]
-            UC_SiswaDashboard(["Dashboard Jadwal & Tugas Siswa"])
-            UC_JoinCourse(["Gabung Kelas (Kode / Katalog)"])
-            UC_LeaveCourse(["Keluar dari Kelas"])
-            UC_ReadMaterial(["Akses & Baca Modul Pembelajaran"])
-            UC_SelfAttend(["Presensi / Absensi Mandiri"])
-            UC_ViewAttHistory(["Cek Riwayat Kehadiran Siswa"])
-            UC_SubmitTask(["Kumpul Tugas (Teks / File)"])
-            UC_ViewGrades(["Rapor Nilai Siswa (Tugas/UTS/UAS)"])
+        %% ================= 4. SISWA USE CASES =================
+        subgraph SiswaModule [" 🎒 4. Modul Peserta Didik (Siswa Pembelajar) "]
+            UC_SiswaDashboard(["Dashboard Siswa, Jadwal & Tugas Aktif"])
+            UC_BrowseCourses(["Jelajahi Katalog Kelas Pembelajaran"])
+            UC_JoinCourseCode(["Gabung Kelas via Input Kode Unik"])
+            UC_JoinCourseDirect(["Gabung Kelas Langsung dari Katalog"])
+            UC_LeaveCourse(["Keluar (Leave) dari Kelas yang Diikuti"])
+            UC_ReadMaterial(["Akses & Unduh Berkas Modul Pembelajaran"])
+            UC_OpenLinkMaterial(["Buka Tautan Sumber / Video Eksternal"])
+            UC_SelfAttend(["Presensi / Absensi Mandiri Hari Ini"])
+            UC_ViewAttHistory(["Cek Riwayat Kehadiran (Hadir/Izin/Sakit/Alpa)"])
+            UC_ViewTaskList(["Lihat Daftar Tugas & Batas Deadline"])
+            UC_ViewTaskDetail(["Buka Lembar Instruksi & Lampiran Tugas"])
+            UC_SubmitTask(["Kumpulkan Tugas (Upload File / Submit Teks)"])
+            UC_CheckMySubmissions(["Cek Bukti & Riwayat Pengumpulan Tugas"])
+            UC_ReceiveGradeNotif(["Terima Notifikasi Real-time Nilai dari Guru"])
+            UC_ViewFeedback(["Lihat Nilai Tugas & Catatan Evaluasi Guru"])
+            UC_ViewGrades(["Lihat Transkrip Rapor Nilai (Tugas/UTS/UAS)"])
         end
 
     end
 
-    %% Shared Connections
+    %% ================= ACTOR TO USE CASE ASSOCIATIONS =================
+    %% Shared Core Connections
     Admin --- UC_Login
     Guru --- UC_Login
     Siswa --- UC_Login
@@ -89,49 +112,77 @@ flowchart LR
     Guru --- UC_Notif
     Siswa --- UC_Notif
 
+    Admin --- UC_MarkNotif
+    Guru --- UC_MarkNotif
+    Siswa --- UC_MarkNotif
+
+    Admin --- UC_Logout
+    Guru --- UC_Logout
+    Siswa --- UC_Logout
+
     %% Admin Connections
     Admin --- UC_AdmDashboard
-    Admin --- UC_ManageUser
+    Admin --- UC_ListUsers
+    Admin --- UC_AddUser
+    Admin --- UC_EditUser
     Admin --- UC_ResetPassUser
+    Admin --- UC_DeleteUser
     Admin --- UC_BulkImport
     Admin --- UC_MonitorCourse
+    Admin --- UC_MonitorAssign
     Admin --- UC_Settings
     Admin --- UC_ExportReports
 
     %% Guru Connections
     Guru --- UC_GuruDashboard
-    Guru --- UC_ManageCourse
+    Guru --- UC_CreateCourse
+    Guru --- UC_EditCourse
+    Guru --- UC_ManageStudents
+    Guru --- UC_KickStudent
     Guru --- UC_SetAttendanceSched
     Guru --- UC_UploadMaterial
+    Guru --- UC_LinkMaterial
+    Guru --- UC_DeleteMaterial
     Guru --- UC_CreateTask
+    Guru --- UC_EditTask
+    Guru --- UC_MonitorSubmissions
     Guru --- UC_ReviewSubmissions
     Guru --- UC_GradeTask
     Guru --- UC_InputExams
     Guru --- UC_ManageClassAttendance
-    Guru --- UC_KickStudent
+    Guru --- UC_OverrideAttendance
+    Guru --- UC_ExportClassReport
 
     %% Siswa Connections
     Siswa --- UC_SiswaDashboard
-    Siswa --- UC_JoinCourse
+    Siswa --- UC_BrowseCourses
+    Siswa --- UC_JoinCourseCode
+    Siswa --- UC_JoinCourseDirect
     Siswa --- UC_LeaveCourse
     Siswa --- UC_ReadMaterial
+    Siswa --- UC_OpenLinkMaterial
     Siswa --- UC_SelfAttend
     Siswa --- UC_ViewAttHistory
+    Siswa --- UC_ViewTaskList
+    Siswa --- UC_ViewTaskDetail
     Siswa --- UC_SubmitTask
+    Siswa --- UC_CheckMySubmissions
+    Siswa --- UC_ReceiveGradeNotif
+    Siswa --- UC_ViewFeedback
     Siswa --- UC_ViewGrades
 
     %% Styling
-    classDef actorStyle fill:#1E293B,stroke:#0F172A,stroke-width:2px,color:#FFFFFF;
-    classDef coreStyle fill:#EFF6FF,stroke:#3B82F6,stroke-width:1.5px;
-    classDef adminStyle fill:#F5F3FF,stroke:#7C3AED,stroke-width:1.5px;
-    classDef guruStyle fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px;
-    classDef siswaStyle fill:#FFFBEB,stroke:#D97706,stroke-width:1.5px;
+    classDef actorStyle fill:#0F172A,stroke:#0284C7,stroke-width:2px,color:#FFFFFF;
+    classDef coreStyle fill:#EFF6FF,stroke:#3B82F6,stroke-width:1.5px,color:#1E3A8A;
+    classDef adminStyle fill:#F5F3FF,stroke:#7C3AED,stroke-width:1.5px,color:#5B21B6;
+    classDef guruStyle fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#166534;
+    classDef siswaStyle fill:#FFFBEB,stroke:#D97706,stroke-width:1.5px,color:#92400E;
 
     class Admin,Guru,Siswa actorStyle;
-    class UC_Login,UC_Forgot,UC_Profile,UC_Notif coreStyle;
-    class UC_AdmDashboard,UC_ManageUser,UC_ResetPassUser,UC_BulkImport,UC_MonitorCourse,UC_Settings,UC_ExportReports adminStyle;
-    class UC_GuruDashboard,UC_ManageCourse,UC_SetAttendanceSched,UC_UploadMaterial,UC_CreateTask,UC_ReviewSubmissions,UC_GradeTask,UC_InputExams,UC_ManageClassAttendance,UC_KickStudent guruStyle;
-    class UC_SiswaDashboard,UC_JoinCourse,UC_LeaveCourse,UC_ReadMaterial,UC_SelfAttend,UC_ViewAttHistory,UC_SubmitTask,UC_ViewGrades siswaStyle;
+    class UC_Login,UC_Forgot,UC_Profile,UC_Notif,UC_MarkNotif,UC_Logout coreStyle;
+    class UC_AdmDashboard,UC_ListUsers,UC_AddUser,UC_EditUser,UC_ResetPassUser,UC_DeleteUser,UC_BulkImport,UC_MonitorCourse,UC_MonitorAssign,UC_Settings,UC_ExportReports adminStyle;
+    class UC_GuruDashboard,UC_CreateCourse,UC_EditCourse,UC_ManageStudents,UC_KickStudent,UC_SetAttendanceSched,UC_UploadMaterial,UC_LinkMaterial,UC_DeleteMaterial,UC_CreateTask,UC_EditTask,UC_MonitorSubmissions,UC_ReviewSubmissions,UC_GradeTask,UC_InputExams,UC_ManageClassAttendance,UC_OverrideAttendance,UC_ExportClassReport guruStyle;
+    class UC_SiswaDashboard,UC_BrowseCourses,UC_JoinCourseCode,UC_JoinCourseDirect,UC_LeaveCourse,UC_ReadMaterial,UC_OpenLinkMaterial,UC_SelfAttend,UC_ViewAttHistory,UC_ViewTaskList,UC_ViewTaskDetail,UC_SubmitTask,UC_CheckMySubmissions,UC_ReceiveGradeNotif,UC_ViewFeedback,UC_ViewGrades siswaStyle;
 ```
 
 ---
