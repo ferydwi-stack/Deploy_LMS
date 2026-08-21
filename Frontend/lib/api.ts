@@ -22,8 +22,8 @@ const getApiBaseUrl = () => {
     if (host === 'localhost' || host === '127.0.0.1') {
       return `http://${host}:8000/api/v1`;
     }
-    // When running on Vercel or any production domain, connect directly to Railway backend API
-    return PRODUCTION_API_URL;
+    // Use relative endpoint so requests are proxied by Next.js rewrites without CORS blocks
+    return '/api/v1';
   }
   return PRODUCTION_API_URL;
 };

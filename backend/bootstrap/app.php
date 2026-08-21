@@ -21,6 +21,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'api/v1/admin/*',
         ]);
 
+        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+
         $middleware->alias([
             'role' => CheckRole::class,
         ]);
