@@ -10,3 +10,25 @@ Route::get('/', function () {
         'timestamp' => now()->toIso8601String()
     ]);
 });
+
+Route::get('/setup-db', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
+
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        $seedOutput = \Illuminate\Support\Facades\Artisan::output();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Database migrated and seeded successfully!',
+            'migrate_output' => $migrateOutput,
+            'seed_output' => $seedOutput,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+});

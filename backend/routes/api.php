@@ -18,6 +18,28 @@ use App\Http\Controllers\Api\StudentStatsController;
 use App\Http\Controllers\Api\TeacherStatsController;
 
 $registerApiRoutes = function () {
+    Route::get('/setup-db', function () {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
+
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+            $seedOutput = \Illuminate\Support\Facades\Artisan::output();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Database migrated and seeded successfully!',
+                'migrate_output' => $migrateOutput,
+                'seed_output' => $seedOutput,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    });
+
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
