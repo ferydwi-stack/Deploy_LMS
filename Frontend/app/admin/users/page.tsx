@@ -308,27 +308,59 @@ export default function AdminUserManagementPage() {
     }
   }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Users filtered by class/mapel AND search
-  const classFilteredUsers = users.filter(u => {
-    const metaStr = (u.meta || '').trim();
-    const matchesClass = classFilter === 'all' || metaStr === classFilter;
-    const searchLower = (search || '').toLowerCase();
-    const matchesSearch = !searchLower ||
-      (u.name || '').toLowerCase().includes(searchLower) ||
-      (u.email || '').toLowerCase().includes(searchLower) ||
-      (u.username || '').toLowerCase().includes(searchLower) ||
-      (u.meta || '').toLowerCase().includes(searchLower) ||
-      (u.id || '').toString().toLowerCase().includes(searchLower);
-    return matchesClass && matchesSearch;
-  });
+  // Filtered users matching search, role tab, and class/mapel
+  const filteredUsers = users.filter(u => {
+    // 1. Role filter
+    if (filter === 'teacher' && u.role !== 'Teacher') return false;
+    if (filter === 'student' && u.role !== 'Student') return false;
 
-  // Filter by role tab
-  const filteredUsers = classFilteredUsers.filter(u => {
-    if (filter === 'all') return true;
-    if (filter === 'teacher') return u.role === 'Teacher';
-    if (filter === 'student') return u.role === 'Student';
+    // 2. Class / Subject filter
+    if (classFilter !== 'all' && (u.meta || '').trim() !== classFilter) return false;
+
+    // 3. Search filter
+    if (search) {
+      const s = search.toLowerCase();
+      const matchesSearch =
+        (u.name || '').toLowerCase().includes(s) ||
+        (u.email || '').toLowerCase().includes(s) ||
+        (u.username || '').toLowerCase().includes(s) ||
+        (u.meta || '').toLowerCase().includes(s) ||
+        (u.id || '').toString().toLowerCase().includes(s);
+      if (!matchesSearch) return false;
+    }
+
     return true;
   });
+
+  // Calculate badge counts accurately
+  const countAll = users.filter(u => {
+    if (classFilter !== 'all' && (u.meta || '').trim() !== classFilter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return (u.name || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s) || (u.username || '').toLowerCase().includes(s) || (u.meta || '').toLowerCase().includes(s);
+    }
+    return true;
+  }).length;
+
+  const countGuru = users.filter(u => {
+    if (u.role !== 'Teacher') return false;
+    if (classFilter !== 'all' && (u.meta || '').trim() !== classFilter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return (u.name || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s) || (u.username || '').toLowerCase().includes(s) || (u.meta || '').toLowerCase().includes(s);
+    }
+    return true;
+  }).length;
+
+  const countSiswa = users.filter(u => {
+    if (u.role !== 'Student') return false;
+    if (classFilter !== 'all' && (u.meta || '').trim() !== classFilter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return (u.name || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s) || (u.username || '').toLowerCase().includes(s) || (u.meta || '').toLowerCase().includes(s);
+    }
+    return true;
+  }).length;
 
   return (
     <DashboardLayout
@@ -388,7 +420,7 @@ export default function AdminUserManagementPage() {
                 filter === 'all' ? 'bg-[#10B981] text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Semua Role ({classFilteredUsers.length})
+              Semua Role ({countAll})
             </button>
             <button
               onClick={() => setFilter('teacher')}
@@ -396,7 +428,7 @@ export default function AdminUserManagementPage() {
                 filter === 'teacher' ? 'bg-[#10B981] text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Guru ({classFilteredUsers.filter(u => u.role === 'Teacher').length})
+              Guru ({countGuru})
             </button>
             <button
               onClick={() => setFilter('student')}
@@ -404,7 +436,7 @@ export default function AdminUserManagementPage() {
                 filter === 'student' ? 'bg-[#10B981] text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Siswa ({classFilteredUsers.filter(u => u.role === 'Student').length})
+              Siswa ({countSiswa})
             </button>
           </div>
 
@@ -466,10 +498,19 @@ export default function AdminUserManagementPage() {
                     <td className="py-4 px-5 text-right"><div className="h-7 w-28 bg-slate-200 rounded-xl ml-auto"></div></td>
                   </tr>
                 ))
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <p className="font-semibold text-sm text-slate-600">Tidak ada pengguna yang sesuai dengan filter.</p>
+                    <p className="text-xs text-slate-400 mt-1">Coba ubah kata kunci pencarian atau filter kelas / mata pelajaran.</p>
+                  </td>
+                </tr>
               ) : (
-                filteredUsers.map((item) => (
-                  <tr key={item.id || item.rawId || item.no} className="hover:bg-blue-50/40 transition-colors odd:bg-white even:bg-[#F8FAFC]/60">
-                    <td className="py-3.5 px-5 text-slate-400 font-semibold text-center border-r border-slate-200/80">{item.no}</td>
+                filteredUsers.map((item, idx) => (
+                  <tr key={`user-row-${item.dbId || item.id || idx}`} className="hover:bg-blue-50/40 transition-colors odd:bg-white even:bg-[#F8FAFC]/60">
+                    <td className="py-3.5 px-5 text-slate-400 font-semibold text-center border-r border-slate-200/80">
+                      {(idx + 1).toString().padStart(2, '0')}
+                    </td>
                     <td className="py-3.5 px-5 border-r border-slate-200/80">
                       <span className="px-3 py-1 bg-[#EEF2FF] text-[#2563EB] font-bold rounded-md font-mono text-[11px] border border-[#2563EB]/20 whitespace-nowrap">
                         {item.id}
