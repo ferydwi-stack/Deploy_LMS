@@ -40,9 +40,9 @@ $registerApiRoutes = function () {
         }
     });
 
-    Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
-    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
-    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+    Route::post('/auth/login', [AuthController::class, 'login'])->name('api.login');
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->name('api.password.email');
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->name('api.password.update');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
