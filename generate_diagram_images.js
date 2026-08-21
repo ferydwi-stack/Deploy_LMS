@@ -12,7 +12,6 @@ if (!fs.existsSync(outDir)) {
 
 const content = fs.readFileSync(diagramsFile, 'utf8');
 
-// Split by ```mermaid
 const parts = content.split('```mermaid');
 const diagrams = [];
 
@@ -22,7 +21,6 @@ for (let i = 1; i < parts.length; i++) {
   
   const code = currentPart.split('```')[0].trim();
   
-  // Find the last markdown header before this block
   const headerMatches = [...prevText.matchAll(/#{1,4}\s+([^\n#]+)/g)];
   let title = `Diagram ${i}`;
   if (headerMatches.length > 0) {
@@ -70,7 +68,7 @@ function downloadUrl(url, dest) {
 }
 
 async function main() {
-  console.log('Sedang memproses dan mengunduh gambar diagram resolusi tinggi (SVG & PNG)...');
+  console.log('Sedang memproses dan mengunduh gambar diagram resolusi tinggi (SVG)...');
 
   for (let i = 0; i < diagrams.length; i++) {
     const d = diagrams[i];
@@ -94,7 +92,7 @@ async function main() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Galeri Diagram Lengkap - Sistem E-Learning (EduSchool LMS)</title>
+  <title>Galeri Diagram Lengkap Terpadu - Sistem E-Learning (EduSchool LMS)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
@@ -111,9 +109,9 @@ async function main() {
     <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-black tracking-tight flex items-center gap-2">
-          📊 Galeri Visual Diagram Sistem E-Learning
+          📊 Galeri Diagram Terpadu Sistem E-Learning
         </h1>
-        <p class="text-blue-100 text-sm mt-0.5">EduSchool LMS · Architecture, Use Case, ERD, Flowchart & Sequence</p>
+        <p class="text-blue-100 text-sm mt-0.5">EduSchool LMS · Unified Use Case, Unified ERD, Unified Flowchart & Sequences</p>
       </div>
       <div class="flex items-center gap-3 no-print">
         <button onclick="window.print()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg border border-white/20 transition-all shadow-sm">
@@ -126,7 +124,7 @@ async function main() {
   <!-- Navigation / TOC -->
   <nav class="max-w-7xl mx-auto px-6 py-6 no-print">
     <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Daftar Pintas Diagram</h2>
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Daftar Pintas Diagram Terpadu</h2>
       <div class="flex flex-wrap gap-2">
         ${diagrams.map((d, idx) => `
           <a href="#diagram-${idx + 1}" class="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-all">
@@ -166,7 +164,7 @@ ${d.code}
   </main>
 
   <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
-    <p>Dokumentasi Visual Diagram Sistem E-Learning EduSchool LMS · Dibuat secara otomatis</p>
+    <p>Dokumentasi Visual Diagram Terpadu Sistem E-Learning EduSchool LMS · Dibuat secara otomatis</p>
   </footer>
 </body>
 </html>`;
