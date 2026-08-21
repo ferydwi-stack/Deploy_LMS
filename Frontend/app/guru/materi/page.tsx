@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, Upload, Download, Trash2, X, Eye, Video, FileText, Link2, Presentation, CheckCircle2, UploadCloud } from 'lucide-react';
+import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, Upload, Download, Trash2, X, Eye, Video, FileText, Link2, Presentation, CheckCircle2, UploadCloud, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { api, getStorageUrl } from '@/lib/api';
@@ -39,15 +39,28 @@ function GuruMateriContent() {
     const data = await api.getMaterials(courseId).catch(() => []);
 
     if (Array.isArray(data) && data.length > 0) {
-      return data.map((m: Material) => ({
-        id: m.id,
-        category: m.content && m.content.includes('[Category:') 
-          ? m.content.split('[Category: ')[1].split(']')[0]
-          : 'PDF Document',
-        title: m.title,
-        desc: m.content ? m.content.split('[Category:')[0].trim() : 'Modul materi pembelajaran terdaftar.',
-        url: getStorageUrl(m.file_path)
-      }));
+      return data.map((m: Material) => {
+        const rawContent = m.content || '';
+        const category = rawContent.includes('[Category:')
+          ? rawContent.split('[Category: ')[1].split(']')[0]
+          : (m.file_path ? 'Dokumen' : 'Link Resource');
+        const descText = rawContent.split('[Category:')[0].trim() || 'Modul materi pembelajaran terdaftar.';
+        
+        // Check if descText or rawContent has any web link (http/https)
+        const urlMatch = descText.match(/https?:\/\/[^\s]+/i) || rawContent.match(/https?:\/\/[^\s]+/i);
+        const extractedUrl = urlMatch ? urlMatch[0] : '';
+        const finalUrl = m.file_path ? getStorageUrl(m.file_path) : extractedUrl;
+        const isExternalLink = !m.file_path && Boolean(extractedUrl);
+
+        return {
+          id: m.id,
+          category: category,
+          title: m.title,
+          desc: descText,
+          url: finalUrl,
+          isLink: isExternalLink
+        };
+      });
     }
     return [];
   }, [courseId]);
@@ -244,15 +257,21 @@ function GuruMateriContent() {
                     <Eye className="w-3.5 h-3.5" />
                     <span>Preview</span>
                   </button>
-                  <a
-                    href={materi.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 transition"
-                  >
-                    <Download className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Unduh</span>
-                  </a>
+                  {materi.url && (
+                    <a
+                      href={materi.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`px-3.5 py-2 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer ${
+                        materi.isLink 
+                          ? 'bg-blue-50 hover:bg-blue-100 text-[#2563EB]' 
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {materi.isLink ? <ExternalLink className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5 text-slate-500" />}
+                      <span>{materi.isLink ? 'Buka Link' : 'Unduh'}</span>
+                    </a>
+                  )}
                 </div>
 
                 <button
@@ -454,10 +473,21 @@ function GuruMateriContent() {
             </div>
 
             <div className="space-y-4 text-xs text-slate-600">
-              <p className="leading-relaxed">{previewMateri.desc}</p>
-              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl font-mono text-[11px] break-all text-blue-600">
-                {previewMateri.url}
-              </div>
+              <p className="leading-relaxed whitespace-pre-wrap break-words">{previewMateri.desc}</p>
+              {previewMateri.url && (
+                <a
+                  href={previewMateri.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3.5 bg-blue-50/60 hover:bg-blue-50 border border-blue-200/80 rounded-2xl font-mono text-[11px] break-all text-blue-700 block transition group"
+                >
+                  <div className="flex items-center gap-1.5 mb-1 text-blue-600 font-sans font-bold text-[10px] uppercase tracking-wider">
+                    <span>{previewMateri.isLink ? 'Tautan Eksternal / Sumber:' : 'Tautan Unduhan Berkas:'}</span>
+                    <ExternalLink className="w-3 h-3 text-blue-600 group-hover:translate-x-0.5 transition" />
+                  </div>
+                  <span className="underline">{previewMateri.url}</span>
+                </a>
+              )}
             </div>
 
             <div className="pt-6 mt-4 border-t border-slate-100 flex items-center justify-end gap-3">
@@ -467,14 +497,17 @@ function GuruMateriContent() {
               >
                 Tutup
               </button>
-              <a
-                href={previewMateri.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-md transition"
-              >
-                Buka Link Sumber
-              </a>
+              {previewMateri.url && (
+                <a
+                  href={previewMateri.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>{previewMateri.isLink ? 'Buka Link Sumber' : 'Unduh File'}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
             </div>
           </div>
         </div>
