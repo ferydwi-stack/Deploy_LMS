@@ -285,91 +285,78 @@ Diagram alir terpadu ini menyajikan seluruh proses operasional pembelajaran digi
 
 ```mermaid
 flowchart TD
-    %% ================= START =================
-    StartSys(["🏁 Mulai Operasional E-Learning"]) --> InitPlatform
+    %% ================= 1. START & LOGIN =================
+    StartNode(["🏁 Mulai (Buka Website LMS)"]) --> OpenLogin["Pengguna Mengakses Halaman Login (/login)"]
+    OpenLogin --> InputCreds["Input Alamat Email & Kata Sandi"]
+    InputCreds --> CheckCreds{"Validasi Kredensial Akun<br/>(Laravel Sanctum API)"}
+    
+    CheckCreds -- "❌ Tidak Valid" --> LoginFailed["Tampilkan Notifikasi Error:<br/>Email atau Password Salah"]
+    LoginFailed --> InputCreds
+    
+    CheckCreds -- "✔ Valid" --> GenToken["Generate Bearer Token Sanctum<br/>Simpan ke LocalStorage / Sesi"]
+    GenToken --> EvalRole{"Evaluasi Peran Akun<br/>(user.role)"}
 
-    %% ================= 1. ADMIN INITIALIZATION =================
-    subgraph AdminPhase [" 1. Fase Inisialisasi & Tata Kelola Pengguna (Administrator) "]
-        InitPlatform["Admin Mengatur Identitas Sekolah<br/>Tahun Ajaran & Semester Aktif"]
-        InitPlatform --> AddUsers["Kelola Akun Pengguna<br/>Tambah Manual / Bulk Import Excel 50+ User"]
-        AddUsers --> DistributeAcc["Akun Siap Digunakan<br/>Email & Password Terdistribusi ke Guru & Siswa"]
+    %% ================= 2. THREE ROLE BRANCHES =================
+    EvalRole -- "👑 Role: Administrator" --> AdminFlow
+    EvalRole -- "👨‍🏫 Role: Guru Pengajar" --> GuruFlow
+    EvalRole -- "👨‍🎓 Role: Peserta Didik" --> SiswaFlow
+
+    %% ================= ADMIN SUBGRAPH (JALUR KIRI) =================
+    subgraph AdminFlow [" 👑 ALUR ADMINISTRATOR "]
+        direction TB
+        AdmDash["1. Masuk Dashboard Administrator<br/>Pantau Metrik Global Sekolah"]
+        AdmDash --> AdmUsers["2. Manajemen Akun Pengguna<br/>• Tambah User Manual (Guru/Siswa)<br/>• Bulk Import 50+ User via Excel<br/>• Reset Password & Hapus User"]
+        AdmUsers --> AdmMonitor["3. Monitoring Pembelajaran<br/>Pantau Seluruh Kelas & Tugas Aktif"]
+        AdmMonitor --> AdmSettings["4. Pengaturan Sistem<br/>Konfigurasi Nama Sekolah & Semester"]
+        AdmSettings --> AdmReports["5. Rekapitulasi Laporan Global<br/>Ekspor Data Presensi & Nilai ke Excel/CSV"]
     end
 
-    %% ================= 2. AUTHENTICATION & ROLE ROUTING =================
-    subgraph AuthPhase [" 2. Fase Autentikasi & Otorisasi Sesi "]
-        DistributeAcc --> UserLogin["Pengguna Membuka Web LMS & Login di /login"]
-        UserLogin --> AuthCheck{"Kredensial Valid & Terdaftar di DB?"}
-        AuthCheck -- "Tidak Valid" --> AuthFailed["Tolak Akses: Tampilkan Notifikasi Error"]
-        AuthFailed --> UserLogin
-        AuthCheck -- "Valid" --> IssueToken["Generate Bearer Token Sanctum<br/>Simpan ke LocalStorage"]
-        IssueToken --> RoleRouting{"Evaluasi user.role"}
+    %% ================= GURU SUBGRAPH (JALUR TENGAH) =================
+    subgraph GuruFlow [" 👨‍🏫 ALUR GURU PENGAJAR "]
+        direction TB
+        GuruDash["1. Masuk Dashboard Guru<br/>Lihat Ringkasan Kelas & Siswa"]
+        GuruDash --> GuruCreateCourse["2. Buat Kelas / Mata Pelajaran Baru<br/>Sistem Generate Kode Kelas Unik"]
+        GuruCreateCourse --> GuruSched["3. Atur Jam Presensi Kelas<br/>Set Waktu Buka & Tutup Kehadiran"]
+        GuruSched --> GuruMaterial["4. Upload Bahan Ajar / Modul<br/>Format Dokumen PDF atau Link Eksternal"]
+        GuruMaterial --> GuruTask["5. Terbitkan Tugas / LKPD Baru<br/>Tentukan Instruksi, File & Deadline"]
+        GuruTask --> GuruReview["6. Periksa Jawaban Siswa Masuk<br/>Download Berkas / Baca Jawaban"]
+        GuruReview --> GuruGrade["7. Beri Nilai Tugas (0-100)<br/>& Berikan Catatan Feedback Ulasan"]
+        GuruGrade --> GuruExams["8. Input Nilai Ujian Semester<br/>Input Nilai UTS & UAS Per Siswa"]
+        GuruExams --> GuruReport["9. Cek Rekapitulasi Nilai & Presensi<br/>Lihat Persentase Kehadiran Kelas"]
     end
 
-    %% ================= 3. GURU CLASS & LESSON CREATION =================
-    subgraph GuruPhase [" 3. Fase Pengelolaan Kelas & Materi (Guru) "]
-        RoleRouting -- "guru" --> GuruDashboard["Buka Dashboard Guru"]
-        GuruDashboard --> CreateCourse["Buat Kelas / Mata Pelajaran Baru"]
-        CreateCourse --> GenCourseCode["Sistem Terbitkan Kode Kelas Unik"]
-        GenCourseCode --> SetSchedule["Atur Jam Buka-Tutup Presensi Kelas"]
-        SetSchedule --> UploadMaterials["Unggah Modul Bahan Ajar PDF/Doc/Link"]
-        UploadMaterials --> CreateTasks["Terbitkan Tugas / LKPD Baru & Tentukan Deadline"]
+    %% ================= SISWA SUBGRAPH (JALUR KANAN) =================
+    subgraph SiswaFlow [" 👨‍🎓 ALUR PESERTA DIDIK (SISWA) "]
+        direction TB
+        SiswaDash["1. Masuk Dashboard Siswa<br/>Lihat Jadwal Kelas & Tugas Aktif"]
+        SiswaDash --> SiswaJoin["2. Gabung ke Kelas Pembelajaran<br/>Input Kode Unik Kelas / Pilih Katalog"]
+        SiswaJoin --> SiswaLearn["3. Buka Kelas & Pelajari Modul<br/>Unduh Dokumen PDF / Buka Tautan"]
+        SiswaLearn --> SiswaAttend["4. Lakukan Presensi Mandiri<br/>Check-in Kehadiran Sesuai Jadwal"]
+        SiswaAttend --> SiswaSubmit["5. Kerjakan & Kumpulkan Tugas<br/>Unggah File Jawaban / Tulis Teks"]
+        SiswaSubmit --> SiswaNotif["6. Menerima Notifikasi Lonceng<br/>Update Nilai & Feedback dari Guru"]
+        SiswaNotif --> SiswaRapor["7. Lihat Rapor Nilai Siswa<br/>Transkrip Nilai Tugas, UTS & UAS"]
     end
 
-    %% ================= 4. SISWA LEARNING & PARTICIPATION =================
-    subgraph SiswaPhase [" 4. Fase Pembelajaran, Presensi & Pengerjaan (Siswa) "]
-        RoleRouting -- "siswa" --> SiswaDashboard["Buka Dashboard Siswa"]
-        SiswaDashboard --> JoinCourse["Gabung Kelas via Input Kode Unik / Katalog"]
-        JoinCourse --> AccessMaterials["Buka Kelas & Pelajari Modul Bahan Ajar"]
-        
-        %% Presensi Mandiri
-        AccessMaterials --> SelfAttendance["Lakukan Presensi / Absensi Mandiri"]
-        SelfAttendance --> TimeCheck{"Waktu Sekarang Masuk Jam Presensi?"}
-        TimeCheck -- "Di Luar Waktu" --> AttBlocked["Presensi Ditolak: Belum Dibuka / Sudah Lewat"]
-        TimeCheck -- "Sesuai Waktu" --> AttSuccess["Presensi Disimpan: Status 'Hadir'"]
-        
-        %% Pengerjaan Tugas
-        AttSuccess --> ReadAssignment["Buka & Baca Instruksi Tugas"]
-        ReadAssignment --> DoTask["Mengerjakan Tugas & Menyiapkan Lembar Jawaban"]
-        DoTask --> UploadSubmission["Kirimkan Tugas (Submit Teks / File)"]
-        UploadSubmission --> DeadlineCheck{"Waktu Submit Sebelum Deadline?"}
-        DeadlineCheck -- "Tepat Waktu" --> StatusSubmitted["Status Disimpan: 'submitted'"]
-        DeadlineCheck -- "Terlambat" --> StatusLate["Status Disimpan: 'late'"]
-    end
-
-    %% ================= 5. GRADING & EXAMS =================
-    subgraph GradingPhase [" 5. Fase Penilaian & Input Nilai Semester (Guru) "]
-        StatusSubmitted --> TriggerNotif["Sistem Kirim Notifikasi Real-time ke Guru"]
-        StatusLate --> TriggerNotif
-        TriggerNotif --> GuruReviewSub["Guru Memeriksa Berkas Jawaban Siswa"]
-        GuruReviewSub --> InputAssignmentGrade["Guru Input Nilai Tugas 0-100 & Catatan Feedback"]
-        InputAssignmentGrade --> InputExamGrades["Guru Input Nilai Ujian Semester UTS & UAS"]
-        
-        InputExamGrades --> SyncReport["Database Menghitung Rekap Nilai Rapor & Persentase Presensi"]
-        SyncReport --> StudentViewGrades["Siswa Melihat Rapor Nilai & Ulasan Guru"]
-    end
-
-    %% ================= 6. MONITORING & REPORT EXPORT =================
-    subgraph ReportPhase [" 6. Fase Monitoring & Pelaporan Sekolah (Administrator) "]
-        RoleRouting -- "admin" --> AdminDashboard["Buka Dashboard Administrator"]
-        AdminDashboard --> MonitorActivities["Pantau Statistik Global: Kelas, User, & Presensi"]
-        SyncReport --> MonitorActivities
-        MonitorActivities --> ExportReports["Ekspor Rekapitulasi Rapor Siswa ke Excel (.xlsx) / CSV"]
-        ExportReports --> EndSys(["🏆 Selesai / Arsip Periode Semester"])
-        StudentViewGrades --> EndSys
-    end
+    %% ================= 3. TERMINATION =================
+    AdmReports --> UserLogout["Pengguna Melakukan Logout / Selesai Sesi"]
+    GuruReport --> UserLogout
+    SiswaRapor --> UserLogout
+    UserLogout --> EndNode(["🏁 Selesai (Sesi Berakhir)"])
 
     %% ================= STYLING =================
-    classDef adminStyle fill:#EEF2FF,stroke:#4F46E5,stroke-width:2px;
-    classDef guruStyle fill:#F0FDF4,stroke:#16A34A,stroke-width:2px;
-    classDef siswaStyle fill:#FEF3C7,stroke:#D97706,stroke-width:2px;
-    classDef sysStyle fill:#F1F5F9,stroke:#475569,stroke-width:2px;
+    classDef startStyle fill:#0F172A,stroke:#0284C7,stroke-width:2px,color:#FFFFFF;
+    classDef authStyle fill:#F1F5F9,stroke:#64748B,stroke-width:1.5px,color:#0F172A;
+    classDef adminStyle fill:#F5F3FF,stroke:#7C3AED,stroke-width:1.5px,color:#5B21B6;
+    classDef guruStyle fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#166534;
+    classDef siswaStyle fill:#FFFBEB,stroke:#D97706,stroke-width:1.5px,color:#92400E;
 
-    class InitPlatform,AddUsers,DistributeAcc,AdminDashboard,MonitorActivities,ExportReports adminStyle;
-    class GuruDashboard,CreateCourse,GenCourseCode,SetSchedule,UploadMaterials,CreateTasks,GuruReviewSub,InputAssignmentGrade,InputExamGrades guruStyle;
-    class SiswaDashboard,JoinCourse,AccessMaterials,SelfAttendance,AttSuccess,ReadAssignment,DoTask,UploadSubmission,StatusSubmitted,StatusLate,StudentViewGrades siswaStyle;
-    class UserLogin,AuthCheck,IssueToken,RoleRouting,TimeCheck,DeadlineCheck,TriggerNotif,SyncReport sysStyle;
+    class StartNode,EndNode startStyle;
+    class OpenLogin,InputCreds,CheckCreds,LoginFailed,GenToken,EvalRole,UserLogout authStyle;
+    class AdmDash,AdmUsers,AdmMonitor,AdmSettings,AdmReports adminStyle;
+    class GuruDash,GuruCreateCourse,GuruSched,GuruMaterial,GuruTask,GuruReview,GuruGrade,GuruExams,GuruReport guruStyle;
+    class SiswaDash,SiswaJoin,SiswaLearn,SiswaAttend,SiswaSubmit,SiswaNotif,SiswaRapor siswaStyle;
 ```
 
 ---
 
-*Dokumentasi 3 Diagram Utama Terpadu disusun untuk melengkapi pelaporan teknis, skripsi/tugas akhir, dan pemahaman komprehensif arsitektur sistem E-Learning.*
+*Dokumentasi 3 Diagram Master Utama disusun untuk melengkapi pelaporan teknis, skripsi/tugas akhir, dan pemahaman arsitektur sistem E-Learning.*
