@@ -17,16 +17,21 @@ Dokumen ini berisi **3 Diagram Utama Terpadu** yang memodelkan fungsionalitas us
 Diagram Use Case ini menyatukan seluruh aktor (**Administrator**, **Guru Pengajar**, dan **Peserta Didik / Siswa**) ke dalam satu batasan sistem terpadu yang mencakup seluruh modul fungsional:
 
 ```mermaid
-flowchart LR
-    %% Actors
-    Admin((👤 Administrator))
-    Guru((👨‍🏫 Guru Pengajar))
-    Siswa((👨‍🎓 Peserta Didik))
+flowchart TB
+    %% ================= TOP ACTORS =================
+    subgraph ActorsBar [" 👥 PENGGUNA SISTEM (ACTORS) "]
+        direction LR
+        Admin((👤 Administrator))
+        Guru((👨‍🏫 Guru Pengajar))
+        Siswa((👨‍🎓 Peserta Didik))
+    end
 
-    subgraph SystemBoundary [" 🏫 Sistem E-Learning EduSchool LMS (Batasan Sistem Lengkap) "]
+    subgraph SystemBoundary [" 🏫 Sistem E-Learning EduSchool LMS (Batasan Sistem Terpadu) "]
+        direction TB
         
         %% ================= 1. CORE SHARED USE CASES =================
         subgraph CoreModule [" 🔐 1. Modul Autentikasi & Akun Bersama (Shared Core) "]
+            direction TB
             UC_Login(["Login & Autentikasi Akun (Sanctum)"])
             UC_Forgot(["Lupa / Reset Password Akun Mandiri"])
             UC_Profile(["Lihat & Edit Profil Pribadi (No HP/Bio)"])
@@ -37,6 +42,7 @@ flowchart LR
 
         %% ================= 2. ADMINISTRATOR USE CASES =================
         subgraph AdminModule [" 🛡️ 2. Modul Administrator (Super User) "]
+            direction TB
             UC_AdmDashboard(["Dashboard Statistik Global LMS"])
             UC_ListUsers(["Lihat Daftar Pengguna (Filter Role/Kelas/Search)"])
             UC_AddUser(["Tambah Pengguna Baru Manual (Guru/Siswa)"])
@@ -52,6 +58,7 @@ flowchart LR
 
         %% ================= 3. GURU USE CASES =================
         subgraph GuruModule [" 📚 3. Modul Guru Pengajar (Tenaga Pendidik) "]
+            direction TB
             UC_GuruDashboard(["Dashboard Guru & Ringkasan Siswa"])
             UC_CreateCourse(["Buat Kelas / Mapel & Terbitkan Kode Kelas"])
             UC_EditCourse(["Edit Informasi Kelas & Silabus Mapel"])
@@ -74,6 +81,7 @@ flowchart LR
 
         %% ================= 4. SISWA USE CASES =================
         subgraph SiswaModule [" 🎒 4. Modul Peserta Didik (Siswa Pembelajar) "]
+            direction TB
             UC_SiswaDashboard(["Dashboard Siswa, Jadwal & Tugas Aktif"])
             UC_BrowseCourses(["Jelajahi Katalog Kelas Pembelajaran"])
             UC_JoinCourseCode(["Gabung Kelas via Input Kode Unik"])
