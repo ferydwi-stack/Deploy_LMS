@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, Upload, Download, Trash2, X, Eye, Video, FileText, Link2, Presentation, CheckCircle2, UploadCloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
-import { api } from '@/lib/api';
+import { api, getStorageUrl } from '@/lib/api';
 import type { Material } from '@/types/models';
 
 function GuruMateriContent() {
@@ -46,7 +46,7 @@ function GuruMateriContent() {
           : 'PDF Document',
         title: m.title,
         desc: m.content ? m.content.split('[Category:')[0].trim() : 'Modul materi pembelajaran terdaftar.',
-        url: m.file_path?.startsWith('http') ? m.file_path : `http://127.0.0.1:8000/storage/${m.file_path}`
+        url: getStorageUrl(m.file_path)
       }));
     }
     return [];

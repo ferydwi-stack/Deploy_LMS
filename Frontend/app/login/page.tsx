@@ -245,65 +245,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Akun Demo Card Box */}
-            <div className="mt-8 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-xs space-y-2">
-              <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
-                <p className="font-bold text-slate-500 text-[11px] tracking-wide uppercase">Akun Demo Prototipe</p>
-                <span className="px-2 py-0.5 bg-blue-50 text-[#1D4ED8] font-bold text-[10px] rounded-md">1-Click Login</span>
-              </div>
-              
-              <button
-                type="button"
-                aria-label="Login sebagai Admin Demo"
-                onClick={() => handleFillDemo('admin')}
-                className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50 transition flex items-center justify-between group border border-transparent hover:border-blue-100 cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-blue-100 text-[#1D4ED8] flex items-center justify-center font-bold">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <span className="text-slate-700 text-xs">
-                    <strong className="text-slate-900 font-bold">Admin</strong> — admin@lms.com
-                  </span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-[#1D4ED8] opacity-0 group-hover:opacity-100 transition" />
-              </button>
-
-              <button
-                type="button"
-                aria-label="Login sebagai Guru Demo"
-                onClick={() => handleFillDemo('guru')}
-                className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50 transition flex items-center justify-between group border border-transparent hover:border-blue-100 cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-                    <UserCheck className="w-4 h-4" />
-                  </div>
-                  <span className="text-slate-700 text-xs">
-                    <strong className="text-slate-900 font-bold">Guru</strong> — guru@lms.com
-                  </span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-[#1D4ED8] opacity-0 group-hover:opacity-100 transition" />
-              </button>
-
-              <button
-                type="button"
-                aria-label="Login sebagai Siswa Demo"
-                onClick={() => handleFillDemo('siswa')}
-                className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50 transition flex items-center justify-between group border border-transparent hover:border-emerald-100 cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <span className="text-slate-700 text-xs">
-                    <strong className="text-slate-900 font-bold">Siswa</strong> — siswa@lms.com
-                  </span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-[#1D4ED8] opacity-0 group-hover:opacity-100 transition" />
-              </button>
-            </div>
-
           </div>
         </div>
 

@@ -7,14 +7,13 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, Download, Eye, X, Video, FileText, Link2, Presentation } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
-import { api, getAuthToken } from '@/lib/api';
+import { api, getAuthToken, getStorageUrl } from '@/lib/api';
 
 const getDownloadUrl = (filePath: string) => {
   if (!filePath) return '';
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin.replace('3000', '8000') : 'http://127.0.0.1:8000';
+  const fileUrl = getStorageUrl(filePath);
   const token = getAuthToken();
-  const url = `${baseUrl}/storage/${filePath}`;
-  return token ? `${url}?token=${encodeURIComponent(token)}` : url;
+  return token && !fileUrl.includes('token=') ? `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}` : fileUrl;
 };
 
 function SiswaMateriContent() {

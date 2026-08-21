@@ -156,19 +156,19 @@ export default function AdminUserManagementPage() {
     try {
       const { api } = await import('@/lib/api');
       await api.resetUserPassword(targetDbId, newPassword);
-      setResetSuccessMsg(`Password untuk ${targetName} berhasil diperbarui di Database MySQL!`);
+      setResetSuccessMsg(`Password untuk ${targetName} berhasil diperbarui!`);
       setResetPassUser(null);
       setNewPassword('');
       await loadUsersFromApi();
       setTimeout(() => setResetSuccessMsg(''), 3000);
     } catch (err) {
-      console.error('MySQL Reset Password Error:', err);
+      console.error('Reset Password Error:', err);
     } finally {
       setIsResetting(false);
     }
   };
 
-  // 5. Handler: Delete User (Realtime DELETE to MySQL)
+  // 5. Handler: Delete User
   const handleDelete = (item: any) => {
     setItemToDelete(item);
     setIsDeleteModalOpen(true);
@@ -186,14 +186,14 @@ export default function AdminUserManagementPage() {
       setItemToDelete(null);
       await loadUsersFromApi();
     } catch (e: any) {
-      console.error('MySQL Delete User Error:', e);
-      alert(e.message || 'Gagal menghapus user dari database MySQL.');
+      console.error('Delete User Error:', e);
+      alert(e.message || 'Gagal menghapus user.');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // 6. Handler: CSV/XLSX File selection using XLSX parser
+  // 6. Handler: CSV/XLSX File selection
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -218,20 +218,16 @@ export default function AdminUserManagementPage() {
         const rawMeta = String(parts[3] || '').trim();
 
         const role = (rawRole.includes('teacher') || rawRole.includes('guru')) ? 'guru' : (rawRole.includes('admin') ? 'admin' : 'siswa');
-
-        const validEmail = (rawEmail && rawEmail.includes('@') && rawEmail.includes('.'))
-          ? rawEmail
-          : `user_${idx + 1}_${Math.random().toString(36).substring(2, 7)}@school.id`;
         
         return {
-          name: rawName || `User ${idx + 1}`,
-          email: validEmail,
-          role: role,
-          subject: role === 'guru' ? (rawMeta || 'Guru Pengajar') : undefined,
-          class_name: role === 'siswa' ? (rawMeta || 'Kelas X-IPA 1') : undefined,
+          id: `USR-${Date.now()}-${idx}`,
+          name: rawName,
+          email: rawEmail,
+          username: rawEmail ? rawEmail.split('@')[0] : `user_${idx}`,
+          role: role === 'guru' ? 'Teacher' : (role === 'siswa' ? 'Student' : 'Admin'),
           meta: rawMeta || (role === 'guru' ? 'Guru Pengajar' : 'Kelas X-IPA 1'),
-          password: 'password123',
-          nisn_or_nip: `${role === 'guru' ? 1985 : 2026}${String(idx + 1).padStart(4, '0')}`
+          nisn_or_nip: parts[4] ? String(parts[4]).trim() : `2026${Math.floor(1000 + Math.random() * 9000)}`,
+          status: 'Active'
         };
       });
 
@@ -241,7 +237,7 @@ export default function AdminUserManagementPage() {
     }
   };
 
-  // 7. Handler: Bulk Import with Animated Progress and Visual Loading
+  // 7. Handler: Bulk Import
   const handleProcessImport = async () => {
     const usersToImport = parsedImportUsers.length > 0 ? parsedImportUsers : [];
 
@@ -262,7 +258,7 @@ export default function AdminUserManagementPage() {
       await api.bulkImportUsers(usersToImport);
       clearInterval(progressTimer);
       setImportProgress(100);
-      setImportSuccessMsg(`Berhasil mengimpor ${usersToImport.length} akun pengguna ke Database MySQL!`);
+      setImportSuccessMsg(`Berhasil mengimpor ${usersToImport.length} akun pengguna!`);
       setSelectedFile(null);
       setParsedImportUsers([]);
       await loadUsersFromApi();
@@ -276,12 +272,12 @@ export default function AdminUserManagementPage() {
       clearInterval(progressTimer);
       setIsImporting(false);
       setImportProgress(0);
-      console.error('MySQL Bulk Import Error:', e);
-      alert(e.message || 'Gagal mengimpor data user massal ke Database MySQL.');
+      console.error('Bulk Import Error:', e);
+      alert(e.message || 'Gagal mengimpor data user massal.');
     }
   };
 
-  // Dynamic Class / Subject options — separated by role for accurate filtering
+  // Dynamic Class / Subject options
   const availableStudentClasses = Array.from(
     new Set(users.filter(u => u.role === 'Student' && u.meta).map(u => u.meta))
   ).sort();
@@ -883,7 +879,7 @@ export default function AdminUserManagementPage() {
               </div>
 
               <div className="p-3 bg-amber-50 rounded-xl text-[11px] text-amber-800 border border-amber-200">
-                ⚠️ Pengguna harus login menggunakan password baru ini setelah disimpan ke MySQL.
+                ⚠️ Pengguna harus login menggunakan password baru ini setelah disimpan.
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 sticky bottom-0 bg-white z-10">

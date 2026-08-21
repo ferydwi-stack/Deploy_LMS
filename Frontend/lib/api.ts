@@ -28,6 +28,24 @@ const getApiBaseUrl = () => {
   return PRODUCTION_API_URL;
 };
 
+export const getStorageUrl = (path?: string | null): string => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  const finalPath = cleanPath.startsWith('storage/') ? cleanPath : `storage/${cleanPath}`;
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname || '';
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return `http://${host}:8000/${finalPath}`;
+    }
+    return `https://deploylms-production.up.railway.app/${finalPath}`;
+  }
+  return `https://deploylms-production.up.railway.app/${finalPath}`;
+};
+
 export const getAuthToken = (): string | null => {
   if (typeof window !== 'undefined') {
     return localStorage.getItem('lms_token');

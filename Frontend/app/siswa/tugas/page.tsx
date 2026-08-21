@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, CheckCircle2, Clock, Upload, X, Award, Eye, Filter, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
-import { api, notifyDataChanged } from '@/lib/api';
+import { api, notifyDataChanged, getStorageUrl } from '@/lib/api';
 
 export default function SiswaTugasPage() {
   return (
@@ -314,7 +314,7 @@ function SiswaTugasContent() {
                   {task.attachmentPath && (
                     <div className="mt-2">
                       <a 
-                        href={`http://127.0.0.1:8000/storage/${task.attachmentPath}`}
+                        href={getStorageUrl(task.attachmentPath)}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-block px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-[11px] font-bold transition"
@@ -349,7 +349,7 @@ function SiswaTugasContent() {
                   <>
                     <span className="text-slate-400">•</span>
                     <a
-                      href={task.submittedFile.startsWith('http') ? task.submittedFile : `http://127.0.0.1:8000/storage/${task.submittedFile}`}
+                      href={getStorageUrl(task.submittedFile)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"

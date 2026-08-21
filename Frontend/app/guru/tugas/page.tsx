@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { Plus, ArrowLeft, BookOpen, FileCheck2, CalendarCheck, FileEdit, X, Download, Award, CheckCircle2, Clock, Filter, ExternalLink, FileText, UploadCloud, Eye, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
-import { api, notifyDataChanged } from '@/lib/api';
+import { api, notifyDataChanged, getStorageUrl } from '@/lib/api';
 
 function GuruTugasContent() {
   const searchParams = useSearchParams();
@@ -170,7 +170,7 @@ function GuruTugasContent() {
       await loadDataFromApi();
     } catch (err: any) {
       console.error('Create assignment error:', err);
-      alert(err.message || 'Gagal membuat tugas baru di MySQL');
+      alert(err.message || 'Gagal membuat tugas baru');
     }
   };
 
@@ -469,7 +469,7 @@ function GuruTugasContent() {
                             <p className="text-[11px] text-slate-400 font-mono">{sub.nis} • {sub.time}</p>
                             <div className="mt-1">
                               <a
-                                href={sub.filePath?.startsWith('http') ? sub.filePath : (sub.filePath ? `http://127.0.0.1:8000/storage/${sub.filePath}` : '')}
+                                href={getStorageUrl(sub.filePath)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 text-[#2563EB] hover:underline font-mono text-[11px] font-semibold rounded-lg transition"
@@ -553,7 +553,7 @@ function GuruTugasContent() {
                     <span className="text-xs font-bold text-slate-700 max-w-[200px] truncate">{previewTask.attachment}</span>
                   </div>
                   <a
-                    href={previewTask.attachmentPath.startsWith('http') ? previewTask.attachmentPath : `http://127.0.0.1:8000/storage/${previewTask.attachmentPath}`}
+                    href={getStorageUrl(previewTask.attachmentPath)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-700 transition"
