@@ -1,96 +1,108 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Download, Calendar, CheckCircle2, GraduationCap, Users, Printer, FileSpreadsheet, ChevronDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { api } from '@/lib/api';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
 
 export default function AdminReportsPage() {
   const [range, setRange] = useState('minggu');
   const [downloadNotice, setDownloadNotice] = useState('');
-  const [reportData, setReportData] = useState<any[]>([]);
-  const [overallStats, setOverallStats] = useState({
+
+  const loadAdminReports = React.useCallback(async () => {
+    const coursesData = await api.getCourses().catch(() => []);
+    const courses = Array.isArray(coursesData) ? coursesData : [];
+    const reportResponses = await Promise.all(
+      courses.map((c: any) => api.getCourseReport(c.id).catch(() => null))
+    );
+
+    let totalHadirAll = 0;
+    let totalAttendanceAll = 0;
+
+    const courseReports: Array<{
+      class: string;
+      teacher: string;
+      total: number;
+      hadir: number;
+      izin: number;
+      sakit: number;
+      alpa: number;
+      percent: string;
+    }> = [];
+
+    reportResponses.forEach((res: any) => {
+      if (!res?.course) return;
+      const course = res.course;
+      const students = Array.isArray(res.students) ? res.students : [];
+      const attendances = Array.isArray(res.attendances) ? res.attendances : [];
+      const total = students.length;
+      const hadir = attendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
+      const izin = attendances.filter((a: any) => String(a.status).toLowerCase() === 'izin').length;
+      const sakit = attendances.filter((a: any) => String(a.status).toLowerCase() === 'sakit').length;
+      const alpa = attendances.filter((a: any) =>
+        String(a.status).toLowerCase() === 'alpha' || String(a.status).toLowerCase() === 'alfa'
+      ).length;
+      const percent = attendances.length > 0 ? `${Math.round((hadir / attendances.length) * 100)}%` : '0%';
+
+      totalHadirAll += hadir;
+      totalAttendanceAll += attendances.length;
+
+      courseReports.push({
+        class: course.title,
+        teacher: course.teacher?.name || 'Guru',
+        total,
+        hadir,
+        izin,
+        sakit,
+        alpa,
+        percent,
+      });
+    });
+
+    const studentPercent = totalAttendanceAll > 0
+      ? Math.round((totalHadirAll / totalAttendanceAll) * 100)
+      : 0;
+
+    const allAttendanceDates = new Set<string>();
+    reportResponses.forEach((res: any) => {
+      const atts = Array.isArray(res?.attendances) ? res.attendances : [];
+      atts.forEach((a: any) => {
+        if (a.date) allAttendanceDates.add(String(a.date).substring(0, 10));
+      });
+    });
+    const effectiveDays = allAttendanceDates.size;
+
+    const totalTeachers = new Set(
+      courses.map((c: any) => c.teacher?.name || c.teacher?.id || c.teacher_id).filter(Boolean)
+    ).size || (courses.length > 0 ? 1 : 0);
+
+    return {
+      reports: courseReports,
+      stats: {
+        studentPercent,
+        activeCourses: courses.length,
+        activeTeachers: totalTeachers,
+        effectiveDays: effectiveDays > 0 ? effectiveDays : 22
+      }
+    };
+  }, []);
+
+  const { data: realReportData, loading: isLoading } = useRealtimeData(
+    loadAdminReports,
+    12000,
+    [range],
+    ['lms:attendances', 'lms:courses', 'lms:stats']
+  );
+
+  const reportData = realReportData?.reports || [];
+  const overallStats = realReportData?.stats || {
     studentPercent: 0,
     activeCourses: 0,
     activeTeachers: 0,
     effectiveDays: 22
-  });
-
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const coursesData = await api.getCourses().catch(() => []);
-        const courses = Array.isArray(coursesData) ? coursesData : [];
-        const reportResponses = await Promise.all(
-          courses.map((c: any) => api.getCourseReport(c.id).catch(() => null))
-        );
-
-        let totalHadirAll = 0;
-        let totalAttendanceAll = 0;
-
-        const courseReports = reportResponses
-          .map((res: any) => {
-            if (!res?.course) return null;
-            const course = res.course;
-            const students = Array.isArray(res.students) ? res.students : [];
-            const attendances = Array.isArray(res.attendances) ? res.attendances : [];
-            const total = students.length;
-            const hadir = attendances.filter((a: any) => String(a.status).toLowerCase() === 'hadir').length;
-            const izin = attendances.filter((a: any) => String(a.status).toLowerCase() === 'izin').length;
-            const sakit = attendances.filter((a: any) => String(a.status).toLowerCase() === 'sakit').length;
-            const alpa = attendances.filter((a: any) =>
-              String(a.status).toLowerCase() === 'alpha' || String(a.status).toLowerCase() === 'alfa'
-            ).length;
-            const percent = attendances.length > 0 ? `${Math.round((hadir / attendances.length) * 100)}%` : '0%';
-
-            totalHadirAll += hadir;
-            totalAttendanceAll += attendances.length;
-
-            return {
-              class: course.title,
-              teacher: course.teacher?.name || 'Guru',
-              total,
-              hadir,
-              izin,
-              sakit,
-              alpa,
-              percent,
-            };
-          })
-          .filter(Boolean);
-
-        const studentPercent = totalAttendanceAll > 0
-          ? Math.round((totalHadirAll / totalAttendanceAll) * 100)
-          : 0;
-
-        const allAttendanceDates = new Set<string>();
-        reportResponses.forEach((res: any) => {
-          const atts = Array.isArray(res?.attendances) ? res.attendances : [];
-          atts.forEach((a: any) => {
-            if (a.date) allAttendanceDates.add(String(a.date).substring(0, 10));
-          });
-        });
-        const effectiveDays = allAttendanceDates.size;
-
-        const totalTeachers = new Set(
-          courses.map((c: any) => c.teacher?.name || c.teacher?.id || c.teacher_id).filter(Boolean)
-        ).size || (courses.length > 0 ? 1 : 0);
-
-        setReportData(courseReports);
-        setOverallStats({
-          studentPercent,
-          activeCourses: courses.length,
-          activeTeachers: totalTeachers,
-          effectiveDays: effectiveDays > 0 ? effectiveDays : 22
-        });
-      } catch (e) {
-        console.error('Failed to fetch admin reports:', e);
-      }
-    };
-
-    fetchReports();
-  }, [range]);
+  };
 
   const handleExport = (type: string) => {
     const rows = reportData.map((row) => ({

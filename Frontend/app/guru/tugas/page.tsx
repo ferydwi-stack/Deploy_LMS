@@ -101,7 +101,12 @@ function GuruTugasContent() {
     }
   }, [courseId, courseTitle]);
 
-  const { loading: tasksLoading } = useRealtimeData(loadDataFromApi, 60000, [courseId, courseTitle]);
+  const { loading: tasksLoading, refresh: refreshTasks } = useRealtimeData(
+    loadDataFromApi,
+    10000,
+    [courseId, courseTitle],
+    ['lms:assignments', 'lms:submissions', 'lms:courses']
+  );
 
   useEffect(() => {
     setIsLoading(tasksLoading);

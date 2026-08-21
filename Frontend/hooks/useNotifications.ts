@@ -1,34 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
 import type { Notification } from '@/types/models';
 
-interface NotificationState {
-  notifications: Notification[];
-  unreadCount: number;
-  loading: boolean;
-  markAsRead: (id: number) => Promise<void>;
-  markAllAsRead: () => Promise<void>;
-}
+const BROADCAST_CHANNEL_NAME = 'lms-realtime-channel';
 
-export function useNotifications(refreshInterval = 30000) {
+export function useNotifications(refreshInterval = 8000) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const lastFetchTimeRef = useRef(0);
+  const isMountedRef = useRef(true);
 
-  const fetchNotifications = async () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const fetchNotifications = useCallback(async () => {
     try {
       const [notifs, count] = await Promise.all([
-        api.getNotifications(),
-        api.getUnreadCount(),
+        api.getNotifications().catch(() => []),
+        api.getUnreadCount().catch(() => ({ unread_count: 0 })),
       ]);
-      setNotifications((notifs as any).notifications || notifs);
-      setUnreadCount(count.unread_count);
+      if (isMountedRef.current) {
+        setNotifications((notifs as any).notifications || notifs || []);
+        setUnreadCount(count?.unread_count || 0);
+        lastFetchTimeRef.current = Date.now();
+      }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   const markAsRead = async (id: number) => {
     try {
@@ -50,32 +58,78 @@ export function useNotifications(refreshInterval = 30000) {
     }
   };
 
+  // Initial load
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    void fetchNotifications();
+  }, [fetchNotifications]);
 
+  // Interval polling (stops when tab is inactive)
   useEffect(() => {
+    if (refreshInterval <= 0) return;
+
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && !document.hidden) {
-        fetchNotifications();
+        void fetchNotifications();
       }
     }, refreshInterval);
 
-    const handleNotificationsRead = () => {
-      fetchNotifications();
-    };
+    return () => clearInterval(interval);
+  }, [fetchNotifications, refreshInterval]);
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('notifications_read', handleNotificationsRead);
-    }
+  // Window Focus & Online Revalidation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
-    return () => {
-      clearInterval(interval);
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('notifications_read', handleNotificationsRead);
+    const handleRevalidate = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (Date.now() - lastFetchTimeRef.current > 2500) {
+        void fetchNotifications();
       }
     };
-  }, [refreshInterval]);
+
+    window.addEventListener('focus', handleRevalidate);
+    window.addEventListener('online', handleRevalidate);
+    document.addEventListener('visibilitychange', handleRevalidate);
+
+    return () => {
+      window.removeEventListener('focus', handleRevalidate);
+      window.removeEventListener('online', handleRevalidate);
+      document.removeEventListener('visibilitychange', handleRevalidate);
+    };
+  }, [fetchNotifications]);
+
+  // Realtime Events & Broadcast Channel
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleEvent = () => {
+      void fetchNotifications();
+    };
+
+    window.addEventListener('lms:notifications', handleEvent);
+    window.addEventListener('lms:assignments', handleEvent);
+    window.addEventListener('notifications_read', handleEvent);
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+        channel.onmessage = (msg) => {
+          const eventName = msg?.data?.event;
+          if (eventName === 'lms:notifications' || eventName === 'lms:assignments') {
+            void fetchNotifications();
+          }
+        };
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener('lms:notifications', handleEvent);
+      window.removeEventListener('lms:assignments', handleEvent);
+      window.removeEventListener('notifications_read', handleEvent);
+      if (channel) channel.close();
+    };
+  }, [fetchNotifications]);
 
   return {
     notifications,
@@ -83,5 +137,6 @@ export function useNotifications(refreshInterval = 30000) {
     loading,
     markAsRead,
     markAllAsRead,
+    refresh: fetchNotifications,
   };
 }

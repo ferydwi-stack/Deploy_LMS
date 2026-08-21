@@ -55,7 +55,12 @@ function SiswaMateriContent() {
     return [];
   }, [courseId]);
 
-  const { data: materiList } = useRealtimeData(loadMaterials, 60000, [courseId]);
+  const { data: materiList } = useRealtimeData(
+    loadMaterials,
+    12000,
+    [courseId],
+    ['lms:materials', 'lms:courses']
+  );
 
   const getCategoryIcon = (category: string) => {
     if (category.includes('Video')) return <Video className="w-5 h-5 text-purple-600" />;

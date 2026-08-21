@@ -86,8 +86,9 @@ function GuruAbsensiContent() {
 
   const { data: attendanceData, loading: attendanceLoading, refresh: refreshAttendance } = useRealtimeData(
     loadAttendanceData,
-    30000,
-    [courseId, selectedDate]
+    8000,
+    [courseId, selectedDate],
+    ['lms:attendances', 'lms:courses']
   );
 
   useEffect(() => {

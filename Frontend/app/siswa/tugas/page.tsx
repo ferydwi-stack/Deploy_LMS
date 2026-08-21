@@ -39,16 +39,16 @@ function SiswaTugasContent() {
 
   const { data: assignments, refresh: refreshAssignments } = useRealtimeData(
     () => api.getAssignments(courseId),
-    30000,
+    10000,
     [courseId],
-    'lms_assignments_updated'
+    ['lms:assignments', 'lms:courses', 'lms_assignments_updated']
   );
 
   const { data: mySubmissions, refresh: refreshSubmissions } = useRealtimeData(
     () => api.getMySubmissions(),
-    30000,
+    10000,
     [],
-    'lms_submissions_updated'
+    ['lms:submissions', 'lms:assignments', 'lms_submissions_updated']
   );
 
   const tasks = (() => {

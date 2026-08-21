@@ -1,64 +1,65 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
 
 function SiswaAbsensiContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
 
-  const courseTitle = searchParams.get('title') || 'Biologi Sel & Genetik Kelas XII';
+  const courseTitle = searchParams.get('title') || 'Kelas Pembelajaran';
   const courseTeacher = searchParams.get('teacher') || 'Teacher';
-  const courseCode = searchParams.get('code') || 'BIO-XII';
+  const courseCode = searchParams.get('code') || 'MAPEL';
   const courseId = searchParams.get('course_id') || '2';
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const [submittedToday, setSubmittedToday] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
-  const [courseDetail, setCourseDetail] = useState<any>(null);
   const [attendanceMessage, setAttendanceMessage] = useState('');
 
-  useEffect(() => {
-    const loadAttendances = async () => {
-      try {
-        const [courseData, attendances] = await Promise.all([
-          api.getCourseDetail(Number(courseId)).catch(() => null),
-          api.getMyAttendances().catch(() => []),
-        ]);
-        setCourseDetail(courseData);
-        if (attendances && Array.isArray(attendances)) {
-          const courseAttendances = attendances.filter((a: any) => String(a.course_id) === String(courseId));
-          setHistory(courseAttendances);
-          const hasToday = courseAttendances.some((a: any) => a.date === todayStr);
-          setSubmittedToday(hasToday);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    if (user) {
-      loadAttendances();
+  const loadAttendances = React.useCallback(async () => {
+    try {
+      const [courseData, attendances] = await Promise.all([
+        api.getCourseDetail(Number(courseId)).catch(() => null),
+        api.getMyAttendances().catch(() => []),
+      ]);
+      const courseAttendances = Array.isArray(attendances)
+        ? attendances.filter((a: any) => String(a.course_id) === String(courseId))
+        : [];
+      const hasToday = courseAttendances.some((a: any) => String(a.date).startsWith(todayStr));
+
+      return {
+        courseDetail: courseData,
+        history: courseAttendances,
+        submittedToday: hasToday,
+      };
+    } catch (e) {
+      console.error(e);
+      return { courseDetail: null, history: [], submittedToday: false };
     }
-  }, [user, courseId, todayStr]);
+  }, [courseId, todayStr]);
+
+  const { data: realtimeAttData, refresh: refreshAttendance } = useRealtimeData(
+    loadAttendances,
+    8000,
+    [courseId, todayStr],
+    ['lms:attendances', 'lms:courses']
+  );
+
+  const courseDetail = realtimeAttData?.courseDetail || null;
+  const history = realtimeAttData?.history || [];
+  const submittedToday = realtimeAttData?.submittedToday || false;
 
   const handleFillAttendance = async () => {
     if (submittedToday) return;
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} WIB`;
-    
     try {
       await api.selfAttend(parseInt(courseId));
-
-      const newEntry = { date: todayStr, time: timeStr, status: 'Hadir', method: 'Absen Mandiri Web' };
-      const newHistory = [newEntry, ...history];
-      setHistory(newHistory);
-      setSubmittedToday(true);
       setAttendanceMessage('Kehadiran Anda berhasil dicatat.');
+      await refreshAttendance();
     } catch (e: any) {
       setAttendanceMessage(e.message || 'Gagal mencatat kehadiran.');
       console.error(e);

@@ -204,69 +204,187 @@ export const api = {
     return fetchApi(`/admin/users${queryStr}`);
   },
 
-  createUser: (userData: Partial<User> & { password?: string }): Promise<ApiResponse<User>> => fetchApi('/admin/users', { method: 'POST', body: JSON.stringify(userData) }),
-  updateUser: (id: number, userData: Partial<User>): Promise<ApiResponse<User>> => fetchApi(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(userData) }),
-  resetUserPassword: (id: number, password: string): Promise<ApiResponse> => fetchApi(`/admin/users/${id}/reset-password`, { method: 'PUT', body: JSON.stringify({ password }) }),
-  deleteUser: (id: number): Promise<ApiResponse> => fetchApi(`/admin/users/${id}`, { method: 'DELETE' }),
-  bulkImportUsers: (users: Partial<User>[]): Promise<ApiResponse> => fetchApi('/admin/users/bulk-import', { method: 'POST', body: JSON.stringify({ users }) }),
+  createUser: async (userData: Partial<User> & { password?: string }): Promise<ApiResponse<User>> => {
+    const res = await fetchApi('/admin/users', { method: 'POST', body: JSON.stringify(userData) });
+    notifyDataChanged('lms:users');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  updateUser: async (id: number, userData: Partial<User>): Promise<ApiResponse<User>> => {
+    const res = await fetchApi(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(userData) });
+    notifyDataChanged('lms:users');
+    return res;
+  },
+  resetUserPassword: async (id: number, password: string): Promise<ApiResponse> => {
+    const res = await fetchApi(`/admin/users/${id}/reset-password`, { method: 'PUT', body: JSON.stringify({ password }) });
+    notifyDataChanged('lms:users');
+    return res;
+  },
+  deleteUser: async (id: number): Promise<ApiResponse> => {
+    const res = await fetchApi(`/admin/users/${id}`, { method: 'DELETE' });
+    notifyDataChanged('lms:users');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  bulkImportUsers: async (users: Partial<User>[]): Promise<ApiResponse> => {
+    const res = await fetchApi('/admin/users/bulk-import', { method: 'POST', body: JSON.stringify({ users }) });
+    notifyDataChanged('lms:users');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
 
   // Courses
   getCourses: (): Promise<Course[]> => fetchApi('/courses'),
   getCourseDetail: (id: number | string): Promise<Course> => fetchApi(`/courses/${id}`),
-  createCourse: (data: Partial<Course>): Promise<ApiResponse<Course>> => fetchApi('/courses', { method: 'POST', body: JSON.stringify(data) }),
-  updateCourse: (id: number, data: Partial<Course>): Promise<ApiResponse<Course>> => fetchApi(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteCourse: (id: number | string): Promise<ApiResponse> => fetchApi(`/courses/${id}`, { method: 'DELETE' }),
-  updateAttendanceSchedule: (id: number | string, data: { attendance_open_time: string; attendance_close_time: string }): Promise<ApiResponse<Course>> =>
-    fetchApi(`/courses/${id}/attendance-schedule`, { method: 'PUT', body: JSON.stringify(data) }),
+  createCourse: async (data: Partial<Course>): Promise<ApiResponse<Course>> => {
+    const res = await fetchApi('/courses', { method: 'POST', body: JSON.stringify(data) });
+    notifyDataChanged('lms:courses');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  updateCourse: async (id: number, data: Partial<Course>): Promise<ApiResponse<Course>> => {
+    const res = await fetchApi(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    notifyDataChanged('lms:courses');
+    return res;
+  },
+  deleteCourse: async (id: number | string): Promise<ApiResponse> => {
+    const res = await fetchApi(`/courses/${id}`, { method: 'DELETE' });
+    notifyDataChanged('lms:courses');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  updateAttendanceSchedule: async (id: number | string, data: { attendance_open_time: string; attendance_close_time: string }): Promise<ApiResponse<Course>> => {
+    const res = await fetchApi(`/courses/${id}/attendance-schedule`, { method: 'PUT', body: JSON.stringify(data) });
+    notifyDataChanged('lms:courses');
+    notifyDataChanged('lms:attendances');
+    return res;
+  },
 
   // Materials
   getMaterials: (courseId?: number | string): Promise<Material[]> => fetchApi(courseId ? `/materials?course_id=${courseId}` : '/materials'),
-  createMaterial: (data: FormData | Partial<Material>): Promise<ApiResponse<Material>> => fetchApi('/materials', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) }),
-  deleteMaterial: (id: number | string): Promise<ApiResponse> => fetchApi(`/materials/${id}`, { method: 'DELETE' }),
+  createMaterial: async (data: FormData | Partial<Material>): Promise<ApiResponse<Material>> => {
+    const res = await fetchApi('/materials', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) });
+    notifyDataChanged('lms:materials');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  deleteMaterial: async (id: number | string): Promise<ApiResponse> => {
+    const res = await fetchApi(`/materials/${id}`, { method: 'DELETE' });
+    notifyDataChanged('lms:materials');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
 
   // Assignments
   getAssignments: (courseId?: number | string): Promise<Assignment[]> => fetchApi(courseId ? `/assignments?course_id=${courseId}` : '/assignments'),
   getAssignmentDetail: (id: number | string): Promise<Assignment> => fetchApi(`/assignments/${id}`),
-  createAssignment: (data: FormData | Partial<Assignment>): Promise<ApiResponse<Assignment>> => fetchApi('/assignments', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) }),
-  deleteAssignment: (id: number | string): Promise<ApiResponse> => fetchApi(`/assignments/${id}`, { method: 'DELETE' }),
+  createAssignment: async (data: FormData | Partial<Assignment>): Promise<ApiResponse<Assignment>> => {
+    const res = await fetchApi('/assignments', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) });
+    notifyDataChanged('lms:assignments');
+    notifyDataChanged('lms:notifications');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  deleteAssignment: async (id: number | string): Promise<ApiResponse> => {
+    const res = await fetchApi(`/assignments/${id}`, { method: 'DELETE' });
+    notifyDataChanged('lms:assignments');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
 
   // Submissions (Tugas Siswa)
-  submitAssignment: (assignmentId: number | string, formData: FormData): Promise<ApiResponse<Submission>> => 
-    fetchApi(`/assignments/${assignmentId}/submit`, { method: 'POST', body: formData }),
+  submitAssignment: async (assignmentId: number | string, formData: FormData): Promise<ApiResponse<Submission>> => {
+    const res = await fetchApi(`/assignments/${assignmentId}/submit`, { method: 'POST', body: formData });
+    notifyDataChanged('lms:assignments');
+    notifyDataChanged('lms:submissions');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
 
-  gradeSubmission: (submissionId: number | string, score: number, teacherFeedback?: string): Promise<ApiResponse<Submission>> =>
-    fetchApi(`/submissions/${submissionId}/grade`, { method: 'PUT', body: JSON.stringify({ score, teacher_feedback: teacherFeedback }) }),
+  gradeSubmission: async (submissionId: number | string, score: number, teacherFeedback?: string): Promise<ApiResponse<Submission>> => {
+    const res = await fetchApi(`/submissions/${submissionId}/grade`, { method: 'PUT', body: JSON.stringify({ score, teacher_feedback: teacherFeedback }) });
+    notifyDataChanged('lms:assignments');
+    notifyDataChanged('lms:submissions');
+    notifyDataChanged('lms:notifications');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
 
   getMySubmissions: (): Promise<Submission[]> => fetchApi('/submissions/my'),
   getAssignmentSubmissions: (assignmentId: number | string): Promise<Submission[]> => fetchApi(`/assignments/${assignmentId}/submissions`),
 
   // Enrollment
-  enrollCourse: (id: number): Promise<ApiResponse> => fetchApi(`/courses/${id}/enroll`, { method: 'POST' }),
-  enrollByCode: (code: string): Promise<ApiResponse<{ course: Course }>> => fetchApi('/courses/enroll-by-code', { method: 'POST', body: JSON.stringify({ code }) }),
-  leaveCourse: (id: number): Promise<ApiResponse> => fetchApi(`/courses/${id}/leave`, { method: 'POST' }),
+  enrollCourse: async (id: number): Promise<ApiResponse> => {
+    const res = await fetchApi(`/courses/${id}/enroll`, { method: 'POST' });
+    notifyDataChanged('lms:courses');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  enrollByCode: async (code: string): Promise<ApiResponse<{ course: Course }>> => {
+    const res = await fetchApi('/courses/enroll-by-code', { method: 'POST', body: JSON.stringify({ code }) });
+    notifyDataChanged('lms:courses');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  leaveCourse: async (id: number): Promise<ApiResponse> => {
+    const res = await fetchApi(`/courses/${id}/leave`, { method: 'POST' });
+    notifyDataChanged('lms:courses');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
   getCourseStudents: (id: number): Promise<User[]> => fetchApi(`/courses/${id}/students`),
   getCourseReport: (id: number): Promise<any> => fetchApi(`/courses/${id}/report`),
   getAvailableCourses: (): Promise<Course[]> => fetchApi('/available-courses'),
-  kickStudent: (courseId: number, studentId: number): Promise<ApiResponse> => fetchApi(`/courses/${courseId}/students/${studentId}`, { method: 'DELETE' }),
-  updateStudentGrade: (courseId: number, studentId: number, data: { uts_score: number; uas_score: number }): Promise<ApiResponse> =>
-    fetchApi(`/courses/${courseId}/students/${studentId}/grades`, { method: 'PUT', body: JSON.stringify(data) }),
+  kickStudent: async (courseId: number, studentId: number): Promise<ApiResponse> => {
+    const res = await fetchApi(`/courses/${courseId}/students/${studentId}`, { method: 'DELETE' });
+    notifyDataChanged('lms:courses');
+    return res;
+  },
+  updateStudentGrade: async (courseId: number, studentId: number, data: { uts_score: number; uas_score: number }): Promise<ApiResponse> => {
+    const res = await fetchApi(`/courses/${courseId}/students/${studentId}/grades`, { method: 'PUT', body: JSON.stringify(data) });
+    notifyDataChanged('lms:courses');
+    notifyDataChanged('lms:grades');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
 
   // Attendance
   getCourseAttendances: (courseId: number, date?: string): Promise<Attendance[]> => fetchApi(`/courses/${courseId}/attendances${date ? `?date=${date}` : ''}`),
   getCourseAttendanceStats: (courseId: number): Promise<any> => fetchApi(`/courses/${courseId}/attendance-stats`),
-  saveCourseAttendances: (courseId: number, data: { date: string; attendances: Array<{ student_id: number; status: string; note?: string }> }): Promise<ApiResponse> => 
-    fetchApi(`/courses/${courseId}/attendances`, { method: 'POST', body: JSON.stringify(data) }),
-  selfAttend: (courseId: number): Promise<ApiResponse> => fetchApi('/attendances/self', { method: 'POST', body: JSON.stringify({ course_id: courseId }) }),
+  saveCourseAttendances: async (courseId: number, data: { date: string; attendances: Array<{ student_id: number; status: string; note?: string }> }): Promise<ApiResponse> => {
+    const res = await fetchApi(`/courses/${courseId}/attendances`, { method: 'POST', body: JSON.stringify(data) });
+    notifyDataChanged('lms:attendances');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
+  selfAttend: async (courseId: number): Promise<ApiResponse> => {
+    const res = await fetchApi('/attendances/self', { method: 'POST', body: JSON.stringify({ course_id: courseId }) });
+    notifyDataChanged('lms:attendances');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
   getMyAttendances: (): Promise<Attendance[]> => fetchApi('/attendances/my'),
 
   // Notifications
   getNotifications: (): Promise<Notification[]> => fetchApi('/notifications'),
   getUnreadCount: (): Promise<{ unread_count: number }> => fetchApi('/notifications/unread-count'),
-  markNotificationRead: (id: number): Promise<ApiResponse> => fetchApi(`/notifications/${id}/read`, { method: 'PUT' }),
-  markAllNotificationsRead: (): Promise<ApiResponse> => fetchApi('/notifications/read-all', { method: 'PUT' }),
+  markNotificationRead: async (id: number): Promise<ApiResponse> => {
+    const res = await fetchApi(`/notifications/${id}/read`, { method: 'PUT' });
+    notifyDataChanged('lms:notifications');
+    return res;
+  },
+  markAllNotificationsRead: async (): Promise<ApiResponse> => {
+    const res = await fetchApi('/notifications/read-all', { method: 'PUT' });
+    notifyDataChanged('lms:notifications');
+    return res;
+  },
 
   // Profile
-  updateProfile: (data: Partial<User>): Promise<ApiResponse<User>> => fetchApi('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  updateProfile: async (data: Partial<User>): Promise<ApiResponse<User>> => {
+    const res = await fetchApi('/auth/profile', { method: 'PUT', body: JSON.stringify(data) });
+    notifyDataChanged('lms:users');
+    return res;
+  },
 
   // Password Reset
   forgotPassword: (email: string): Promise<ApiResponse> => fetchApi('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
@@ -275,7 +393,12 @@ export const api = {
 
   // Admin Settings
   getAdminSettings: (): Promise<ApiResponse<any>> => fetchApi('/admin/settings'),
-  updateAdminSettings: (data: Record<string, any>): Promise<ApiResponse<any>> => fetchApi('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  updateAdminSettings: async (data: Record<string, any>): Promise<ApiResponse<any>> => {
+    const res = await fetchApi('/admin/settings', { method: 'PUT', body: JSON.stringify(data) });
+    notifyDataChanged('lms:settings');
+    notifyDataChanged('lms:stats');
+    return res;
+  },
 
   // Stats
   getAdminStats: (): Promise<StatsResponse> => fetchApi('/admin/stats'),

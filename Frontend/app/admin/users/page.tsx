@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Plus, FileSpreadsheet, Edit3, Trash2, X, Search, Key, ShieldCheck, Upload, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
 
 export default function AdminUserManagementPage() {
   const [filter, setFilter] = useState<'all' | 'teacher' | 'student'>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [users, setUsers] = useState<any[]>([]);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -32,12 +30,11 @@ export default function AdminUserManagementPage() {
 
   // 1. Fetch real users directly from MySQL API
   const loadUsersFromApi = useCallback(async () => {
-    setIsLoading(true);
     try {
-      const data = await api.getUsers();
+      const data = await api.getUsers().catch(() => []);
       const usersData = Array.isArray(data) ? data : (data?.users || []);
       if (Array.isArray(usersData)) {
-        const formatted = usersData.map((u: any, idx: number) => ({
+        return usersData.map((u: any, idx: number) => ({
           no: (idx + 1).toString().padStart(2, '0'),
           dbId: u.id,
           id: u.nisn_or_nip || `USR-00${u.id}`,
@@ -55,20 +52,22 @@ export default function AdminUserManagementPage() {
           bio: u.bio || '',
           pass: '••••••••'
         }));
-        setUsers(formatted);
-      } else {
-        setUsers([]);
       }
+      return [];
     } catch (e) {
       console.error('Failed to load users from MySQL API:', e);
-    } finally {
-      setIsLoading(false);
+      return [];
     }
   }, []);
 
-  useEffect(() => {
-    loadUsersFromApi();
-  }, [loadUsersFromApi]);
+  const { data: realUsersData, loading: isLoading, refresh: refreshUsers } = useRealtimeData(
+    loadUsersFromApi,
+    15000,
+    [],
+    ['lms:users']
+  );
+
+  const users = realUsersData || [];
 
   // Form State for Adding User
   const [newUser, setNewUser] = useState({
