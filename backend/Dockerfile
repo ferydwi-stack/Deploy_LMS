@@ -64,8 +64,9 @@ set -e
 # Run migrations and seeders if connected to DB
 php artisan migrate --force || true
 php artisan db:seed --force || true
-php artisan config:cache || true
-php artisan route:cache || true
+# Clear any stale caches
+php artisan config:clear || true
+php artisan route:clear || true
 
 # Start php-fpm in background and nginx in foreground
 php-fpm -D
