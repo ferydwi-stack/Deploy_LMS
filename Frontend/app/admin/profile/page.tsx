@@ -45,20 +45,15 @@ export default function AdminProfilePage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const usersData = await api.getUsers().catch(() => []);
-        const usersList = Array.isArray(usersData) ? usersData : (usersData?.users || []);
-        const teachers = usersList.filter((u: any) => u.role === 'guru');
-        const students = usersList.filter((u: any) => u.role === 'siswa');
-        
-        const coursesData = await api.getCourses().catch(() => []);
-        const coursesList = Array.isArray(coursesData) ? coursesData : [];
-
-        setStats({
-          totalUsers: usersList.length,
-          totalTeachers: teachers.length,
-          totalStudents: students.length,
-          totalCourses: coursesList.length
-        });
+        const data: any = await api.getAdminStats().catch(() => null);
+        if (data && data.total_users !== undefined) {
+          setStats({
+            totalUsers: data.total_users || 0,
+            totalTeachers: data.total_teachers || 0,
+            totalStudents: data.total_students || 0,
+            totalCourses: data.total_courses || 0
+          });
+        }
       } catch {
         // silent
       }

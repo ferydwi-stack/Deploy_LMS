@@ -148,17 +148,26 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
 
   useEffect(() => {
     if (role === 'admin' && userStats.total === 0) {
-      api.getUsers().then((data: any) => {
-        if (Array.isArray(data)) {
-          const teachers = data.filter((u: any) => u.role === 'guru').length;
-          const students = data.filter((u: any) => u.role === 'siswa').length;
+      api.getAdminStats().then((stats: any) => {
+        if (stats && stats.total_users !== undefined) {
           setUserStats({
-            total: data.length,
-            teachers: teachers,
-            students: students
+            total: stats.total_users || 0,
+            teachers: stats.total_teachers || 0,
+            students: stats.total_students || 0
           });
         }
-      }).catch(() => {});
+      }).catch(() => {
+        api.getUsers().then((data: any) => {
+          const list = Array.isArray(data) ? data : (data?.users || []);
+          if (Array.isArray(list) && list.length > 0) {
+            setUserStats({
+              total: list.length,
+              teachers: list.filter((u: any) => u.role === 'guru').length,
+              students: list.filter((u: any) => u.role === 'siswa').length
+            });
+          }
+        }).catch(() => {});
+      });
     }
   }, [role, userStats.total]);
 
