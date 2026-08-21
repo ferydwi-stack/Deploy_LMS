@@ -130,7 +130,8 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
       ...options,
       headers,
     });
-  } catch {
+  } catch (fetchErr: any) {
+    console.error('Fetch error from:', `${baseUrl}${endpoint}`, fetchErr);
     throw new Error('Tidak dapat terhubung ke server backend LMS. Silakan periksa koneksi internet atau coba beberapa saat lagi.');
   }
 
