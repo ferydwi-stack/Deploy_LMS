@@ -1,0 +1,1566 @@
+"""
+Generate Laporan PKL Word Document (.docx) - FTIK Universitas Teknokrat Indonesia
+Sesuai standar resmi Buku Panduan Laporan PKL FTIK dan contoh Laporan Cover Polos.
+
+PERBAIKAN v2:
+- Kertas penyekat biru antar mahasiswa BAB III
+- Tabel API Endpoint, Database Schema, Komponen
+- Konten lebih padat (min 50 halaman)
+- Arsitektur Sistem (Gambar 3.1) ditambahkan
+- Lebih banyak gambar screenshot per mahasiswa
+- Simpulan (bukan Kesimpulan) sesuai panduan
+- Judul BAB: 4cm dari tepi atas (spacing atas)
+"""
+import os
+from docx import Document
+from docx.shared import Inches, Pt, Cm, RGBColor, Emu
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.enum.section import WD_ORIENT
+from docx.oxml import parse_xml
+from docx.oxml.ns import nsdecls, qn
+
+def set_cell_shading(cell, color_hex):
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{color_hex}"/>')
+    tcPr.append(shd)
+
+def set_cell_borders(cell, top="single", bottom="single", left="single", right="single", sz="4"):
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    borders_xml = f'<w:tcBorders {nsdecls("w")}>'
+    for side, val in [("top", top), ("bottom", bottom), ("left", left), ("right", right)]:
+        borders_xml += f'<w:{side} w:val="{val}" w:sz="{sz}" w:space="0" w:color="000000"/>'
+    borders_xml += '</w:tcBorders>'
+    tcBorders = parse_xml(borders_xml)
+    tcPr.append(tcBorders)
+
+def remove_cell_borders(cell):
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    tcBorders = parse_xml(
+        f'<w:tcBorders {nsdecls("w")}>'
+        f'<w:top w:val="none" w:sz="0" w:space="0"/>'
+        f'<w:left w:val="none" w:sz="0" w:space="0"/>'
+        f'<w:bottom w:val="none" w:sz="0" w:space="0"/>'
+        f'<w:right w:val="none" w:sz="0" w:space="0"/>'
+        f'</w:tcBorders>'
+    )
+    tcPr.append(tcBorders)
+
+def sfmt(paragraph, space_before=0, space_after=0, line_spacing=1.5, 
+         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, first_line_indent=None,
+         keep_with_next=False, left_indent=None):
+    pf = paragraph.paragraph_format
+    pf.space_before = Pt(space_before)
+    pf.space_after = Pt(space_after)
+    pf.line_spacing = line_spacing
+    pf.alignment = alignment
+    if first_line_indent is not None:
+        pf.first_line_indent = Cm(first_line_indent)
+    if left_indent is not None:
+        pf.left_indent = Cm(left_indent)
+    if keep_with_next:
+        pf.keep_with_next = True
+
+def ar(paragraph, text, bold=False, italic=False, size=12, underline=False, color=None):
+    r = paragraph.add_run(text)
+    r.font.name = 'Times New Roman'
+    r.font.size = Pt(size)
+    r.bold = bold
+    r.italic = italic
+    r.underline = underline
+    if color:
+        r.font.color.rgb = RGBColor(*color)
+    return r
+
+def set_page_number_roman(section):
+    footer = section.footer
+    footer.is_linked_to_previous = False
+    p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run()
+    fldChar1 = parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="begin"/>')
+    run._r.append(fldChar1)
+    run2 = p.add_run()
+    instrText = parse_xml(f'<w:instrText {nsdecls("w")} xml:space="preserve"> PAGE  \\* ROMANLOW </w:instrText>')
+    run2._r.append(instrText)
+    run3 = p.add_run()
+    fldChar2 = parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="end"/>')
+    run3._r.append(fldChar2)
+
+def set_page_number_arabic(section):
+    header = section.header
+    header.is_linked_to_previous = False
+    p = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run = p.add_run()
+    fldChar1 = parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="begin"/>')
+    run._r.append(fldChar1)
+    run2 = p.add_run()
+    instrText = parse_xml(f'<w:instrText {nsdecls("w")} xml:space="preserve"> PAGE </w:instrText>')
+    run2._r.append(instrText)
+    run3 = p.add_run()
+    fldChar2 = parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="end"/>')
+    run3._r.append(fldChar2)
+    footer = section.footer
+    footer.is_linked_to_previous = False
+
+def add_gambar(doc, placeholder_text, caption):
+    """Add image placeholder + caption below (centered)."""
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_before=12, space_after=6)
+    ar(p, f"[Gambar untuk {placeholder_text}]", italic=True, size=11)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, caption, size=12)
+
+def add_tabel_caption(doc, caption):
+    """Add table caption above table (centered)."""
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_before=6, keep_with_next=True)
+    ar(p, caption, size=12)
+
+def add_blue_separator(doc, name, npm):
+    """Add kertas penyekat biru sesuai panduan FTIK."""
+    doc.add_page_break()
+    # Full-page blue background with name/NPM
+    for _ in range(8):
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.0)
+    
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.0, space_after=0)
+    ar(p, "BAB III", bold=True, size=14, color=(0, 0, 139))
+    
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.0, space_after=12)
+    ar(p, "PELAKSANAAN PRAKTIK KERJA LAPANGAN", bold=True, size=14, color=(0, 0, 139))
+    
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.5, space_after=0)
+    ar(p, name, bold=True, size=16, color=(0, 0, 139))
+    
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.5, space_after=0)
+    ar(p, npm, bold=True, size=14, color=(0, 0, 139))
+    
+    doc.add_page_break()
+
+def add_bab_title(doc, bab_num, bab_text):
+    """Add BAB title with 4cm from top edge (1cm extra spacing since top margin is 3cm)."""
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_before=28)
+    # space_before=28pt ≈ ~1cm to make total ~4cm from top edge
+    
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0, keep_with_next=True)
+    ar(p, f"BAB {bab_num}", bold=True, size=12)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12, keep_with_next=True)
+    ar(p, bab_text, bold=True, size=12)
+
+def add_subbab(doc, number, title):
+    """Add subbab heading."""
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.5, space_before=6, space_after=6, keep_with_next=True)
+    ar(p, f"{number} {title}", bold=True, size=12)
+
+def add_body(doc, text, first_indent=True):
+    """Add body paragraph with optional first-line indent."""
+    p = doc.add_paragraph()
+    sfmt(p, line_spacing=1.5, first_line_indent=1.27 if first_indent else None)
+    ar(p, text, size=12)
+    return p
+
+def add_body_mixed(doc, first_indent=True):
+    """Create a paragraph for mixed formatting. Returns paragraph for manual ar() calls."""
+    p = doc.add_paragraph()
+    sfmt(p, line_spacing=1.5, first_line_indent=1.27 if first_indent else None)
+    return p
+
+def add_numbered_item(doc, number, text, indent=0):
+    """Add a numbered item."""
+    p = doc.add_paragraph()
+    sfmt(p, line_spacing=1.5, space_after=0, left_indent=indent if indent else None)
+    ar(p, f"{number}) {text}", size=12)
+
+def create_laporan():
+    doc = Document()
+
+    # === GLOBAL STYLES ===
+    style = doc.styles['Normal']
+    style.font.name = 'Times New Roman'
+    style.font.size = Pt(12)
+    style.paragraph_format.line_spacing = 1.5
+    style.paragraph_format.space_after = Pt(0)
+    style.paragraph_format.space_before = Pt(0)
+
+    # === SECTION 1: Front matter (roman numerals) ===
+    section = doc.sections[0]
+    section.page_width = Cm(21)
+    section.page_height = Cm(29.7)
+    section.top_margin = Cm(3)
+    section.bottom_margin = Cm(3)
+    section.left_margin = Cm(4)
+    section.right_margin = Cm(3)
+    set_page_number_roman(section)
+
+    names_data = [
+        ("1.", "FERY DWI RAMADHI", "(23312086)"),
+        ("2.", "FATHUR RAMANTHA", "(23312087)"),
+        ("3.", "I PUTU PANDU", "(23312088)"),
+    ]
+
+    # =====================================================================
+    # HALAMAN SAMPUL (COVER) - Lampiran 1
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_before=24)
+
+    for line in ["LAPORAN PRAKTIK KERJA LAPANGAN (PKL)", "DI CV NEWUS TEKNOLOGI", "BANDAR LAMPUNG"]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+        ar(p, line, bold=True, size=14)
+
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    ar(p, "Untuk memenuhi persyaratan mendapatkan nilai Praktik Kerja Lapangan", size=12)
+
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+    ar(p, "Disusun oleh:", bold=True, size=12)
+
+    for num, name, npm in names_data:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+        ar(p, f"{num} {name} {npm}", bold=True, size=12)
+
+    for _ in range(2):
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    ar(p, "[Gambar untuk Logo Universitas Teknokrat Indonesia]", italic=True, size=11)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    ar(p, "(Tinggi gambar 5 cm, Lebar gambar 5,5 cm)", italic=True, size=10)
+
+    for _ in range(2):
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+
+    for line in ["PROGRAM STUDI S1 INFORMATIKA", "FAKULTAS TEKNIK DAN ILMU KOMPUTER",
+                 "UNIVERSITAS TEKNOKRAT INDONESIA", "BANDAR LAMPUNG", "2026"]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+        ar(p, line, bold=True, size=14)
+
+    doc.add_page_break()
+
+    # =====================================================================
+    # LEMBAR PERSETUJUAN - Lampiran 2
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+    ar(p, "LEMBAR PERSETUJUAN LAPORAN", bold=True, size=14)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, "PRAKTIK KERJA LAPANGAN", bold=True, size=14)
+
+    # Info mahasiswa
+    info = [
+        ("Nama", ":\t1.  Fery Dwi Ramadhi (23312086)"),
+        ("", "\t2.  Fathur Ramantha (23312087)"),
+        ("", "\t3.  I Putu Pandu (23312088)"),
+    ]
+    for label, value in info:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.0, space_after=0)
+        if label:
+            ar(p, label, size=12)
+        ar(p, value, size=12)
+
+    for label, value in [("Program Studi", ":\tS1 Informatika"), 
+                          ("Instansi/perusahaan", ":\tCV Newus Teknologi"),
+                          ("Alamat Instansi", ":\tJl. Salim Batubara No.118, Kupang Teba,"),
+                          ("", "\t\tKec. Teluk Betung Utara, Bandar Lampung")]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.0, space_after=0)
+        if label:
+            ar(p, label, size=12)
+            ar(p, f"\t{value}", size=12)
+        else:
+            ar(p, value, size=12)
+
+    # Tanda tangan persetujuan
+    for _ in range(2):
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+
+    tbl = doc.add_table(rows=4, cols=2)
+    tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    
+    c = tbl.rows[0].cells[0].paragraphs[0]
+    c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    ar(c, "Pembimbing,", size=12)
+    
+    labels_ttd = [
+        ("Pembimbing laporan PKL\nFakultas Teknik dan Ilmu Komputer,", "Pembimbing lapangan\nInstansi/Perusahaan PKL,"),
+    ]
+    for left_text, right_text in labels_ttd:
+        c1 = tbl.rows[1].cells[0].paragraphs[0]
+        c1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c1, left_text, size=12)
+        c2 = tbl.rows[1].cells[1].paragraphs[0]
+        c2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c2, right_text, size=12)
+
+    for i in range(2):
+        c = tbl.rows[2].cells[i].paragraphs[0]
+        c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c, "\n\n\n\n", size=12)
+    
+    for i in range(2):
+        c = tbl.rows[3].cells[i].paragraphs[0]
+        c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c, "(.......................................................)", size=12)
+        px = tbl.rows[3].cells[i].add_paragraph()
+        px.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(px, "NIK", size=12)
+
+    for row in tbl.rows:
+        for cell in row.cells:
+            remove_cell_borders(cell)
+
+    for _ in range(2):
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+
+    for text in ["Menyetujui,", "Program Studi Informatika", "Ketua,"]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+        ar(p, text, size=12)
+
+    for _ in range(3):
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+    ar(p, "Dr. Heni Sulistiani, S.Kom., M.Kom.", size=12)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    ar(p, "NIK 022 13 02 11", size=12)
+
+    doc.add_page_break()
+
+    # =====================================================================
+    # LEMBAR PENGESAHAN - Lampiran 3
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, "LEMBAR PENGESAHAN", bold=True, size=14)
+
+    for line in ["LAPORAN PRAKTIK KERJA LAPANGAN (PKL)", "DI CV NEWUS TEKNOLOGI", "BANDAR LAMPUNG"]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+        ar(p, line, bold=True, size=12)
+
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.5, space_before=6)
+    ar(p, "Dipersiapkan dan disusun oleh:", size=12)
+
+    for num, name, npm in names_data:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+        ar(p, f"{num}   {name}  {npm}", bold=True, size=12)
+
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.5, space_before=6)
+    ar(p, "Telah dipertahankan di depan Dewan Penguji", size=12)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    ar(p, "Pada tanggal .... September 2026", size=12)
+
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_before=6)
+    ar(p, "Dewan Penguji", bold=True, size=12)
+
+    # Table pembimbing-penguji
+    tbl2 = doc.add_table(rows=3, cols=2)
+    tbl2.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for idx, label in enumerate(["Pembimbing,", "Penguji,"]):
+        c = tbl2.rows[0].cells[idx].paragraphs[0]
+        c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c, label, size=12)
+    for i in range(2):
+        c = tbl2.rows[1].cells[i].paragraphs[0]
+        c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c, "\n\n\n\n", size=12)
+    for i in range(2):
+        c = tbl2.rows[2].cells[i].paragraphs[0]
+        c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c, "(.......................................................)", size=12)
+        px = tbl2.rows[2].cells[i].add_paragraph()
+        px.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(px, "NIK", size=12)
+    for row in tbl2.rows:
+        for cell in row.cells:
+            remove_cell_borders(cell)
+
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.5, space_before=6)
+    ar(p, "Laporan ini telah diterima sebagai salah satu persyaratan", size=12)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=0)
+    ar(p, "untuk memperoleh nilai Praktik Kerja Lapangan", size=12)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0)
+    ar(p, "Tanggal .... September 2026", size=12)
+
+    # Dekan dan Kaprodi
+    tbl3 = doc.add_table(rows=3, cols=2)
+    tbl3.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for idx, lines in enumerate([
+        ("Fakultas Teknik dan Ilmu Komputer", "Dekan,"),
+        ("Program Studi Informatika", "Ketua,")
+    ]):
+        c = tbl3.rows[0].cells[idx].paragraphs[0]
+        c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c, lines[0], size=12)
+        px = tbl3.rows[0].cells[idx].add_paragraph()
+        px.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(px, lines[1], size=12)
+
+    for i in range(2):
+        c = tbl3.rows[1].cells[i].paragraphs[0]
+        c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c, "\n\n\n\n", size=12)
+
+    c = tbl3.rows[2].cells[0].paragraphs[0]
+    c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    ar(c, "(.......................................................)", size=12)
+    px = tbl3.rows[2].cells[0].add_paragraph()
+    px.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    ar(px, "NIK", size=12)
+
+    c = tbl3.rows[2].cells[1].paragraphs[0]
+    c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    ar(c, "Dr. Heni Sulistiani, S.Kom., M.Kom.", size=12)
+    px = tbl3.rows[2].cells[1].add_paragraph()
+    px.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    ar(px, "NIK 022 13 02 11", size=12)
+
+    for row in tbl3.rows:
+        for cell in row.cells:
+            remove_cell_borders(cell)
+
+    doc.add_page_break()
+
+    # =====================================================================
+    # KATA PENGANTAR - Lampiran 4
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, "KATA PENGANTAR", bold=True, size=14)
+
+    p = add_body(doc, "Puji syukur penulis panjatkan kepada Allah SWT, karena atas berkat dan rahmat-Nya, penulis dapat menyelesaikan Laporan Praktik Kerja Lapangan (PKL) ini. Penulisan Laporan PKL ini dilakukan dalam rangka memenuhi salah satu syarat untuk mendapatkan nilai Praktik Kerja Lapangan (PKL) pada Program Studi S1 Informatika Fakultas Teknik dan Ilmu Komputer Universitas Teknokrat Indonesia. Penulis menyadari bahwa, tanpa bantuan dan bimbingan dari berbagai pihak, sangatlah sulit bagi penulis untuk menyelesaikan laporan PKL ini. Oleh karena itu, penulis mengucapkan terima kasih kepada:")
+
+    thanks = [
+        "Dr. H.M. Nasrullah Yusuf, S.E., M.B.A. selaku Rektor Universitas Teknokrat Indonesia.",
+        "Dr. Mahathir Muhammad, S.E., M.M., selaku Wakil Rektor Universitas Teknokrat Indonesia.",
+        "Dr. Ryan Randy Suryono, S.Kom., M.Kom., selaku Dekan Fakultas Teknik dan Ilmu Komputer Universitas Teknokrat Indonesia.",
+        "Dr. Heni Sulistiani, S.Kom., M.Kom., selaku Ketua Program Studi S1 Informatika Fakultas Teknik dan Ilmu Komputer Universitas Teknokrat Indonesia.",
+        "Yusra Fernando, S.Kom., M.Kom., selaku Koordinator PKL Fakultas Teknik dan Ilmu Komputer Universitas Teknokrat Indonesia.",
+        "Dosen Pembimbing yang telah meluangkan waktu untuk membimbing penulis menyelesaikan Laporan PKL ini.",
+        "Pihak CV Newus Teknologi Bandar Lampung yang telah banyak membantu dan memberikan bimbingan selama melaksanakan PKL serta membantu dalam usaha memperoleh data yang penulis perlukan.",
+        "Orang tua dan keluarga yang telah memberikan doa, motivasi, dan dukungan moral maupun materiil.",
+        "Seluruh rekan mahasiswa S1 Informatika Universitas Teknokrat Indonesia.",
+    ]
+    for i, t in enumerate(thanks, 1):
+        add_numbered_item(doc, i, t)
+
+    add_body(doc, "Akhir kata, penulis berharap semoga Allah SWT berkenan membalas segala kebaikan semua pihak yang telah membantu dan semoga Laporan PKL ini membawa manfaat.")
+
+    for _ in range(2):
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.RIGHT, line_spacing=1.0)
+
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.RIGHT, line_spacing=1.0, space_after=0)
+    ar(p, "Bandar Lampung, September 2026", size=12)
+    for _ in range(3):
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.RIGHT, line_spacing=1.0)
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.RIGHT, line_spacing=1.0)
+    ar(p, "Penulis", size=12)
+
+    doc.add_page_break()
+
+    # =====================================================================
+    # DAFTAR ISI
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, "DAFTAR ISI", bold=True, size=14)
+
+    daftar_isi = [
+        ("LEMBAR PERSETUJUAN", "ii", True, 0),
+        ("LEMBAR PENGESAHAN", "iii", True, 0),
+        ("KATA PENGANTAR", "iv", True, 0),
+        ("DAFTAR ISI", "v", True, 0),
+        ("DAFTAR TABEL", "vii", True, 0),
+        ("DAFTAR GAMBAR", "viii", True, 0),
+        ("DAFTAR LAMPIRAN", "ix", True, 0),
+        ("ABSTRAK", "x", True, 0),
+        ("BAB I PENDAHULUAN", "1", True, 0),
+        ("1.1. Latar Belakang", "1", False, 0.63),
+        ("1.2. Tujuan Praktik Kerja Lapangan (PKL)", "3", False, 0.63),
+        ("1.3. Kegunaan Praktik Kerja Lapangan (PKL)", "4", False, 0.63),
+        ("1.3.1. Manfaat bagi Mahasiswa", "4", False, 1.27),
+        ("1.3.2. Manfaat bagi FTIK Universitas Teknokrat Indonesia", "5", False, 1.27),
+        ("1.3.3. Manfaat bagi CV Newus Teknologi", "6", False, 1.27),
+        ("1.4. Tempat Praktik Kerja Lapangan (PKL)", "6", False, 0.63),
+        ("1.5. Jadwal Pelaksanaan PKL", "7", False, 0.63),
+        ("BAB II TINJAUAN UMUM TEMPAT PKL", "9", True, 0),
+        ("2.1. Sejarah Perusahaan", "9", False, 0.63),
+        ("2.2. Visi dan Misi Perusahaan", "10", False, 0.63),
+        ("2.3. Struktur Organisasi", "11", False, 0.63),
+        ("2.4. Kegiatan Umum Perusahaan", "12", False, 0.63),
+        ("BAB III PELAKSANAAN PRAKTIK KERJA LAPANGAN", "14", True, 0),
+        ("3.1. Fery Dwi Ramadhi (23312086)", "14", False, 0.63),
+        ("3.1.1. Bidang Kerja", "14", False, 1.27),
+        ("3.1.2. Pelaksanaan Kerja", "15", False, 1.27),
+        ("3.1.3. Kendala yang Dihadapi", "24", False, 1.27),
+        ("3.1.4. Cara Mengatasi Kendala", "25", False, 1.27),
+        ("3.2. Fathur Ramantha (23312087)", "28", False, 0.63),
+        ("3.2.1. Bidang Kerja", "28", False, 1.27),
+        ("3.2.2. Pelaksanaan Kerja", "29", False, 1.27),
+        ("3.2.3. Kendala yang Dihadapi", "36", False, 1.27),
+        ("3.2.4. Cara Mengatasi Kendala", "37", False, 1.27),
+        ("3.3. I Putu Pandu (23312088)", "40", False, 0.63),
+        ("3.3.1. Bidang Kerja", "40", False, 1.27),
+        ("3.3.2. Pelaksanaan Kerja", "41", False, 1.27),
+        ("3.3.3. Kendala yang Dihadapi", "48", False, 1.27),
+        ("3.3.4. Cara Mengatasi Kendala", "49", False, 1.27),
+        ("BAB IV PENUTUP", "52", True, 0),
+        ("4.1. Simpulan", "52", False, 0.63),
+        ("4.2. Saran", "54", False, 0.63),
+        ("4.2.1. Untuk CV Newus Teknologi", "54", False, 1.27),
+        ("4.2.2. Kontribusi terhadap IPTEK", "55", False, 1.27),
+        ("DAFTAR PUSTAKA", "56", True, 0),
+        ("LAMPIRAN", "57", True, 0),
+    ]
+    for item, page, is_bold, indent in daftar_isi:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.5, space_after=0, left_indent=indent if indent else None)
+        ar(p, item, bold=is_bold, size=12)
+        dots = max(3, 60 - len(item) - int(indent*3))
+        ar(p, f"  {'.' * dots}  {page}", size=12)
+
+    doc.add_page_break()
+
+    # =====================================================================
+    # DAFTAR TABEL
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, "DAFTAR TABEL", bold=True, size=14)
+
+    for t_no, t_judul in [
+        ("Tabel 1.1", "Tahapan Kegiatan Praktik Kerja Lapangan (PKL)"),
+        ("Tabel 3.1", "Daftar Endpoint RESTful API Laravel 11"),
+        ("Tabel 3.2", "Struktur Tabel Basis Data MySQL"),
+        ("Tabel 3.3", "Daftar Komponen Antarmuka Next.js"),
+        ("Tabel 3.4", "Hasil Pengujian Otomatis (E2E Automated Bot Testing)"),
+    ]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.5, space_after=0)
+        ar(p, f"{t_no}  {t_judul}", size=12)
+
+    doc.add_page_break()
+
+    # =====================================================================
+    # DAFTAR GAMBAR
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, "DAFTAR GAMBAR", bold=True, size=14)
+
+    for g_no, g_judul in [
+        ("Gambar 1.1", "Tempat Praktik Kerja Lapangan (PKL)"),
+        ("Gambar 2.1", "Logo CV Newus Teknologi"),
+        ("Gambar 2.2", "Struktur Organisasi CV Newus Teknologi"),
+        ("Gambar 3.1", "Arsitektur Sistem LMS (Frontend dan Backend)"),
+        ("Gambar 3.2", "Entity Relationship Diagram (ERD) Basis Data"),
+        ("Gambar 3.3", "Diagram Use Case Terpadu Sistem LMS"),
+        ("Gambar 3.4", "Diagram Alir (Flowchart) Sistem Terpadu"),
+        ("Gambar 3.5", "Tampilan Halaman Login Sistem LMS"),
+        ("Gambar 3.6", "Tampilan Dashboard Administrator"),
+        ("Gambar 3.7", "Tampilan Dashboard Guru Pengajar"),
+        ("Gambar 3.8", "Tampilan Dashboard Siswa"),
+        ("Gambar 3.9", "Tampilan Halaman Manajemen Kelas"),
+        ("Gambar 3.10", "Tampilan Halaman Presensi Siswa"),
+        ("Gambar 3.11", "Tampilan Halaman Penugasan LKPD"),
+        ("Gambar 3.12", "Tampilan Halaman Rekapitulasi Nilai Rapor"),
+        ("Gambar 3.13", "Tampilan Lonceng Notifikasi Real-time"),
+        ("Gambar 3.14", "Tampilan Fitur Ekspor Laporan Excel"),
+        ("Gambar 3.15", "Tampilan Halaman Manajemen Modul Bahan Ajar"),
+        ("Gambar 3.16", "Tampilan Halaman Input Nilai UTS/UAS"),
+        ("Gambar 3.17", "Tampilan Halaman Bulk Import Spreadsheet"),
+        ("Gambar 3.18", "Dokumentasi Kegiatan PKL di CV Newus Teknologi"),
+    ]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.5, space_after=0)
+        ar(p, f"{g_no}  {g_judul}", size=12)
+
+    doc.add_page_break()
+
+    # =====================================================================
+    # DAFTAR LAMPIRAN
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, "DAFTAR LAMPIRAN", bold=True, size=14)
+
+    for l_no, l_judul in [
+        ("Lampiran 1", "Formulir Penilaian Fery Dwi Ramadhi"),
+        ("Lampiran 2", "Catatan Harian Fery Dwi Ramadhi"),
+        ("Lampiran 3", "Formulir Penilaian Fathur Ramantha"),
+        ("Lampiran 4", "Catatan Harian Fathur Ramantha"),
+        ("Lampiran 5", "Formulir Penilaian I Putu Pandu"),
+        ("Lampiran 6", "Catatan Harian I Putu Pandu"),
+    ]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.5, space_after=0)
+        ar(p, f"{l_no}  {l_judul}", size=12)
+
+    doc.add_page_break()
+
+    # =====================================================================
+    # ABSTRAK (spasi 1, maks 1000 kata)
+    # =====================================================================
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+    ar(p, "ABSTRAK", bold=True, size=14)
+
+    p = add_body_mixed(doc)
+    p.paragraph_format.line_spacing = 1.0
+    ar(p, "Pelaksanaan Praktik Kerja Lapangan (PKL) dilaksanakan pada tanggal 6 Agustus 2026 sampai dengan 6 September 2026 di CV Newus Teknologi yang berlokasi di Jl. Salim Batubara No.118, Kupang Teba, Kec. Teluk Betung Utara, Kota Bandar Lampung, Lampung 35212. Pada kegiatan PKL ini, penulis ditempatkan pada posisi ", size=12)
+    ar(p, "Software Engineer", italic=True, size=12)
+    ar(p, " dengan tugas merancang dan membangun ", size=12)
+    ar(p, "Learning Management System ", italic=True, size=12)
+    ar(p, "(LMS) berbasis web menggunakan ", size=12)
+    ar(p, "framework ", italic=True, size=12)
+    ar(p, "Next.js dan Laravel sesuai dengan kebutuhan perusahaan.", size=12)
+
+    p = add_body_mixed(doc)
+    p.paragraph_format.line_spacing = 1.0
+    ar(p, "Selama pelaksanaan PKL, penulis mengembangkan sistem LMS yang memiliki arsitektur ", size=12)
+    ar(p, "decoupled ", italic=True, size=12)
+    ar(p, "antara ", size=12)
+    ar(p, "frontend ", italic=True, size=12)
+    ar(p, "(Next.js dengan Tailwind CSS) dan ", size=12)
+    ar(p, "backend ", italic=True, size=12)
+    ar(p, "(Laravel 11 dengan MySQL). Sistem ini mendukung tiga peran pengguna yaitu Administrator, Guru Pengajar, dan Peserta Didik dengan fitur-fitur utama meliputi manajemen kelas, pengunggahan modul bahan ajar, penugasan LKPD ", size=12)
+    ar(p, "daring ", italic=True, size=12)
+    ar(p, "dengan mekanisme ", size=12)
+    ar(p, "late-submission", italic=True, size=12)
+    ar(p, ", presensi mandiri berbasis jendela waktu, penilaian ujian UTS/UAS, lonceng notifikasi ", size=12)
+    ar(p, "real-time", italic=True, size=12)
+    ar(p, ", serta ekspor rekapitulasi nilai dan kehadiran ke format Excel (.xlsx).", size=12)
+
+    p = add_body_mixed(doc)
+    p.paragraph_format.line_spacing = 1.0
+    ar(p, "Hasil pengujian otomatis (", size=12)
+    ar(p, "End-to-End Automated Bot Testing", italic=True, size=12)
+    ar(p, ") terhadap 53 skenario fitur dari 4 akun pengguna menunjukkan tingkat keberhasilan 100% (", size=12)
+    ar(p, "all passed", italic=True, size=12)
+    ar(p, "). Platform telah berhasil di-", size=12)
+    ar(p, "deploy ", italic=True, size=12)
+    ar(p, "pada infrastruktur ", size=12)
+    ar(p, "cloud ", italic=True, size=12)
+    ar(p, "Vercel (", size=12)
+    ar(p, "frontend", italic=True, size=12)
+    ar(p, ") dan Railway (", size=12)
+    ar(p, "backend ", italic=True, size=12)
+    ar(p, "API). Kegiatan PKL ini memberikan pengalaman serta pemahaman yang lebih mendalam mengenai dunia kerja profesional, khususnya di bidang pengembangan perangkat lunak.", size=12)
+
+    p = doc.add_paragraph()
+    sfmt(p, line_spacing=1.0, space_before=12)
+    ar(p, "Kata kunci : ", bold=True, size=12)
+    ar(p, "Praktik Kerja Lapangan, CV Newus Teknologi, Learning Management System, Next.js, Laravel, MySQL.", italic=True, size=12)
+
+    # =====================================================================
+    # NEW SECTION: BAB I dst (Arabic page numbers)
+    # =====================================================================
+    new_section = doc.add_section()
+    new_section.page_width = Cm(21)
+    new_section.page_height = Cm(29.7)
+    new_section.top_margin = Cm(3)
+    new_section.bottom_margin = Cm(3)
+    new_section.left_margin = Cm(4)
+    new_section.right_margin = Cm(3)
+    set_page_number_arabic(new_section)
+
+    # =====================================================================
+    # BAB I  PENDAHULUAN
+    # =====================================================================
+    add_bab_title(doc, "I", "PENDAHULUAN")
+
+    add_subbab(doc, "1.1.", "Latar Belakang")
+
+    add_body(doc, "Perkembangan teknologi informasi yang semakin pesat telah mendorong berbagai sektor industri untuk memanfaatkan sistem informasi dalam mendukung aktivitas operasional. Sektor pendidikan sebagai salah satu pilar utama pembangunan nasional tidak terkecuali dalam transformasi digital tersebut. Institusi pendidikan dituntut untuk mampu mengelola data akademik, proses pembelajaran, dan administrasi sekolah secara cepat, akurat, serta terintegrasi guna meningkatkan efisiensi dan efektivitas pengelolaan pendidikan.")
+
+    p = add_body_mixed(doc)
+    ar(p, "Salah satu bentuk pemanfaatan teknologi informasi dalam dunia pendidikan adalah melalui pengembangan ", size=12)
+    ar(p, "Learning Management System ", italic=True, size=12)
+    ar(p, "(LMS). LMS merupakan perangkat lunak yang dirancang untuk membantu pengelolaan kegiatan pembelajaran secara ", size=12)
+    ar(p, "daring, ", italic=True, size=12)
+    ar(p, "meliputi pengelolaan kelas, pendistribusian bahan ajar, penugasan, penilaian, hingga pemantauan kehadiran peserta didik. Dengan adanya LMS, proses pembelajaran tidak lagi dibatasi oleh ruang dan waktu, sehingga interaksi antara guru pengajar dan peserta didik dapat berlangsung secara lebih fleksibel dan terdokumentasi.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Fakultas Teknik dan Ilmu Komputer (FTIK) Universitas Teknokrat Indonesia memiliki tujuan untuk menghasilkan lulusan yang tidak hanya menguasai teori, tetapi juga mampu mengimplementasikan ilmu pengetahuan dan teknologi secara profesional di dunia kerja. Namun demikian, terdapat kesenjangan antara pembelajaran yang diperoleh selama perkuliahan dengan kondisi nyata di lingkungan industri. Dalam dunia kerja, seorang tenaga profesional tidak hanya dituntut memiliki kemampuan teknis, tetapi juga kemampuan menganalisis kebutuhan pengguna, berkomunikasi dengan klien, bekerja sama dalam tim, serta beradaptasi terhadap perubahan kebutuhan sistem yang dinamis. Oleh karena itu, diperlukan suatu kegiatan yang dapat menjembatani mahasiswa dengan dunia kerja profesional, yaitu melalui Praktik Kerja Lapangan (PKL).", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "CV Newus Teknologi dipilih sebagai tempat pelaksanaan Praktik Kerja Lapangan karena merupakan perusahaan yang bergerak di bidang teknologi informasi dan berfokus pada pengembangan solusi perangkat lunak sesuai kebutuhan klien. Perusahaan ini memiliki lingkungan kerja yang relevan dengan bidang keilmuan Informatika, khususnya dalam pengembangan sistem informasi berbasis web. Selama melaksanakan PKL, penulis ditugaskan untuk merancang dan membangun ", size=12)
+    ar(p, "Learning Management System ", italic=True, size=12)
+    ar(p, "(LMS) berbasis web menggunakan ", size=12)
+    ar(p, "framework ", italic=True, size=12)
+    ar(p, "Next.js pada sisi ", size=12)
+    ar(p, "frontend ", italic=True, size=12)
+    ar(p, "dan Laravel pada sisi ", size=12)
+    ar(p, "backend ", italic=True, size=12)
+    ar(p, "yang terintegrasi dengan basis data MySQL.", size=12)
+
+    add_body(doc, "Melalui pelaksanaan PKL di CV Newus Teknologi, penulis memperoleh pengalaman nyata mengenai proses pengembangan sistem informasi yang berorientasi pada kebutuhan pengguna. Pengalaman tersebut tidak hanya meningkatkan kemampuan teknis dalam pengelolaan dan pengembangan sistem, tetapi juga mengembangkan kemampuan komunikasi, kerja sama tim, disiplin, serta profesionalisme kerja. Dengan demikian, kegiatan Praktik Kerja Lapangan di CV Newus Teknologi diharapkan dapat menjadi sarana untuk memperkecil kesenjangan antara teori yang diperoleh di perguruan tinggi dengan praktik yang diterapkan dalam industri teknologi informasi.")
+
+    # 1.2
+    add_subbab(doc, "1.2.", "Tujuan Praktik Kerja Lapangan (PKL)")
+    add_body(doc, "Adapun tujuan dari pelaksanaan Praktik Kerja Lapangan (PKL) di CV Newus Teknologi adalah sebagai berikut:")
+
+    for i, t in enumerate([
+        "Memperoleh wawasan dan pengalaman kerja secara langsung dalam lingkungan industri teknologi informasi, khususnya pada proses pengelolaan dan pengembangan sistem informasi berbasis web.",
+        "Menerapkan ilmu pengetahuan dan keterampilan yang telah diperoleh selama perkuliahan, terutama pada bidang pengembangan perangkat lunak, analisis kebutuhan sistem, serta pengelolaan basis data dalam lingkungan kerja yang nyata.",
+        "Merancang dan membangun aplikasi Learning Management System (LMS) berbasis web yang mengintegrasikan frontend Next.js dengan backend RESTful API Laravel 11 dan basis data MySQL.",
+        "Meningkatkan kemampuan komunikasi, kerja sama tim, manajemen waktu, dan pemecahan masalah yang diperlukan dalam lingkungan kerja profesional.",
+        "Menambah wawasan mengenai proses bisnis perusahaan dan budaya kerja industri sebagai bekal dalam mempersiapkan diri menghadapi dunia kerja setelah lulus.",
+    ], 1):
+        add_numbered_item(doc, i, t)
+
+    # 1.3
+    add_subbab(doc, "1.3.", "Kegunaan Praktik Kerja Lapangan (PKL)")
+    add_body(doc, "Pelaksanaan Praktik Kerja Lapangan (PKL) memberikan berbagai manfaat bagi mahasiswa, Fakultas Teknik dan Ilmu Komputer (FTIK) Universitas Teknokrat Indonesia, serta CV Newus Teknologi sebagai tempat pelaksanaan PKL. Adapun manfaat yang diperoleh adalah sebagai berikut:")
+
+    # 1.3.1
+    add_subbab(doc, "1.3.1.", "Manfaat bagi Mahasiswa")
+    for i, m in enumerate([
+        "Memperoleh pengalaman kerja secara langsung dalam lingkungan industri teknologi informasi, khususnya dalam pengembangan Learning Management System berbasis web.",
+        "Mampu menerapkan ilmu pengetahuan dan keterampilan yang telah diperoleh selama perkuliahan ke dalam dunia kerja nyata, terutama pada bidang pengembangan perangkat lunak full-stack.",
+        "Meningkatkan kemampuan teknis dalam pengembangan sistem, perancangan basis data, implementasi API, serta pengujian perangkat lunak.",
+        "Mengembangkan kemampuan berpikir kritis dan pemecahan masalah dalam menghadapi berbagai kendala selama proses pengembangan dan implementasi sistem.",
+        "Meningkatkan kemampuan komunikasi, kerja sama tim, disiplin, serta manajemen waktu yang diperlukan dalam lingkungan kerja profesional.",
+    ], 1):
+        add_numbered_item(doc, i, m)
+
+    # 1.3.2
+    add_subbab(doc, "1.3.2.", "Manfaat bagi FTIK Universitas Teknokrat Indonesia")
+    for i, m in enumerate([
+        "Menjadi sarana evaluasi terhadap kesesuaian kurikulum dan materi pembelajaran dengan kebutuhan dunia industri.",
+        "Memperkuat hubungan kerja sama antara FTIK Universitas Teknokrat Indonesia dengan perusahaan mitra pelaksanaan PKL.",
+        "Meningkatkan kualitas lulusan yang memiliki pengalaman kerja, kompetensi teknis, serta pemahaman terhadap kebutuhan industri.",
+    ], 1):
+        add_numbered_item(doc, i, m)
+
+    # 1.3.3
+    add_subbab(doc, "1.3.3.", "Manfaat bagi CV Newus Teknologi")
+    for i, m in enumerate([
+        "Memperoleh kontribusi tenaga kerja mahasiswa dalam pengembangan produk Learning Management System sebagai portofolio perusahaan.",
+        "Mendukung penyelesaian pekerjaan operasional perusahaan melalui kontribusi mahasiswa selama pelaksanaan Praktik Kerja Lapangan.",
+        "Menjadi sarana bagi perusahaan untuk mengenal dan mengevaluasi potensi mahasiswa sebagai calon tenaga kerja yang kompeten di bidang teknologi informasi.",
+    ], 1):
+        add_numbered_item(doc, i, m)
+
+    # 1.4
+    add_subbab(doc, "1.4.", "Tempat Praktik Kerja Lapangan (PKL)")
+    p = add_body_mixed(doc)
+    ar(p, "Pelaksanaan Kegiatan Praktik Kerja Lapangan (PKL) dilaksanakan di CV Newus Teknologi yang berlokasi di Jl. Salim Batubara No.118, Kupang Teba, Kec. Teluk Betung Utara, Kota Bandar Lampung, Lampung 35212. Selama pelaksanaan PKL, penulis bertugas sebagai ", size=12)
+    ar(p, "Software Engineer ", italic=True, size=12)
+    ar(p, "yang bertanggung jawab dalam merancang dan mengembangkan ", size=12)
+    ar(p, "Learning Management System ", italic=True, size=12)
+    ar(p, "(LMS) menggunakan ", size=12)
+    ar(p, "framework ", italic=True, size=12)
+    ar(p, "Next.js dan Laravel berdasarkan kebutuhan yang ditentukan oleh perusahaan. Lokasi CV Newus Teknologi ditunjukkan pada Gambar 1.1.", size=12)
+
+    add_gambar(doc, "Peta Lokasi CV Newus Teknologi dari Google Maps", "Gambar 1.1 Tempat Praktik Kerja Lapangan (PKL)")
+
+    # 1.5
+    add_subbab(doc, "1.5.", "Jadwal Pelaksanaan PKL")
+    add_body(doc, "Praktik Kerja Lapangan (PKL) dilaksanakan selama satu bulan terhitung mulai tanggal 6 Agustus 2026 sampai dengan 6 September 2026. Pembagian waktu pelaksanaan kegiatan telah disepakati antara pembimbing lapangan serta penulis dan disusun secara sistematis guna memastikan fokus serta optimalisasi penyelesaian tugas dapat tercapai secara maksimal. Jadwal dan tahapan kegiatan pelaksanaan Praktik Kerja Lapangan (PKL) dapat dilihat pada Tabel 1.1.")
+
+    add_tabel_caption(doc, "Tabel 1.1 Tahapan Kegiatan Praktik Kerja Lapangan (PKL)")
+
+    tbl_jadwal = doc.add_table(rows=6, cols=2)
+    tbl_jadwal.alignment = WD_TABLE_ALIGNMENT.CENTER
+    hdr = tbl_jadwal.rows[0].cells
+    for cell in hdr:
+        set_cell_shading(cell, "D9E2F3")
+    hp0 = hdr[0].paragraphs[0]
+    hp0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    ar(hp0, "Tahapan Kegiatan", bold=True, size=11)
+    hp1 = hdr[1].paragraphs[0]
+    hp1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    ar(hp1, "Keterangan", bold=True, size=11)
+
+    for i, (tahap, ket) in enumerate([
+        ("Minggu ke-1\n(6-12 Agustus 2026)", "Orientasi perusahaan, penentuan topik proyek PKL, wawancara kebutuhan sistem, penyusunan Product Requirements Document (PRD), dan perancangan wireframe UI/UX di Figma."),
+        ("Minggu ke-2\n(13-19 Agustus 2026)", "Perancangan skema database MySQL 11 tabel, setup repository Git, inisialisasi framework Laravel 11 backend dan Next.js frontend, implementasi autentikasi Laravel Sanctum."),
+        ("Minggu ke-3\n(20-26 Agustus 2026)", "Pengembangan modul kelas, materi ajar, penugasan LKPD, presensi mandiri, integrasi BroadcastChannel real-time sync, dan pembuatan antarmuka 3 dashboard peran pengguna."),
+        ("Minggu ke-4\n(27 Agustus - 2 Sept 2026)", "Pengembangan modul rekapitulasi nilai rapor, input UTS/UAS, ekspor Excel, bulk import spreadsheet 50+ user, dan deployment produksi ke cloud Vercel dan Railway."),
+        ("Minggu ke-5\n(3-6 September 2026)", "Eksekusi automated bot testing 53 skenario (100% passed), evaluasi hasil bersama pembimbing lapangan, penyusunan dokumentasi sistem, dan penulisan laporan akhir PKL."),
+    ]):
+        row = tbl_jadwal.rows[i+1]
+        c0 = row.cells[0].paragraphs[0]
+        c0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(c0, tahap, size=10)
+        c1 = row.cells[1].paragraphs[0]
+        ar(c1, ket, size=10)
+
+    # =====================================================================
+    # BAB II TINJAUAN UMUM TEMPAT PKL
+    # =====================================================================
+    doc.add_page_break()
+    add_bab_title(doc, "II", "TINJAUAN UMUM TEMPAT PKL")
+
+    add_subbab(doc, "2.1.", "Sejarah Perusahaan")
+
+    p = add_body_mixed(doc)
+    ar(p, "CV Newus Teknologi merupakan perusahaan yang bergerak di bidang teknologi informasi dengan fokus pada pengembangan solusi perangkat lunak berbasis web dan ", size=12)
+    ar(p, "mobile ", italic=True, size=12)
+    ar(p, "untuk berbagai sektor industri. Berdiri di Kota Bandar Lampung, perusahaan berkomitmen untuk menghadirkan solusi digital inovatif bagi institusi pendidikan, pemerintah daerah, dan UMKM.", size=12)
+
+    add_body(doc, "Sejak awal berdiri, CV Newus Teknologi tidak hanya berperan sebagai pengembang perangkat lunak, tetapi juga sebagai konsultan teknologi informasi yang memiliki pemahaman mendalam mengenai arsitektur, pengembangan, dan implementasi sistem informasi dalam kegiatan operasional perusahaan. Dengan pengalaman tersebut, perusahaan berkomitmen untuk menghadirkan solusi teknologi yang mampu mendukung efektivitas, efisiensi, serta kelancaran proses operasional di berbagai bidang industri.")
+
+    add_body(doc, "Dalam perkembangannya, CV Newus Teknologi terus melakukan inovasi dan pengembangan sumber daya manusia guna menjaga kualitas layanan yang diberikan. Didukung oleh tenaga profesional yang kompeten, perusahaan berupaya menjadi mitra teknologi yang andal dalam membantu transformasi digital dan integrasi sistem operasional perusahaan. Logo CV Newus Teknologi ditunjukkan pada Gambar 2.1.")
+
+    add_gambar(doc, "Logo CV Newus Teknologi", "Gambar 2.1 Logo CV Newus Teknologi")
+
+    # 2.2
+    add_subbab(doc, "2.2.", "Visi dan Misi Perusahaan")
+    add_body(doc, "Visi perusahaan adalah menjadi perusahaan konsultan dan pengembang perangkat lunak terdepan di Indonesia yang berdaya saing serta mampu menghadirkan solusi teknologi digital yang berdampak nyata bagi kemajuan masyarakat dan industri.")
+    add_body(doc, "Misi perusahaan diwujudkan melalui penyediaan layanan konsultasi, implementasi, pengembangan perangkat lunak, integrasi sistem, serta inovasi teknologi yang mendukung keberhasilan transformasi digital pada berbagai sektor industri. Adapun misi perusahaan meliputi:")
+
+    for i, m in enumerate([
+        "Mengembangkan produk perangkat lunak berkualitas tinggi dengan mengadopsi standar arsitektur sistem modern, aman, dan berorientasi pada pengalaman pengguna.",
+        "Memberikan layanan konsultasi teknologi informasi yang solutif, transparan, dan bernilai tambah bagi seluruh mitra bisnis.",
+        "Membangun ekosistem kerja yang kolaboratif, inovatif, dan mendukung pengembangan kompetensi talenta digital muda Indonesia.",
+        "Mendukung digitalisasi sektor pendidikan melalui penyediaan platform e-learning dan sistem tata kelola sekolah terpadu.",
+    ], 1):
+        add_numbered_item(doc, i, m)
+
+    # 2.3
+    add_subbab(doc, "2.3.", "Struktur Organisasi")
+    add_body(doc, "Struktur organisasi CV Newus Teknologi disusun untuk mendukung efektivitas operasional perusahaan dalam memberikan layanan teknologi informasi kepada klien. Perusahaan dipimpin oleh seorang Direktur yang membawahi beberapa divisi utama, yaitu Divisi Pengembangan Perangkat Lunak, Divisi Desain UI/UX, Divisi Infrastruktur dan Operasional, serta Divisi Pemasaran dan Hubungan Pelanggan. Setiap divisi dipimpin oleh seorang kepala divisi yang bertanggung jawab langsung kepada Direktur. Adapun struktur organisasi CV Newus Teknologi dapat dilihat pada Gambar 2.2 di bawah ini.")
+    add_gambar(doc, "Struktur Organisasi CV Newus Teknologi", "Gambar 2.2 Struktur Organisasi CV Newus Teknologi")
+
+    # 2.4
+    add_subbab(doc, "2.4.", "Kegiatan Umum Perusahaan")
+    add_body(doc, "Kegiatan umum CV Newus Teknologi berfokus pada penyediaan layanan teknologi informasi dan konsultasi di bidang pengembangan perangkat lunak. Perusahaan secara aktif terlibat dalam pengembangan berbagai jenis sistem informasi, mulai dari sistem akademik, platform e-learning, hingga sistem manajemen sumber daya perusahaan. Adapun kegiatan utama perusahaan meliputi:")
+
+    for i, k in enumerate([
+        "Pengembangan aplikasi web dan mobile berbasis framework modern (Next.js, Laravel, Flutter) untuk kebutuhan klien institusi pendidikan, pemerintah daerah, dan UMKM.",
+        "Pembangunan sistem informasi akademik dan Learning Management System untuk institusi pendidikan sebagai bagian dari layanan digitalisasi proses belajar mengajar.",
+        "Konsultasi arsitektur sistem, perancangan microservices, serta deployment server berbasis cloud computing (Vercel, Railway, AWS, dan Google Cloud).",
+        "Perancangan desain antarmuka aplikasi (UI/UX Design) berstandar human-centered design yang mengutamakan kenyamanan dan kemudahan penggunaan bagi pengguna akhir.",
+        "Pengembangan Enterprise Resource Planning (ERP) dan Smart School Systems yang terintegrasi untuk kebutuhan operasional dan manajerial sekolah.",
+    ], 1):
+        add_numbered_item(doc, i, k)
+
+    # =====================================================================
+    # BAB III  PELAKSANAAN PRAKTIK KERJA LAPANGAN
+    # =====================================================================
+    doc.add_page_break()
+    add_bab_title(doc, "III", "PELAKSANAAN PRAKTIK KERJA LAPANGAN")
+
+    # Pengantar arsitektur sistem
+    p = add_body_mixed(doc)
+    ar(p, "Pada bab ini dipaparkan pelaksanaan kerja masing-masing anggota kelompok PKL dalam mengembangkan ", size=12)
+    ar(p, "Learning Management System ", italic=True, size=12)
+    ar(p, "(LMS) di CV Newus Teknologi. Sistem yang dikembangkan menggunakan arsitektur ", size=12)
+    ar(p, "decoupled ", italic=True, size=12)
+    ar(p, "yang memisahkan sisi ", size=12)
+    ar(p, "frontend ", italic=True, size=12)
+    ar(p, "(Next.js 14 dengan Tailwind CSS) dan ", size=12)
+    ar(p, "backend ", italic=True, size=12)
+    ar(p, "(Laravel 11 dengan MySQL 8.0). Arsitektur sistem secara menyeluruh ditunjukkan pada Gambar 3.1.", size=12)
+
+    add_gambar(doc, "Arsitektur Sistem LMS menampilkan pemisahan Frontend (Next.js/Vercel) dan Backend (Laravel/Railway) yang berkomunikasi melalui RESTful API", "Gambar 3.1 Arsitektur Sistem LMS (Frontend dan Backend)")
+
+    # ================================================================
+    # 3.1 FERY DWI RAMADHI
+    # ================================================================
+    add_subbab(doc, "3.1.", "FERY DWI RAMADHI (23312086)")
+
+    add_subbab(doc, "3.1.1.", "Bidang Kerja")
+    p = add_body_mixed(doc)
+    ar(p, "Selama melaksanakan Praktik Kerja Lapangan di CV Newus Teknologi, penulis dipercaya mengemban posisi sebagai ", size=12)
+    ar(p, "Full-Stack Developer ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "Project Lead. ", italic=True, size=12)
+    ar(p, "Tanggung jawab utama penulis meliputi perancangan arsitektur sistem menyeluruh, perancangan dan implementasi basis data relasional MySQL, pembangunan ", size=12)
+    ar(p, "RESTful API ", italic=True, size=12)
+    ar(p, "menggunakan ", size=12)
+    ar(p, "framework ", italic=True, size=12)
+    ar(p, "Laravel 11, integrasi keamanan autentikasi menggunakan Laravel Sanctum, serta penerapan mekanisme sinkronisasi data ", size=12)
+    ar(p, "real-time ", italic=True, size=12)
+    ar(p, "antar-tab browser. Penulis juga berperan sebagai koordinator tim yang bertanggung jawab membagi tugas, melakukan ", size=12)
+    ar(p, "code review, ", italic=True, size=12)
+    ar(p, "dan memastikan integrasi seluruh modul berjalan dengan baik.", size=12)
+
+    add_subbab(doc, "3.1.2.", "Pelaksanaan Kerja")
+    add_body(doc, "Pelaksanaan kerja yang dilakukan oleh penulis selama masa PKL dijabarkan ke dalam beberapa tahapan sebagai berikut:")
+
+    # ERD
+    p = add_body_mixed(doc)
+    ar(p, "Pada tahap pertama, penulis merancang basis data relasional yang terdiri atas 11 tabel terintegrasi: ", size=12)
+    ar(p, "users, courses, course_student, materials, assignments, submissions, attendances, notifications, settings, activity_logs, ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "personal_access_tokens. ", italic=True, size=12)
+    ar(p, "Setiap entitas tabel dikonstruksi menggunakan ", size=12)
+    ar(p, "Laravel Eloquent Migration ", italic=True, size=12)
+    ar(p, "dengan penegakan integritas data melalui ", size=12)
+    ar(p, "Foreign Key Constraints ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "Cascade Deletion. ", italic=True, size=12)
+    ar(p, "Perancangan ini dilakukan dengan menyesuaikan kebutuhan fungsional yang telah diidentifikasi pada tahap analisis kebutuhan sistem. Dokumentasi diagram basis data ditunjukkan pada Gambar 3.2.", size=12)
+
+    add_gambar(doc, "Entity Relationship Diagram (ERD) Basis Data LMS dengan 11 tabel relasional", "Gambar 3.2 Entity Relationship Diagram (ERD) Basis Data")
+
+    # Tabel 3.2 Database Schema
+    add_tabel_caption(doc, "Tabel 3.2 Struktur Tabel Basis Data MySQL")
+    tbl_db = doc.add_table(rows=12, cols=3)
+    tbl_db.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for cell in tbl_db.rows[0].cells:
+        set_cell_shading(cell, "D9E2F3")
+    for j, h in enumerate(["No", "Nama Tabel", "Keterangan"]):
+        cp = tbl_db.rows[0].cells[j].paragraphs[0]
+        cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(cp, h, bold=True, size=10)
+    
+    db_tables = [
+        ("1", "users", "Data pengguna (admin, guru, siswa) dengan role dan autentikasi"),
+        ("2", "courses", "Data kelas/mata pelajaran dengan relasi ke guru pengampu"),
+        ("3", "course_student", "Tabel pivot relasi many-to-many kelas dan siswa"),
+        ("4", "materials", "Modul bahan ajar (judul, konten, file lampiran)"),
+        ("5", "assignments", "Penugasan LKPD dengan deadline dan bobot nilai"),
+        ("6", "submissions", "Pengumpulan tugas siswa dengan file dan nilai"),
+        ("7", "attendances", "Data presensi siswa per kelas per tanggal"),
+        ("8", "notifications", "Notifikasi real-time untuk seluruh pengguna"),
+        ("9", "settings", "Konfigurasi sistem (nama sekolah, logo, dll)"),
+        ("10", "activity_logs", "Catatan aktivitas pengguna untuk audit trail"),
+        ("11", "personal_access_tokens", "Token autentikasi Laravel Sanctum"),
+    ]
+    for i, (no, nama, ket) in enumerate(db_tables):
+        row = tbl_db.rows[i+1]
+        for j, val in enumerate([no, nama, ket]):
+            cp = row.cells[j].paragraphs[0]
+            cp.alignment = WD_ALIGN_PARAGRAPH.CENTER if j == 0 else WD_ALIGN_PARAGRAPH.LEFT
+            r = ar(cp, val, size=10)
+            if j == 1:
+                r.italic = True
+
+    # API Endpoints
+    p = add_body_mixed(doc)
+    ar(p, "Selanjutnya, penulis membangun lebih dari 50 ", size=12)
+    ar(p, "endpoint REST API ", italic=True, size=12)
+    ar(p, "yang terorganisir di bawah ", size=12)
+    ar(p, "namespace ", italic=True, size=12)
+    ar(p, "/api/v1. Seluruh rute dilindungi oleh ", size=12)
+    ar(p, "middleware auth:sanctum ", italic=True, size=12)
+    ar(p, "dengan otorisasi berbasis peran pengguna (", size=12)
+    ar(p, "Role-Based Access Control / RBAC", italic=True, size=12)
+    ar(p, ") yang membedakan hak akses Administrator, Guru Pengajar, dan Peserta Didik. Mekanisme ", size=12)
+    ar(p, "token Bearer ", italic=True, size=12)
+    ar(p, "digunakan untuk menjaga keamanan sesi tanpa membebani server. Daftar endpoint utama ditunjukkan pada Tabel 3.1.", size=12)
+
+    # Tabel 3.1 API Endpoints
+    add_tabel_caption(doc, "Tabel 3.1 Daftar Endpoint RESTful API Laravel 11")
+    tbl_api = doc.add_table(rows=11, cols=4)
+    tbl_api.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for cell in tbl_api.rows[0].cells:
+        set_cell_shading(cell, "D9E2F3")
+    for j, h in enumerate(["No", "Method", "Endpoint", "Keterangan"]):
+        cp = tbl_api.rows[0].cells[j].paragraphs[0]
+        cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(cp, h, bold=True, size=9)
+    
+    api_data = [
+        ("1", "POST", "/api/v1/login", "Autentikasi pengguna, generate token"),
+        ("2", "GET", "/api/v1/courses", "Daftar kelas sesuai peran pengguna"),
+        ("3", "POST", "/api/v1/courses", "Buat kelas baru (Admin/Guru)"),
+        ("4", "GET", "/api/v1/materials", "Daftar modul bahan ajar per kelas"),
+        ("5", "POST", "/api/v1/assignments", "Buat penugasan LKPD (Guru)"),
+        ("6", "POST", "/api/v1/submissions", "Submit jawaban tugas (Siswa)"),
+        ("7", "POST", "/api/v1/attendances", "Catat presensi mandiri (Siswa)"),
+        ("8", "GET", "/api/v1/notifications", "Ambil notifikasi pengguna"),
+        ("9", "GET", "/api/v1/reports/grades", "Rekapitulasi nilai rapor"),
+        ("10", "POST", "/api/v1/users/import", "Bulk import akun dari Excel"),
+    ]
+    for i, (no, method, ep, ket) in enumerate(api_data):
+        row = tbl_api.rows[i+1]
+        for j, val in enumerate([no, method, ep, ket]):
+            cp = row.cells[j].paragraphs[0]
+            cp.alignment = WD_ALIGN_PARAGRAPH.CENTER if j in [0, 1] else WD_ALIGN_PARAGRAPH.LEFT
+            r = ar(cp, val, size=9)
+            if j == 2:
+                r.italic = True
+
+    # Real-time sync
+    p = add_body_mixed(doc)
+    ar(p, "Penulis juga merancang arsitektur sinkronisasi mutasi data pada ", size=12)
+    ar(p, "frontend ", italic=True, size=12)
+    ar(p, "Next.js. Setiap kali terjadi operasi ", size=12)
+    ar(p, "Create, Update, ", italic=True, size=12)
+    ar(p, "atau ", size=12)
+    ar(p, "Delete, ", italic=True, size=12)
+    ar(p, "API ", size=12)
+    ar(p, "helper ", italic=True, size=12)
+    ar(p, "akan memicu ", size=12)
+    ar(p, "event BroadcastChannel ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "Custom DOM Event. Custom hook useRealtimeData ", italic=True, size=12)
+    ar(p, "kemudian menangkap sinyal tersebut dan melakukan ", size=12)
+    ar(p, "revalidation ", italic=True, size=12)
+    ar(p, "data secara instan tanpa memerlukan ", size=12)
+    ar(p, "reload ", italic=True, size=12)
+    ar(p, "halaman web secara manual. Mekanisme ini memastikan bahwa setiap perubahan data yang dilakukan oleh satu pengguna pada satu tab browser akan langsung tercermin di seluruh tab lain yang sedang membuka halaman yang sama.", size=12)
+
+    # Login screenshot
+    add_body(doc, "Tampilan halaman login sistem LMS yang telah dikembangkan ditunjukkan pada Gambar 3.5. Halaman login dirancang dengan antarmuka yang bersih dan responsif, dilengkapi dengan fitur demo akun yang memungkinkan pengguna mencoba sistem tanpa harus mendaftar terlebih dahulu.")
+    add_gambar(doc, "Tampilan Halaman Login Sistem LMS dengan fitur Demo Accounts", "Gambar 3.5 Tampilan Halaman Login Sistem LMS")
+
+    # Deployment
+    p = add_body_mixed(doc)
+    ar(p, "Penulis melakukan ", size=12)
+    ar(p, "deployment backend ", italic=True, size=12)
+    ar(p, "Laravel ke ", size=12)
+    ar(p, "cloud platform ", italic=True, size=12)
+    ar(p, "Railway menggunakan ", size=12)
+    ar(p, "runtime ", italic=True, size=12)
+    ar(p, "PHP 8.2 dan MySQL 8.0 terkelola, serta menghubungkannya dengan domain Vercel ", size=12)
+    ar(p, "frontend. ", italic=True, size=12)
+    ar(p, "Konfigurasi ", size=12)
+    ar(p, "environment variables ", italic=True, size=12)
+    ar(p, "dilakukan dengan cermat untuk memastikan koneksi antara ", size=12)
+    ar(p, "frontend ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "backend ", italic=True, size=12)
+    ar(p, "berjalan lancar pada lingkungan produksi. Pengujian fungsional seluruh ", size=12)
+    ar(p, "endpoint ", italic=True, size=12)
+    ar(p, "dilakukan secara berkala menggunakan Postman Collection untuk memastikan keandalan API.", size=12)
+
+    # 3.1.3
+    add_subbab(doc, "3.1.3.", "Kendala yang Dihadapi")
+    add_body(doc, "Selama pelaksanaan Praktik Kerja Lapangan (PKL) di CV Newus Teknologi, penulis menghadapi beberapa kendala yang menjadi bagian dari proses adaptasi terhadap lingkungan kerja profesional serta teknologi yang digunakan. Adapun kendala yang dihadapi adalah sebagai berikut:")
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala pertama yang dihadapi penulis berkaitan dengan inkonsistensi penulisan huruf besar/kecil (", size=12)
+    ar(p, "case-sensitivity", italic=True, size=12)
+    ar(p, ") pada nilai status presensi siswa saat validasi ", size=12)
+    ar(p, "controller backend. ", italic=True, size=12)
+    ar(p, "Karena nilai yang dikirim dari ", size=12)
+    ar(p, "frontend ", italic=True, size=12)
+    ar(p, "terkadang menggunakan huruf kapital sedangkan validasi ", size=12)
+    ar(p, "enum ", italic=True, size=12)
+    ar(p, "di Laravel bersifat ", size=12)
+    ar(p, "case-sensitive, ", italic=True, size=12)
+    ar(p, "hal ini menyebabkan kesalahan validasi yang tidak terduga pada saat pengguna melakukan presensi.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala kedua yang dihadapi penulis berkaitan dengan konfigurasi ", size=12)
+    ar(p, "Cross-Origin Resource Sharing ", italic=True, size=12)
+    ar(p, "(CORS) dan penanganan ", size=12)
+    ar(p, "session cookies ", italic=True, size=12)
+    ar(p, "antar-domain saat ", size=12)
+    ar(p, "frontend ", italic=True, size=12)
+    ar(p, "Vercel berkomunikasi dengan ", size=12)
+    ar(p, "backend ", italic=True, size=12)
+    ar(p, "Railway. Permintaan API dari domain Vercel ke domain Railway awalnya ditolak oleh ", size=12)
+    ar(p, "browser ", italic=True, size=12)
+    ar(p, "karena kebijakan ", size=12)
+    ar(p, "Same-Origin Policy, ", italic=True, size=12)
+    ar(p, "sehingga proses autentikasi dan pertukaran data tidak dapat dilakukan.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala ketiga yang dihadapi penulis berkaitan dengan kebutuhan pembaruan data tampilan di sisi klien yang sebelumnya mengharuskan pengguna melakukan ", size=12)
+    ar(p, "refresh browser ", italic=True, size=12)
+    ar(p, "secara berulang untuk melihat perubahan terbaru. Hal ini mengurangi kenyamanan penggunaan sistem dan tidak sesuai dengan standar pengalaman pengguna (", size=12)
+    ar(p, "User Experience", italic=True, size=12)
+    ar(p, ") aplikasi web modern.", size=12)
+
+    # 3.1.4
+    add_subbab(doc, "3.1.4.", "Cara Mengatasi Kendala")
+    add_body(doc, "Dalam menghadapi berbagai kendala selama pelaksanaan PKL, penulis berupaya untuk terus meningkatkan pemahaman dan kemampuan teknis melalui diskusi dengan pembimbing lapangan serta studi mandiri. Adapun cara yang dilakukan untuk mengatasi setiap kendala adalah sebagai berikut:")
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala pertama terkait inkonsistensi penulisan status presensi, penulis menambahkan normalisasi ", size=12)
+    ar(p, "string ", italic=True, size=12)
+    ar(p, "menggunakan fungsi ", size=12)
+    ar(p, "strtolower(trim($request->status)) ", italic=True, size=12)
+    ar(p, "pada ", size=12)
+    ar(p, "AttendanceController ", italic=True, size=12)
+    ar(p, "Laravel sebelum validasi ", size=12)
+    ar(p, "enum ", italic=True, size=12)
+    ar(p, "dijalankan. Dengan demikian, sistem dapat menerima berbagai variasi penulisan huruf besar maupun kecil dengan aman tanpa menimbulkan kesalahan validasi.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala kedua terkait CORS, penulis mengonfigurasi file ", size=12)
+    ar(p, "config/cors.php ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "config/sanctum.php ", italic=True, size=12)
+    ar(p, "dengan mendaftarkan ", size=12)
+    ar(p, "origin ", italic=True, size=12)
+    ar(p, "domain ", size=12)
+    ar(p, "frontend ", italic=True, size=12)
+    ar(p, "serta menyematkan ", size=12)
+    ar(p, "header Accept: application/json ", italic=True, size=12)
+    ar(p, "pada ", size=12)
+    ar(p, "client ", italic=True, size=12)
+    ar(p, "Axios/Fetch di sisi ", size=12)
+    ar(p, "frontend. ", italic=True, size=12)
+    ar(p, "Selain itu, penulis juga menambahkan konfigurasi ", size=12)
+    ar(p, "supports_credentials ", italic=True, size=12)
+    ar(p, "pada Laravel agar ", size=12)
+    ar(p, "cookie ", italic=True, size=12)
+    ar(p, "autentikasi dapat dikirim lintas-domain.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala ketiga terkait pembaruan data tanpa ", size=12)
+    ar(p, "reload, ", italic=True, size=12)
+    ar(p, "penulis membangun ", size=12)
+    ar(p, "custom hook useRealtimeData ", italic=True, size=12)
+    ar(p, "berbasis ", size=12)
+    ar(p, "BroadcastChannel ", italic=True, size=12)
+    ar(p, "browser API yang secara otomatis mendeteksi perubahan data dan memicu ", size=12)
+    ar(p, "query revalidation ", italic=True, size=12)
+    ar(p, "saat tab kembali aktif. Mekanisme ini memungkinkan pembaruan data secara instan tanpa campur tangan pengguna, sehingga pengalaman penggunaan sistem menjadi lebih responsif dan modern.", size=12)
+
+    # ================================================================
+    # KERTAS PENYEKAT BIRU - FATHUR RAMANTHA
+    # ================================================================
+    add_blue_separator(doc, "FATHUR RAMANTHA", "NPM 23312087")
+
+    # 3.2 FATHUR RAMANTHA
+    add_subbab(doc, "3.2.", "FATHUR RAMANTHA (23312087)")
+    add_subbab(doc, "3.2.1.", "Bidang Kerja")
+
+    p = add_body_mixed(doc)
+    ar(p, "Dalam pelaksanaan PKL, penulis bertindak sebagai ", size=12)
+    ar(p, "Frontend Developer ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "UI/UX Specialist. ", italic=True, size=12)
+    ar(p, "Fokus tugas penulis adalah menyusun rancangan antarmuka pengguna berstandar modern, mengonversi desain Figma ke dalam kode komponen Next.js (App Router), menerapkan sistem tata warna dan responsivitas berbasis Tailwind CSS, serta mengoptimalkan pengalaman interaksi pengguna di semua perangkat. Penulis juga bertanggung jawab memastikan seluruh halaman yang dibangun memiliki konsistensi visual dan dapat diakses dengan baik pada berbagai ukuran layar.", size=12)
+
+    add_subbab(doc, "3.2.2.", "Pelaksanaan Kerja")
+    p = add_body_mixed(doc)
+    ar(p, "Tahapan pelaksanaan kerja yang diselesaikan oleh penulis meliputi perancangan ", size=12)
+    ar(p, "wireframe ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "high-fidelity UI ", italic=True, size=12)
+    ar(p, "di Figma untuk seluruh halaman sistem, implementasi komponen Next.js dan Tailwind CSS, serta pembuatan antarmuka interaktif untuk tiga peran pengguna. Proses perancangan dimulai dengan pembuatan ", size=12)
+    ar(p, "wireframe low-fidelity ", italic=True, size=12)
+    ar(p, "untuk menentukan tata letak dan alur navigasi, kemudian dilanjutkan dengan pembuatan ", size=12)
+    ar(p, "high-fidelity mockup ", italic=True, size=12)
+    ar(p, "yang menyertakan palet warna, tipografi, dan komponen visual akhir. Tampilan ", size=12)
+    ar(p, "dashboard ", italic=True, size=12)
+    ar(p, "Administrator ditunjukkan pada Gambar 3.6.", size=12)
+
+    add_gambar(doc, "Tampilan Dashboard Administrator dengan statistik dan grafik", "Gambar 3.6 Tampilan Dashboard Administrator")
+
+    # Komponen tabel
+    p = add_body_mixed(doc)
+    ar(p, "Penulis membangun lebih dari 30 halaman dan 20 komponen ", size=12)
+    ar(p, "reusable ", italic=True, size=12)
+    ar(p, "Next.js yang dirancang untuk dapat digunakan kembali di berbagai bagian sistem. Komponen-komponen tersebut mencakup ", size=12)
+    ar(p, "Sidebar, Navbar ", italic=True, size=12)
+    ar(p, "dengan lonceng notifikasi ", size=12)
+    ar(p, "real-time, StatCard, CourseCard, ", italic=True, size=12)
+    ar(p, "modal dialog interaktif, dan tabel data responsif. Setiap komponen dikembangkan dengan pendekatan ", size=12)
+    ar(p, "atomic design ", italic=True, size=12)
+    ar(p, "untuk memastikan modularitas dan kemudahan pemeliharaan kode. Daftar komponen utama ditunjukkan pada Tabel 3.3.", size=12)
+
+    # Tabel 3.3 Komponen
+    add_tabel_caption(doc, "Tabel 3.3 Daftar Komponen Antarmuka Next.js")
+    tbl_comp = doc.add_table(rows=11, cols=3)
+    tbl_comp.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for cell in tbl_comp.rows[0].cells:
+        set_cell_shading(cell, "D9E2F3")
+    for j, h in enumerate(["No", "Nama Komponen", "Fungsi"]):
+        cp = tbl_comp.rows[0].cells[j].paragraphs[0]
+        cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(cp, h, bold=True, size=10)
+    
+    comps = [
+        ("1", "Sidebar", "Navigasi utama dashboard sesuai peran"),
+        ("2", "Navbar", "Header dengan notifikasi dan profil pengguna"),
+        ("3", "StatCard", "Kartu statistik ringkasan dashboard"),
+        ("4", "CourseCard", "Kartu tampilan kelas dengan info ringkas"),
+        ("5", "DataTable", "Tabel data responsif dengan pagination"),
+        ("6", "ModalDialog", "Dialog interaktif untuk CRUD operations"),
+        ("7", "FileUploader", "Komponen unggah file drag-and-drop"),
+        ("8", "SkeletonLoader", "Placeholder loading state komponen"),
+        ("9", "NotificationBell", "Lonceng notifikasi real-time"),
+        ("10", "GradeInputForm", "Formulir input nilai UTS/UAS"),
+    ]
+    for i, (no, nama, fungsi) in enumerate(comps):
+        row = tbl_comp.rows[i+1]
+        for j, val in enumerate([no, nama, fungsi]):
+            cp = row.cells[j].paragraphs[0]
+            cp.alignment = WD_ALIGN_PARAGRAPH.CENTER if j == 0 else WD_ALIGN_PARAGRAPH.LEFT
+            r = ar(cp, val, size=10)
+            if j == 1:
+                r.italic = True
+
+    add_body(doc, "Tampilan dashboard Guru Pengajar yang menampilkan informasi kelas yang diampu, statistik kehadiran, dan akses cepat ke modul penugasan ditunjukkan pada Gambar 3.7.")
+    add_gambar(doc, "Tampilan Dashboard Guru Pengajar dengan daftar kelas dan statistik", "Gambar 3.7 Tampilan Dashboard Guru Pengajar")
+
+    add_body(doc, "Penulis mengembangkan halaman katalog kelas yang memungkinkan siswa melihat daftar kelas yang telah didaftarkan, mengakses materi pembelajaran, serta mengikuti kegiatan presensi dan penugasan. Tampilan dashboard Siswa ditunjukkan pada Gambar 3.8.")
+    add_gambar(doc, "Tampilan Dashboard Siswa dengan katalog kelas dan jadwal tugas", "Gambar 3.8 Tampilan Dashboard Siswa")
+
+    p = add_body_mixed(doc)
+    ar(p, "Selain itu, penulis juga membangun halaman manajemen kelas yang memungkinkan administrator dan guru untuk mengelola data kelas, menambahkan siswa ke kelas, serta mengatur pengaturan kelas. Halaman ini dilengkapi dengan fitur pencarian dan filter untuk memudahkan pengelolaan data. Tampilan halaman manajemen kelas ditunjukkan pada Gambar 3.9.", size=12)
+    add_gambar(doc, "Tampilan Halaman Manajemen Kelas dengan daftar kelas dan aksi", "Gambar 3.9 Tampilan Halaman Manajemen Kelas")
+
+    add_body(doc, "Penulis mengembangkan halaman presensi siswa yang menampilkan riwayat kehadiran dan tombol presensi mandiri satu klik. Sistem presensi dirancang dengan mekanisme jendela waktu yang hanya mengizinkan siswa melakukan presensi dalam rentang waktu yang telah ditentukan oleh guru pengajar. Tampilan halaman presensi ditunjukkan pada Gambar 3.10.")
+    add_gambar(doc, "Tampilan Halaman Presensi Siswa dengan tombol presensi mandiri", "Gambar 3.10 Tampilan Halaman Presensi Siswa")
+
+    add_body(doc, "Penulis juga membangun halaman penugasan LKPD yang memungkinkan guru membuat tugas dengan lampiran file, menetapkan deadline, dan memberikan penilaian. Siswa dapat mengunggah jawaban melalui antarmuka drag-and-drop yang intuitif. Tampilan halaman penugasan ditunjukkan pada Gambar 3.11.")
+    add_gambar(doc, "Tampilan Halaman Penugasan LKPD dengan form submit jawaban", "Gambar 3.11 Tampilan Halaman Penugasan LKPD")
+
+    # 3.2.3
+    add_subbab(doc, "3.2.3.", "Kendala yang Dihadapi")
+    add_body(doc, "Selama pelaksanaan PKL, penulis menghadapi beberapa kendala teknis yang berkaitan dengan pengembangan antarmuka pengguna. Adapun kendala yang dihadapi adalah sebagai berikut:")
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala pertama yang dihadapi penulis adalah timbulnya pergeseran tata letak antarmuka (", size=12)
+    ar(p, "Cumulative Layout Shift / CLS", italic=True, size=12)
+    ar(p, ") saat data statistik grafik pertama kali dimuat dari server. Kondisi ini menyebabkan elemen-elemen pada halaman bergeser secara tiba-tiba sehingga mengganggu kenyamanan pengguna dalam berinteraksi dengan sistem.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala kedua yang dihadapi penulis berkaitan dengan tampilan tabel rekapitulasi nilai dan presensi yang terpotong pada layar beresolusi kecil (ponsel dan tablet). Hal ini menyebabkan pengguna tidak dapat melihat seluruh data yang ditampilkan tanpa harus melakukan ", size=12)
+    ar(p, "scroll ", italic=True, size=12)
+    ar(p, "secara horizontal, yang tidak selalu intuitif bagi pengguna.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala ketiga yang dihadapi penulis berkaitan dengan kompleksitas penanganan status tombol (", size=12)
+    ar(p, "disabled state ", italic=True, size=12)
+    ar(p, "dan animasi ", size=12)
+    ar(p, "loading", italic=True, size=12)
+    ar(p, ") saat pengiriman formulir berlangsung. Tanpa penanganan yang tepat, pengguna dapat menekan tombol ", size=12)
+    ar(p, "submit ", italic=True, size=12)
+    ar(p, "berkali-kali dan menyebabkan duplikasi data.", size=12)
+
+    # 3.2.4
+    add_subbab(doc, "3.2.4.", "Cara Mengatasi Kendala")
+    add_body(doc, "Dalam menghadapi kendala-kendala tersebut, penulis melakukan berbagai upaya perbaikan sebagai berikut:")
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala pertama, penulis menerapkan ", size=12)
+    ar(p, "Skeleton Loader Components ", italic=True, size=12)
+    ar(p, "dengan dimensi pasti sebelum data selesai di-", size=12)
+    ar(p, "fetch ", italic=True, size=12)
+    ar(p, "dari API, sehingga antarmuka tetap stabil dan tidak terjadi pergeseran tata letak yang mengganggu.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala kedua, penulis menerapkan pembungkus ", size=12)
+    ar(p, "horizontal overflow-x-auto ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "styling container queries ", italic=True, size=12)
+    ar(p, "pada tabel laporan agar data tetap dapat di-", size=12)
+    ar(p, "scroll ", italic=True, size=12)
+    ar(p, "dengan mulus di perangkat ", size=12)
+    ar(p, "mobile ", italic=True, size=12)
+    ar(p, "tanpa memotong konten yang ditampilkan.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala ketiga, penulis mengintegrasikan ", size=12)
+    ar(p, "state isSubmitting ", italic=True, size=12)
+    ar(p, "dengan animasi ", size=12)
+    ar(p, "spinner ", italic=True, size=12)
+    ar(p, "Lucide-React pada seluruh tombol aksi. Ketika formulir sedang diproses, tombol secara otomatis dinonaktifkan untuk mencegah pengiriman ganda.", size=12)
+
+    # ================================================================
+    # KERTAS PENYEKAT BIRU - I PUTU PANDU
+    # ================================================================
+    add_blue_separator(doc, "I PUTU PANDU", "NPM 23312088")
+
+    # 3.3 I PUTU PANDU
+    add_subbab(doc, "3.3.", "I PUTU PANDU (23312088)")
+    add_subbab(doc, "3.3.1.", "Bidang Kerja")
+
+    p = add_body_mixed(doc)
+    ar(p, "Dalam kegiatan PKL, penulis bertugas sebagai ", size=12)
+    ar(p, "System Analyst, Database Administrator ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "Quality Assurance (QA). ", italic=True, size=12)
+    ar(p, "Ruang lingkup kerja penulis mencakup analisis kebutuhan fungsional sistem, penyusunan dokumentasi teknis berupa diagram UML, manajemen ", size=12)
+    ar(p, "seeder ", italic=True, size=12)
+    ar(p, "data massal untuk pengujian, pembuatan fitur ", size=12)
+    ar(p, "import spreadsheet, ", italic=True, size=12)
+    ar(p, "serta perancangan dan eksekusi pengujian otomatis menyeluruh terhadap seluruh fitur sistem.", size=12)
+
+    add_subbab(doc, "3.3.2.", "Pelaksanaan Kerja")
+    p = add_body_mixed(doc)
+    ar(p, "Pada tahap awal, penulis menyusun ", size=12)
+    ar(p, "Product Requirements Document ", italic=True, size=12)
+    ar(p, "(PRD) yang mendokumentasikan keseluruhan kebutuhan fungsional dan non-fungsional sistem LMS. Dokumen ini mencakup spesifikasi fitur, prioritas pengembangan, serta kriteria penerimaan (", size=12)
+    ar(p, "acceptance criteria", italic=True, size=12)
+    ar(p, ") untuk setiap modul. Selain itu, penulis mendesain Diagram ", size=12)
+    ar(p, "Use Case ", italic=True, size=12)
+    ar(p, "terpadu yang mencakup 50 fitur fungsional untuk tiga peran pengguna (Administrator, Guru Pengajar, dan Peserta Didik). Diagram ", size=12)
+    ar(p, "Use Case ", italic=True, size=12)
+    ar(p, "ditunjukkan pada Gambar 3.3.", size=12)
+
+    add_gambar(doc, "Diagram Use Case Terpadu Sistem LMS dengan 50 fitur fungsional", "Gambar 3.3 Diagram Use Case Terpadu Sistem LMS")
+
+    p = add_body_mixed(doc)
+    ar(p, "Selanjutnya, penulis menyusun Diagram Alir Sistem (", size=12)
+    ar(p, "Flowchart", italic=True, size=12)
+    ar(p, ") terpadu yang menggambarkan alur kerja keseluruhan sistem mulai dari proses ", size=12)
+    ar(p, "login, ", italic=True, size=12)
+    ar(p, "pengarahan berdasarkan peran, hingga akses ke modul-modul fungsional. Diagram Alir ini menjadi acuan bagi tim pengembang dalam memastikan konsistensi logika bisnis di seluruh bagian sistem. Diagram Alir Sistem ditunjukkan pada Gambar 3.4.", size=12)
+
+    add_gambar(doc, "Diagram Alir (Flowchart) Sistem Terpadu menampilkan alur login dan navigasi berdasarkan peran", "Gambar 3.4 Diagram Alir (Flowchart) Sistem Terpadu")
+
+    p = add_body_mixed(doc)
+    ar(p, "Penulis menyusun skrip ", size=12)
+    ar(p, "Database Seeder ", italic=True, size=12)
+    ar(p, "untuk menginisialisasi 61 akun pengguna nyata yang terdiri dari 1 akun administrator, 13 akun guru pengampu mata pelajaran, dan 47 akun siswa. Selain itu, penulis juga membuat data ", size=12)
+    ar(p, "seed ", italic=True, size=12)
+    ar(p, "untuk 6 kelas aktif dan 3 tugas LKPD sebagai data awal pengujian. Penulis turut merancang modul ", size=12)
+    ar(p, "import ", italic=True, size=12)
+    ar(p, "akun massal dari file Excel (.xlsx/.csv) yang memungkinkan administrator mendaftarkan puluhan hingga ratusan akun pengguna dalam satu operasi. Tampilan halaman ", size=12)
+    ar(p, "bulk import ", italic=True, size=12)
+    ar(p, "ditunjukkan pada Gambar 3.17.", size=12)
+
+    add_gambar(doc, "Tampilan Halaman Bulk Import Spreadsheet untuk pendaftaran akun massal", "Gambar 3.17 Tampilan Halaman Bulk Import Spreadsheet")
+
+    # Rekapitulasi nilai
+    add_body(doc, "Penulis juga terlibat dalam pengembangan modul rekapitulasi nilai rapor yang mengintegrasikan data dari penugasan LKPD, ujian UTS, dan ujian UAS. Modul ini dilengkapi dengan fitur ekspor ke format Excel (.xlsx) untuk memudahkan pelaporan akademik. Tampilan halaman rekapitulasi nilai ditunjukkan pada Gambar 3.12.")
+    add_gambar(doc, "Tampilan Halaman Rekapitulasi Nilai Rapor dengan kolom LKPD, UTS, UAS", "Gambar 3.12 Tampilan Halaman Rekapitulasi Nilai Rapor")
+
+    add_body(doc, "Tampilan lonceng notifikasi yang memberikan pemberitahuan secara real-time kepada pengguna ditunjukkan pada Gambar 3.13.")
+    add_gambar(doc, "Tampilan Lonceng Notifikasi Real-time pada Navbar", "Gambar 3.13 Tampilan Lonceng Notifikasi Real-time")
+
+    add_body(doc, "Tampilan fitur ekspor laporan ke format Excel yang memungkinkan guru dan administrator mengunduh data nilai dan kehadiran ditunjukkan pada Gambar 3.14.")
+    add_gambar(doc, "Tampilan Fitur Ekspor Laporan Excel (.xlsx)", "Gambar 3.14 Tampilan Fitur Ekspor Laporan Excel")
+
+    add_body(doc, "Penulis juga mengembangkan halaman manajemen modul bahan ajar yang memungkinkan guru mengunggah materi pembelajaran berupa teks, file PDF, dan dokumen pendukung lainnya. Tampilan halaman manajemen modul bahan ajar ditunjukkan pada Gambar 3.15.")
+    add_gambar(doc, "Tampilan Halaman Manajemen Modul Bahan Ajar", "Gambar 3.15 Tampilan Halaman Manajemen Modul Bahan Ajar")
+
+    add_body(doc, "Tampilan halaman input nilai UTS/UAS yang memungkinkan guru memberikan penilaian ujian semester ditunjukkan pada Gambar 3.16.")
+    add_gambar(doc, "Tampilan Halaman Input Nilai UTS/UAS oleh Guru", "Gambar 3.16 Tampilan Halaman Input Nilai UTS/UAS")
+
+    # Bot testing
+    p = add_body_mixed(doc)
+    ar(p, "Pada tahap akhir, penulis merancang dan mengeksekusi skrip ", size=12)
+    ar(p, "bot ", italic=True, size=12)
+    ar(p, "penguji otomatis menggunakan Node.js yang mensimulasikan interaksi nyata 4 akun pengguna (Admin, Guru, Siswa 1, Siswa 2) terhadap 8 kategori fitur inti (53 skenario uji coba) secara menyeluruh terhadap server ", size=12)
+    ar(p, "backend ", italic=True, size=12)
+    ar(p, "Railway. Seluruh skenario pengujian berhasil dieksekusi dengan tingkat keberhasilan 100%. Hasil pengujian otomatis ditunjukkan pada Tabel 3.4.", size=12)
+
+    # Tabel 3.4
+    add_tabel_caption(doc, "Tabel 3.4 Hasil Pengujian Otomatis (E2E Automated Bot Testing)")
+    tbl_test = doc.add_table(rows=9, cols=4)
+    tbl_test.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for cell in tbl_test.rows[0].cells:
+        set_cell_shading(cell, "D9E2F3")
+    for j, h in enumerate(["No", "Modul yang Diuji", "Akun Penguji", "Hasil"]):
+        cp = tbl_test.rows[0].cells[j].paragraphs[0]
+        cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ar(cp, h, bold=True, size=10)
+
+    for i, (no, modul, akun, hasil) in enumerate([
+        ("1", "Autentikasi dan Token Sanctum", "Admin, Guru, Siswa", "Passed"),
+        ("2", "Dashboard Statistik Global", "Administrator", "Passed"),
+        ("3", "Manajemen Akun Pengguna", "Administrator", "Passed"),
+        ("4", "Bulk Import Spreadsheet", "Administrator", "Passed"),
+        ("5", "Manajemen Kelas dan Materi", "Guru Pengajar", "Passed"),
+        ("6", "Presensi Mandiri Siswa", "Siswa Pembelajar", "Passed"),
+        ("7", "Penugasan LKPD dan Penilaian", "Guru, Siswa", "Passed"),
+        ("8", "Rekapitulasi Nilai Rapor", "Admin, Guru, Siswa", "Passed"),
+    ]):
+        row = tbl_test.rows[i+1]
+        for j, val in enumerate([no, modul, akun, hasil]):
+            cp = row.cells[j].paragraphs[0]
+            cp.alignment = WD_ALIGN_PARAGRAPH.CENTER if j in [0, 3] else WD_ALIGN_PARAGRAPH.LEFT
+            r = ar(cp, val, size=10)
+            if j == 3:
+                r.bold = True
+
+    add_body(doc, "Dokumentasi kegiatan Praktik Kerja Lapangan (PKL) di CV Newus Teknologi ditunjukkan pada Gambar 3.18.")
+    add_gambar(doc, "Dokumentasi Kegiatan PKL di CV Newus Teknologi (foto bersama tim)", "Gambar 3.18 Dokumentasi Kegiatan PKL di CV Newus Teknologi")
+
+    # 3.3.3
+    add_subbab(doc, "3.3.3.", "Kendala yang Dihadapi")
+    add_body(doc, "Selama pelaksanaan PKL, penulis menghadapi beberapa kendala yang berkaitan dengan proses analisis data, manajemen basis data, dan pengujian sistem. Adapun kendala yang dihadapi adalah sebagai berikut:")
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala pertama yang dihadapi penulis adalah format file Excel yang diunggah pengguna seringkali memiliki urutan kolom atau nama ", size=12)
+    ar(p, "header ", italic=True, size=12)
+    ar(p, "yang tidak seragam. Variasi format ini menyebabkan proses ", size=12)
+    ar(p, "parsing ", italic=True, size=12)
+    ar(p, "data pada ", size=12)
+    ar(p, "controller import ", italic=True, size=12)
+    ar(p, "gagal karena sistem tidak dapat mengenali kolom yang dimaksud.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala kedua yang dihadapi penulis berkaitan dengan skenario presensi siswa yang gagal ketika diuji di luar rentang jam operasional kelas yang ditentukan oleh guru. Hal ini menunjukkan bahwa logika validasi waktu pada ", size=12)
+    ar(p, "backend ", italic=True, size=12)
+    ar(p, "perlu disempurnakan agar memberikan pesan kesalahan yang informatif kepada pengguna.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Kendala ketiga yang dihadapi penulis berkaitan dengan waktu pengujian manual fitur yang sangat lama jika harus ", size=12)
+    ar(p, "login ", italic=True, size=12)
+    ar(p, "dan ", size=12)
+    ar(p, "logout ", italic=True, size=12)
+    ar(p, "bergantian dengan 4 akun berbeda untuk menguji skenario lintas-peran. Proses ini memakan waktu yang tidak efisien dan rentan terhadap kesalahan manusia (", size=12)
+    ar(p, "human error", italic=True, size=12)
+    ar(p, ").", size=12)
+
+    # 3.3.4
+    add_subbab(doc, "3.3.4.", "Cara Mengatasi Kendala")
+    add_body(doc, "Dalam menghadapi kendala-kendala tersebut, penulis melakukan berbagai upaya perbaikan sebagai berikut:")
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala pertama, penulis menyediakan ", size=12)
+    ar(p, "template ", italic=True, size=12)
+    ar(p, "file master dan menambahkan validasi ", size=12)
+    ar(p, "header ", italic=True, size=12)
+    ar(p, "otomatis pada ", size=12)
+    ar(p, "controller import ", italic=True, size=12)
+    ar(p, "Laravel menggunakan pustaka Maatwebsite Excel. Sistem akan menampilkan pesan kesalahan yang spesifik apabila format kolom tidak sesuai dengan ", size=12)
+    ar(p, "template ", italic=True, size=12)
+    ar(p, "yang telah ditetapkan.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala kedua, penulis menambahkan logika validasi zona waktu server menggunakan pustaka Carbon (Asia/Jakarta) dengan pesan ", size=12)
+    ar(p, "error ", italic=True, size=12)
+    ar(p, "edukatif jika presensi diakses di luar jadwal. Pesan kesalahan dirancang agar memberikan informasi yang jelas mengenai rentang waktu presensi yang diperbolehkan.", size=12)
+
+    p = add_body_mixed(doc)
+    ar(p, "Untuk mengatasi kendala ketiga, penulis mengembangkan skrip ", size=12)
+    ar(p, "bot ", italic=True, size=12)
+    ar(p, "pengujian otomatis menggunakan Node.js yang menjalankan 53 ", size=12)
+    ar(p, "test case ", italic=True, size=12)
+    ar(p, "secara otomatis dalam waktu kurang dari 15 detik dengan hasil 100% ", size=12)
+    ar(p, "Passed. ", italic=True, size=12)
+    ar(p, "Skrip ini mensimulasikan seluruh alur penggunaan sistem secara menyeluruh tanpa memerlukan intervensi manual.", size=12)
+
+    # =====================================================================
+    # BAB IV  PENUTUP
+    # =====================================================================
+    doc.add_page_break()
+    add_bab_title(doc, "IV", "PENUTUP")
+
+    # 4.1 Simpulan (bukan Kesimpulan)
+    add_subbab(doc, "4.1.", "Simpulan")
+    add_body(doc, "Berdasarkan hasil pelaksanaan Praktik Kerja Lapangan (PKL) yang dilaksanakan di CV Newus Teknologi selama satu bulan (6 Agustus sampai dengan 6 September 2026), dapat disimpulkan beberapa hal sebagai berikut:")
+
+    for i, k in enumerate([
+        "Pelaksanaan Praktik Kerja Lapangan memberikan pengalaman kerja secara langsung kepada penulis dalam lingkungan industri teknologi informasi, khususnya dalam pengembangan Learning Management System berbasis web menggunakan framework Next.js dan Laravel 11.",
+        "Penulis mampu menerapkan ilmu yang diperoleh selama perkuliahan pada proses pengembangan perangkat lunak secara profesional, mulai dari analisis kebutuhan sistem, perancangan basis data relasional 11 tabel, implementasi lebih dari 50 endpoint RESTful API, pembangunan antarmuka pengguna responsif untuk tiga peran pengguna, hingga pengujian dan deployment sistem ke lingkungan cloud produksi.",
+        "Sistem Learning Management System yang dikembangkan telah diuji secara komprehensif menggunakan Automated End-to-End Bot Testing dengan 53 skenario uji coba lintas-peran dan berhasil meraih tingkat keberhasilan 100% (Passed), yang menunjukkan bahwa seluruh fitur sistem telah berfungsi sesuai dengan spesifikasi kebutuhan yang ditentukan.",
+        "Aplikasi telah berhasil di-deploy ke lingkungan cloud produksi publik (Frontend di Vercel dan Backend di Railway) dan siap diimplementasikan oleh institusi pendidikan mitra CV Newus Teknologi sebagai platform pembelajaran daring yang terintegrasi.",
+        "Selama pelaksanaan PKL, penulis berhasil meningkatkan kemampuan komunikasi, kerja sama tim, manajemen waktu, berpikir logis, pemecahan masalah, kedisiplinan, serta tanggung jawab dalam menyelesaikan pekerjaan secara profesional.",
+    ], 1):
+        add_numbered_item(doc, i, k)
+
+    # 4.2 Saran
+    add_subbab(doc, "4.2.", "Saran")
+    add_body(doc, "Berdasarkan hasil pelaksanaan Praktik Kerja Lapangan (PKL), penulis memberikan beberapa saran sebagai berikut:")
+
+    add_subbab(doc, "4.2.1.", "Untuk CV Newus Teknologi")
+    for i, s in enumerate([
+        "Perusahaan dapat terus mempertahankan sistem pembelajaran dan pendampingan yang telah berjalan dengan baik sehingga peserta PKL selanjutnya dapat memahami materi dan tugas yang diberikan secara optimal.",
+        "Perusahaan dapat menambahkan modul video conference interaktif dan payment gateway otomatis ke dalam platform LMS untuk memperluas fungsionalitas produk dan meningkatkan daya saing di pasar.",
+    ], 1):
+        add_numbered_item(doc, i, s)
+
+    add_subbab(doc, "4.2.2.", "Kontribusi terhadap IPTEK")
+    for i, s in enumerate([
+        "Penggunaan arsitektur decoupled (Next.js dan Laravel) dalam pengembangan LMS dapat dijadikan referensi bagi penelitian dan pengembangan sistem informasi pendidikan berbasis web di masa mendatang.",
+        "Mekanisme sinkronisasi data real-time menggunakan BroadcastChannel API dapat diadopsi dan dikembangkan lebih lanjut untuk aplikasi web lain yang membutuhkan pembaruan data tanpa reload halaman.",
+        "Universitas Teknokrat Indonesia dapat memperbanyak materi praktikum berbasis arsitektur web modern dan cloud deployment pada kurikulum perkuliahan agar mahasiswa memiliki kesiapan yang lebih baik dalam menghadapi tuntutan industri.",
+    ], 1):
+        add_numbered_item(doc, i, s)
+
+    # =====================================================================
+    # DAFTAR PUSTAKA (spasi 1)
+    # =====================================================================
+    doc.add_page_break()
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12, keep_with_next=True)
+    ar(p, "DAFTAR PUSTAKA", bold=True, size=14)
+
+    for pust in [
+        'Fathansyah, 2018, Basis Data (Edisi Revisi), Informatika Bandung, Bandung.',
+        'FTIK-UTI, 2018, Buku Panduan Praktik Kerja Lapangan (PKL), TCTC Universitas Teknokrat Indonesia, Bandar Lampung.',
+        'Laravel LLC, 2024, Laravel Documentation (Version 11.x), https://laravel.com/docs, diakses 15 Agustus 2026.',
+        'Next.js Team, 2024, Next.js App Router Documentation, Vercel Inc., https://nextjs.org/docs, diakses 15 Agustus 2026.',
+        'Pressman, R. S. dan Maxim, B. R., 2020, Software Engineering: A Practitioner\'s Approach (9th ed.), McGraw-Hill Education, New York.',
+        'Rosa, A. S. dan Shalahuddin, M., 2019, Rekayasa Perangkat Lunak Terstruktur dan Berorientasi Objek, Informatika Bandung, Bandung.',
+        'Schwaber, K. dan Sutherland, J., 2020, The Scrum Guide: The Definitive Guide to Scrum: The Rules of the Game, Scrum.org.',
+        'Tailwind Labs, 2024, Tailwind CSS Documentation (Version 3.x), https://tailwindcss.com/docs, diakses 15 Agustus 2026.',
+    ]:
+        p = doc.add_paragraph()
+        sfmt(p, line_spacing=1.0, space_after=6, left_indent=1.27, first_line_indent=-1.27)
+        ar(p, pust, size=12)
+
+    # =====================================================================
+    # LAMPIRAN
+    # =====================================================================
+    doc.add_page_break()
+    p = doc.add_paragraph()
+    sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12, keep_with_next=True)
+    ar(p, "LAMPIRAN", bold=True, size=14)
+
+    for lamp_num, lamp_judul, lamp_placeholder in [
+        ("Lampiran 1", "Formulir Penilaian Fery Dwi Ramadhi", "Formulir Penilaian Mahasiswa PKL - Fery Dwi Ramadhi"),
+        ("Lampiran 2", "Catatan Harian Fery Dwi Ramadhi", "Catatan Harian PKL - Fery Dwi Ramadhi"),
+        ("Lampiran 3", "Formulir Penilaian Fathur Ramantha", "Formulir Penilaian Mahasiswa PKL - Fathur Ramantha"),
+        ("Lampiran 4", "Catatan Harian Fathur Ramantha", "Catatan Harian PKL - Fathur Ramantha"),
+        ("Lampiran 5", "Formulir Penilaian I Putu Pandu", "Formulir Penilaian Mahasiswa PKL - I Putu Pandu"),
+        ("Lampiran 6", "Catatan Harian I Putu Pandu", "Catatan Harian PKL - I Putu Pandu"),
+    ]:
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_after=12)
+        ar(p, f"{lamp_num}  {lamp_judul}", bold=True, size=12)
+        p = doc.add_paragraph()
+        sfmt(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, line_spacing=1.0, space_before=12)
+        ar(p, f"[Gambar untuk {lamp_placeholder}]", italic=True, size=11)
+        doc.add_page_break()
+
+    # =====================================================================
+    # SAVE
+    # =====================================================================
+    output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "Laporan_PKL_LMS_Newus_Teknologi_2026.docx")
+    doc.save(output_path)
+    print(f"SUCCESS: Laporan PKL v2 berhasil di-generate di: {output_path}")
+    print(f"Format: Times New Roman 12pt, Spasi 1.5 (isi) / 1.0 (abstrak, pustaka)")
+    print(f"Margin: Atas 3cm, Bawah 3cm, Kiri 4cm, Kanan 3cm")
+    print(f"Alinea baru: indent 1.27cm (ketikan ke-6)")
+    print(f"Istilah asing: huruf miring (italic)")
+    print(f"Kertas penyekat biru: antara mahasiswa di BAB III")
+    print(f"Simpulan (bukan Kesimpulan) sesuai panduan FTIK")
+
+if __name__ == "__main__":
+    create_laporan()
