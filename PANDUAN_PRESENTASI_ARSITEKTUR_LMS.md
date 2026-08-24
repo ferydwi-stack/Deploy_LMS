@@ -1,653 +1,823 @@
-# 🚀 PANDUAN LENGKAP ARSITEKTUR, KODE, JOBDESK DETAIL & MATERI PRESENTASI EDUSCHOOL LMS
+# 📘 PANDUAN JOBDESK LENGKAP & MENDALAM — EDUSCHOOL LMS
 
-> **Dokumen Resmi Presentasi & Bedah Sistem Full-Stack E-Learning**  
-> Proyek Praktik Kerja Lapangan (PKL) / Tugas Akhir — Program Studi S1 Informatika  
-> Fakultas Teknik dan Ilmu Komputer, Universitas Teknokrat Indonesia & CV Newus Teknologi
-
----
-
-## 👥 1. IDENTITAS TIM & RINCIAN MENDALAM JOBDESK ANGGOTA
-
-Proyek **EduSchool LMS** dibangun oleh tim beranggotakan 3 orang mahasiswa. Berikut adalah rincian lengkap mengenai **apa yang dibuat**, **tujuan pembuatannya**, **teknologi yang digunakan**, serta **logika bisnis/algoritma (*logic*) yang diterapkan** oleh masing-masing anggota:
-
-```
-┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│                                STRUKTUR TIM PENGEMBANG                                   │
-├───────────────────────────────┬───────────────────────────────┬──────────────────────────┤
-│     FERY DWI RAMADHI          │       FATHUR RAMANTHA         │  I PUTU PANDU WIRANATA   │
-│       (NPM 23312086)          │        (NPM 23312105)         │      (NPM 23312088)      │
-├───────────────────────────────┼───────────────────────────────┼──────────────────────────┤
-│ 📌 Posisi / Peran:            │ 📌 Posisi / Peran:            │ 📌 Posisi / Peran:       │
-│  • System Analyst             │  • Frontend UI/UX Specialist  │  • Full-Stack Engineer   │
-│  • Cloud & DevOps Engineer    │  • Design System & Styling    │    (Frontend & Backend)  │
-│  • Database Architect         │  • Client-Side Components     │  • RESTful API Developer │
-│  • Dokumentasi Program        │  • Mobile & Micro-Interactions│  • Real-time Sync Logic  │
-└───────────────────────────────┴───────────────────────────────┴──────────────────────────┘
-```
+> **Dokumen Presentasi & Belajar Mandiri Anggota Tim**  
+> Proyek PKL — S1 Informatika, Universitas Teknokrat Indonesia × CV Newus Teknologi  
+> Live: [https://sistem-e-learning-g9xn.vercel.app](https://sistem-e-learning-g9xn.vercel.app)
 
 ---
 
-### 👨‍💻 A. FERY DWI RAMADHI (NPM 23312086)
-**Peran Utama**: *System Analyst, Cloud & DevOps Engineer, Database Architect, dan Dokumentasi Program*
+## 🗂️ DAFTAR ISI
 
-#### 1. Analisis Kebutuhan Sistem & Pemodelan UML
-- **Apa yang Dibuat**:
-  - Dokumen *Product Requirements Document* (PRD) yang merinci 50 fitur fungsional untuk 3 peran (Admin, Guru, Siswa).
-  - Diagram pemodelan sistem standar UML: **Diagram Use Case Terpadu**, **Diagram Alir (Flowchart) Sistem Terpadu**, serta *Activity & Sequence Diagrams*.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Mencegah *scope creep* (pelebaran cakupan proyek yang tidak terarah), menetapkan batasan hak akses pengguna (*Role-Based Access Control*), dan memberikan panduan cetak biru (*blueprint*) alur bisnis yang jelas bagi pengembang frontend dan backend.
-- **Teknologi & Tools yang Digunakan**:
-  - UML 2.5 Standard, Mermaid.js, Draw.io, dan Markdown PRD.
-- **Logika & Alur Kerja (Logic)**:
-  - **Matriks Hak Akses (CRUD Matrix)**: Membagi sistem ke dalam 3 hierarki isolasi:
-    - *Administrator*: Memiliki hak akses level sistem (CRUD User, Pengaturan Sekolah, Audit Trail, Rekapitulasi Global).
-    - *Guru Pengajar*: Memiliki hak akses level kelas (CRUD Materi, Penugasan LKPD, Input Nilai UTS/UAS, Jadwal Presensi).
-    - *Peserta Didik*: Memiliki hak akses level konsumsi & partisipasi (Join Kelas, Baca Materi, Kumpul Tugas, Presensi Mandiri, Cek Rapor).
+1. [Identitas Tim & Gambaran Besar Peran](#identitas-tim)
+2. [FERY DWI RAMADHI — System Analyst, DevOps, Database, Dokumentasi](#fery)
+3. [FATHUR RAMANTHA — Frontend UI/UX & Design System](#fathur)
+4. [I PUTU PANDU WIRANATA — Full-Stack Engineer (Backend + Frontend Logic)](#pandu)
+5. [Arsitektur Sistem & Tech Stack Keseluruhan](#arsitektur)
+6. [Peta Lengkap Rute API Backend](#api-routes)
+7. [Alur Kerja & Flowchart Sistem](#flowchart)
+8. [FAQ Tanya Jawab Presentasi](#faq)
 
 ---
 
-#### 2. Perancangan Arsitektur Basis Data Relasional (11 Tabel MySQL)
-- **Apa yang Dibuat**:
-  - Skema basis data relasional MySQL 8.0 dengan 11 tabel terintegrasi: `users`, `courses`, `course_student`, `materials`, `assignments`, `submissions`, `attendances`, `notifications`, `settings`, `activity_logs`, dan `personal_access_tokens`.
-  - Diagram *Entity Relationship Diagram* (ERD) lengkap dengan relasi *One-to-Many* dan *Many-to-Many* (tabel pivot).
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menyediakan struktur penyimpanan data akademik yang konsisten, terhindar dari anomali data (anomali insert, update, dan delete), serta mendukung performa query yang cepat.
-- **Teknologi & Tools yang Digunakan**:
-  - MySQL 8.0, InnoDB Storage Engine, Laravel Eloquent Migrations, B-Tree Indexing.
-- **Logika & Alur Kerja (Logic)**:
-  - **Normalisasi 3NF (Third Normal Form)**: Memastikan tidak ada redundansi data antar-tabel. Data siswa dan kelas dihubungkan melalui tabel pivot `course_student` (*Many-to-Many*).
-  - **Penegakan Integritas Data & Cascade Deletion**: Memasang relasi `ON DELETE CASCADE` pada foreign key relasi anak (misal: jika kelas dihapus, maka seluruh materi, tugas, dan presensi di kelas tersebut ikut terhapus secara otomatis dan aman).
-  - **Composite Unique Constraints**: Mencegah duplikasi data kritis, misalnya pada tabel presensi: satu siswa hanya dapat melakukan presensi satu kali per kelas per tanggal kalender:
-    ```sql
-    UNIQUE KEY `unique_student_course_date` (`user_id`, `course_id`, `date`)
-    ```
-  - **Indexing Optimization**: Menambahkan indeks pada kolom `email`, `role`, `course_id`, dan `created_at` untuk mempercepat waktu pencarian data.
+## 👥 IDENTITAS TIM & GAMBARAN BESAR PERAN {#identitas-tim}
+
+| Anggota | NPM | Bidang Utama |
+| :--- | :--- | :--- |
+| **Fery Dwi Ramadhi** | 23312086 | System Analyst, Cloud DevOps, Database Architect, Dokumentasi |
+| **Fathur Ramantha** | 23312105 | Frontend UI/UX, Design System, Komponen Next.js |
+| **I Putu Pandu Wiranata** | 23312088 | Full-Stack Engineer: RESTful API + Frontend State & Logic |
 
 ---
 
-#### 3. Arsitektur Cloud & DevOps Infrastructure (Vercel & Railway)
-- **Apa yang Dibuat**:
-  - Arsitektur sistem *Decoupled* (pemisahan total antara frontend Next.js dan backend Laravel).
-  - Konfigurasi *Cloud Deployment Pipeline* pada platform **Vercel** (Frontend) dan **Railway** (Backend & Database).
-  - Pengaturan keamanan CORS (*Cross-Origin Resource Sharing*), SSL/HTTPS, dan *Environment Variables*.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Memastikan sistem LMS dapat diakses secara publik selama 24/7 dengan ketersediaan tinggi (*high availability*), kecepatan *caching* global di Edge CDN, serta isolasi server backend yang aman.
-- **Teknologi & Tools yang Digunakan**:
-  - Vercel Edge Network, Railway Container Engine (PHP 8.2-FPM + Nginx), Git Webhooks, SSL TLS 1.3.
-- **Logika & Alur Kerja (Logic)**:
-  - **Decoupled Architecture Flow**: Frontend Next.js berjalan secara serverless di CDN global Vercel dan berkomunikasi secara *asynchronous* melalui REST API ke backend container Railway.
-  - **CORS Preflight & Credential Handling**: Mengonfigurasi `config/cors.php` dan `config/sanctum.php` dengan whitelist domain origin Vercel (`https://sistem-e-learning-g9xn.vercel.app`) dan mengizinkan header `Authorization: Bearer <token>` serta penanganan request preflight HTTP `OPTIONS`.
+---
+
+## 👨‍💻 FERY DWI RAMADHI (NPM 23312086) {#fery}
+### *System Analyst · Cloud & DevOps Engineer · Database Architect · Dokumentasi Program*
 
 ---
 
-#### 4. Penyusunan Dokumentasi Teknis & Laporan Resmi PKL/TA
-- **Apa yang Dibuat**:
-  - Naskah buku Laporan PKL formal berstandar akademik FTIK Universitas Teknokrat Indonesia (file `.docx` resmi).
-  - Dokumentasi struktur file, arsitektur sistem, dan panduan instalasi server lokal.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Memenuhi syarat kelulusan Praktik Kerja Lapangan dan menyajikan dokumentasi serah terima perangkat lunak profesional bagi CV Newus Teknologi.
-- **Teknologi & Tools yang Digunakan**:
-  - Python `python-docx`, Markdown, Panduan Akademik FTIK UTI.
-- **Logika & Alur Kerja (Logic)**:
-  - Menegakkan format pengetikan presisi: Margin Kiri 4 cm, Atas 3 cm, Kanan 3 cm, Bawah 3 cm, font Times New Roman 12pt, spasi 1.5, jarak judul bab 4 cm dari tepi atas, sistem sitasi Harvard, penomoran Romawi di halaman awal dan angka Arab di kanan atas, serta halaman penyekat biru (*blue separator page*) antar-anggota tim di BAB III.
+### 📌 JOBDESK 1 — Analisis Kebutuhan Sistem & Pemodelan UML
+
+#### 🔧 Apa yang Dibuat:
+- **Dokumen Product Requirements Document (PRD)** — mendefinisikan 50 fitur fungsional untuk 3 aktor pengguna.
+- **Diagram Use Case Terpadu** — memetakan setiap fitur ke aktor yang berhak menggunakannya.
+- **Diagram Alir Sistem (Flowchart)** — menggambarkan alur eksekusi dari login hingga penggunaan fitur per peran.
+- **Activity Diagram** — alur detail setiap proses (misal: alur presensi mandiri, alur submit tugas).
+- **Sequence Diagram** — pola pertukaran pesan (Browser ↔ API ↔ Database).
+
+#### 🎯 Kegunaan / Buat Apa:
+- Menjadi **cetak biru (blueprint)** utama seluruh tim agar semua anggota membangun fitur yang sama dan tidak tumpang tindih.
+- Mendefinisikan **Matriks Hak Akses (RBAC Matrix)** yang membatasi operasi per peran:
+  ```
+  Administrator : CRUD User, Pengaturan Sekolah, Monitoring Global, Import Massal
+  Guru Pengajar : CRUD Kelas, Materi, Tugas, Nilai UTS/UAS, Jadwal Presensi
+  Peserta Didik : Join Kelas, Baca Materi, Submit Tugas, Presensi Mandiri, Cek Rapor
+  ```
+- Mencegah *scope creep* (pelebaran fitur yang tidak terencana).
+
+#### 🛠️ Tools & Teknologi:
+- **UML 2.5 Standard** (Use Case, Activity, Sequence Diagram)
+- **Mermaid.js** (diagram berbasis Markdown)
+- **Draw.io / Lucidchart** (visual diagram)
+- **Markdown PRD** (dokumentasi kebutuhan)
+
+#### 🧠 Logika & Mekanisme (Logic):
+- Setiap fitur dikategorikan ke 3 level akses: *baca saja, baca+tulis, admin penuh*.
+- Diagram Sequence digunakan untuk memvalidasi alur token (client → bearer header → server → response JSON).
 
 ---
 
-### 🎨 B. FATHUR RAMANTHA (NPM 23312105)
-**Peran Utama**: *Frontend UI/UX Specialist, Design System Engineer, dan Client-Side Component Developer*
+### 📌 JOBDESK 2 — Perancangan Arsitektur Basis Data Relasional (MySQL 8.0)
 
-#### 1. Riset Pengguna & Perancangan Antarmuka (UI/UX Figma)
-- **Apa yang Dibuat**:
-  - Riset alur pengguna (*User Flow*) dan pembuatan *Wireframe Low-Fidelity*.
-  - Desain *High-Fidelity Prototype* interaktif di Figma untuk seluruh tampilan (Desktop, Tablet, dan Mobile).
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menghadirkan antarmuka pengguna yang bersih, modern, tidak membingungkan guru senior maupun siswa baru, serta memiliki daya tarik visual yang profesional.
-- **Teknologi & Tools yang Digunakan**:
-  - Figma, Auto-Layout, Component Variants, Color Tokens, Iconography Lucide.
-- **Logika & Alur Kerja (Logic)**:
-  - **Prinsip Human-Centered Design**: Menempatkan navigasi utama di sisi kiri (*Sidebar* yang dapat di-collapse) dan header profil/notifikasi di bagian atas (*Navbar*).
-  - **Skema Warna 60-30-10**: 60% warna netral (*slate/white* background), 30% warna struktural (*dark slate/gray*), dan 10% warna aksen (*Primary Blue #2563EB* untuk tombol aksi utama dan *Emerald Green* untuk indikator status sukses/hadir).
+#### 🔧 Apa yang Dibuat:
+- **21 file migrasi database Laravel** (dieksekusi secara berurutan saat deploy).
+- **Entity Relationship Diagram (ERD)** dengan 11 tabel utama:
 
----
-
-#### 2. Pembangunan Design System & Styling (Tailwind CSS v4)
-- **Apa yang Dibuat**:
-  - Sistem token desain berbasis Tailwind CSS v4 untuk warna, spasi (*spacing*), sudut membulat (*border radius 2xl*), bayangan (*soft elevation shadow*), dan tipografi font modern (Poppins).
-  - Tata letak responsif penuh (*Mobile-First Responsive Layout*).
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menjamin konsistensi visual di seluruh 30+ halaman sistem dan memastikan aplikasi dapat digunakan dengan nyaman di layar smartphone berukuran kecil tanpa terjadi layout berantakan.
-- **Teknologi & Tools yang Digunakan**:
-  - Tailwind CSS v4, PostCSS, CSS Grid & Flexbox, Container Queries.
-- **Logika & Alur Kerja (Logic)**:
-  - **Breakpoint Responsif**: Mengatur breakpoint layar (`sm: 640px`, `md: 768px`, `lg: 1024px`, `xl: 1280px`). Pada layar mobile (<768px), sidebar secara otomatis disembunyikan dan diakses melalui tombol hamburger menu pop-up.
-  - **Overflow Table Wrapping**: Tabel data rekap nilai dan presensi dibungkus dengan kelas `overflow-x-auto` agar pengguna mobile dapat melakukan scrolling horizontal secara mulus tanpa memotong konten kartu dashboard.
-
----
-
-#### 3. Pengembangan 3 Dashboard Khusus & Pustaka 20+ Komponen Next.js
-- **Apa yang Dibuat**:
-  - 3 Dashboard khusus berbasis peran:
-    - **Dashboard Administrator**: Statistik ringkasan sekolah, grafik aktivitas mingguan, tabel manajemen pengguna dengan filter dinamis.
-    - **Dashboard Guru Pengajar**: Katalog kelas yang diampu, ringkasan tugas terkumpul yang belum dinilai, jadwal absensi harian, dan akses cepat materi.
-    - **Dashboard Peserta Didik**: Tampilan kelas terdaftar (*CourseCard*), tenggat waktu tugas terdekat (*Deadline Tracker*), tombol presensi interaktif, dan grafik nilai rapor.
-  - Pustaka 20+ komponen *reusable*: `Navbar`, `Sidebar`, `StatCard`, `CourseCard`, `ModalDialog`, `FileUploader`, `NotificationBell`, `SkeletonLoader`, dan `GradeInputForm`.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menerapkan prinsip *Don't Repeat Yourself* (DRY), mempercepat proses pembuatan halaman baru, dan memastikan isolasi fungsionalitas antarmuka antar-peran.
-- **Teknologi & Tools yang Digunakan**:
-  - Next.js 15 (App Router), React 19 Client Components, Lucide React Icons, Recharts Data Visualization.
-- **Logika & Alur Kerja (Logic)**:
-  - **Atomic Design Composition**: Membangun komponen dari unit terkecil (*Atoms* seperti Button & Badge), digabungkan menjadi *Molecules* (`CourseCard` & `StatCard`), lalu dirangkai menjadi *Organisms* (`Navbar` & `Sidebar`) dan halaman utama.
-  - **Role-Based Dynamic Navigation**: Komponen `Sidebar.tsx` membaca objek peran pengguna (`user.role`) dan secara dinamis hanya menampilkan menu yang diizinkan untuk peran tersebut.
-
----
-
-#### 4. Optimasi Pengalaman Pengguna (UX, Pencegahan CLS & Animasi)
-- **Apa yang Dibuat**:
-  - Komponen *Skeleton Loaders* untuk seluruh kartu metrik, tabel, dan daftar kelas.
-  - Penanganan status formulir interaktif (*loading spinner* dan penonaktifan tombol submit ganda).
-  - Efek perayaan visual animasi konfeti (*Canvas-Confetti*).
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menghilangkan kedipan pergeseran tata letak saat data sedang dimuat dari server, mencegah pengiriman data ganda (*duplicate submission*), dan memberikan kepuasan visual saat siswa menyelesaikan tugas.
-- **Teknologi & Tools yang Digunakan**:
-  - Canvas-Confetti, Tailwind Animation Keyframes, Lucide Spinners.
-- **Logika & Alur Kerja (Logic)**:
-  - **Pencegahan Cumulative Layout Shift (CLS)**: Menampilkan placeholder abu-abu beranimasi pulsa (`animate-pulse`) dengan ukuran tinggi dan lebar yang persis sama dengan elemen aslinya sebelum data API selesai dimuat.
-  - **State isSubmitting**: Mengunci tombol aksi (`disabled={isSubmitting}`) saat proses HTTP berlangsung untuk mencegah pengguna mengklik tombol berkali-kali.
-
----
-
-### ⚡ C. I PUTU PANDU WIRANATA (NPM 23312088)
-**Peran Utama**: *Full-Stack Engineer (Frontend & Backend Integration), RESTful API Developer, dan State Management Specialist*
-
-#### 1. Pembangunan 50+ Endpoint RESTful API Backend (Laravel 12)
-- **Apa yang Dibuat**:
-  - Arsitektur backend API yang kokoh dan modular di bawah *namespace* `/api/v1` dengan 12 controller utama:
-    - `AuthController`: Registrasi, Login, Logout, Profil Pengguna, Reset Password.
-    - `CourseController`: CRUD data kelas, generate kode kelas unik, pendaftaran siswa ke kelas.
-    - `MaterialController`: Upload modul materi, link YouTube/Drive, pratinjau dokumen.
-    - `AssignmentController`: Pembuatan penugasan LKPD, setting bobot nilai dan deadline.
-    - `SubmissionController`: Upload file jawaban tugas siswa, form koreksi dan pemberian nilai/feedback oleh guru.
-    - `AttendanceController`: Pencatatan absensi siswa mandiri, riwayat kehadiran, rekapitulasi kelas.
-    - `ReportController`: Perhitungan nilai rapor semester dan ekspor berkas Excel.
-    - `AdminController`: Manajemen akun (CRUD), statistik global sekolah, bulk import spreadsheet.
-    - `NotificationController`: Pengambilan notifikasi real-time, penandaan notifikasi telah dibaca.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menyediakan layanan logika bisnis dan manipulasi data yang cepat, aman, dan dapat diandalkan oleh antarmuka frontend.
-- **Teknologi & Tools yang Digunakan**:
-  - Laravel 12 Framework, PHP 8.2+, Eloquent ORM, Request Form Validation, JSON Response Standard.
-- **Logika & Alur Kerja (Logic)**:
-  - **Standar Respon API Konsisten**: Seluruh endpoint mengembalikan format JSON standar:
-    ```json
-    {
-      "success": true,
-      "message": "Data berhasil diproses",
-      "data": { ... }
-    }
-    ```
-  - **Sanitisasi & Normalisasi Input**: Menghindari kesalahan validasi akibat variasi penulisan huruf besar/kecil dengan menerapkan `strtolower(trim($request->input))` pada data sensitif seperti peran pengguna dan status presensi.
-
----
-
-#### 2. Keamanan Autentikasi & Otorisasi (Laravel Sanctum & RBAC)
-- **Apa yang Dibuat**:
-  - Sistem otentikasi berbasis *Bearer Token* menggunakan Laravel Sanctum.
-  - Middleware otorisasi *Role-Based Access Control* (RBAC) pada rute backend.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menjamin keamanan setiap transaksi data dan memastikan pengguna hanya dapat mengakses fitur yang sesuai dengan hak akses perannya.
-- **Teknologi & Tools yang Digunakan**:
-  - Laravel Sanctum, Bcrypt Hashing, Middleware Guards (`auth:sanctum`, `check.role`).
-- **Logika & Alur Kerja (Logic)**:
-  - **Token Generation**: Saat login berhasil, server menerbitkan token *plain text* yang unik dan menyimpan hash token tersebut pada tabel `personal_access_tokens`.
-  - **Middleware Inspection**: Setiap request yang masuk diperiksa header `Authorization: Bearer <token>`. Jika token valid, middleware mengecek apakah kolom `user.role` sesuai dengan rute yang diakses. Jika siswa mencoba mengakses endpoint `/api/v1/admin/*`, server langsung mengembalikan kode HTTP `403 Forbidden`.
-
----
-
-#### 3. Logika Presensi Mandiri Siswa Berbasis Jendela Waktu (Time-Window Schedule)
-- **Apa yang Dibuat**:
-  - Modul absensi mandiri siswa dengan validasi rentang jam operasional kelas.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menggantikan presensi manual di kelas dengan sistem digital mandiri yang jujur dan tertib waktu.
-- **Teknologi & Tools yang Digunakan**:
-  - Nesbot Carbon Time Library (Timezone Asia/Jakarta / WIB), Attendance Model.
-- **Logika & Alur Kerja (Logic)**:
-  - **Time Comparison Algorithm**: Mengambil waktu saat ini pada server:
-    ```php
-    $now = Carbon::now('Asia/Jakarta');
-    $startTime = Carbon::parse($course->attendance_start);
-    $endTime = Carbon::parse($course->attendance_end);
-    
-    if (!$now->between($startTime, $endTime)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Presensi ditutup. Jam absensi: ' . $startTime->format('H:i') . ' - ' . $endTime->format('H:i') . ' WIB'
-        ], 422);
-    }
-    ```
-  - **Anti-Duplikasi Presensi**: Menggunakan query `Attendance::updateOrCreate()` berdasarkan kombinasi `user_id`, `course_id`, dan `date` sehingga seorang siswa tidak dapat membuat data presensi ganda pada hari yang sama.
-
----
-
-#### 4. Modul Penilaian, Rekapitulasi Nilai Rapor & Ekspor Excel
-- **Apa yang Dibuat**:
-  - Modul perhitungan nilai rapor semester (LKPD, UTS, UAS) dan pembuatan file unduhan Microsoft Excel (.xlsx).
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Mengotomatiskan proses rekapitulasi nilai guru yang sebelumnya memakan waktu berhari-hari menjadi hitungan detik.
-- **Teknologi & Tools yang Digunakan**:
-  - Eloquent Aggregation (`avg`, `sum`), Maatwebsite Excel, Laravel Download Response.
-- **Logika & Alur Kerja (Logic)**:
-  - **Formula Pembobotan Nilai Rapor**:
-    $$\text{Nilai Akhir} = (\text{Rata-rata LKPD} \times 0.40) + (\text{Nilai UTS} \times 0.30) + (\text{Nilai UAS} \times 0.30)$$
-  - **Formatting Ekspor Excel**: Menata format sheet Excel dengan header tabel tebal (*bold*), garis pembatas sel (*borders*), perataan teks tengah untuk NISN/Nilai, dan penamaan file dinamis: `Rekap_Nilai_Kelas_{ID}_{Tanggal}.xlsx`.
-
----
-
-#### 5. Modul Bulk Import Spreadsheet 50+ Akun Pengguna
-- **Apa yang Dibuat**:
-  - Fitur unggah file Excel/CSV untuk pendaftaran massal puluhan hingga ratusan akun pengguna sekaligus.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Memudahkan pihak tata usaha/administrator sekolah dalam mendaftarkan seluruh siswa dan guru baru tanpa harus menginput data satu per satu secara manual.
-- **Teknologi & Tools yang Digunakan**:
-  - Maatwebsite Excel Importer, DB Transactions (`DB::beginTransaction`), Hash Password.
-- **Logika & Alur Kerja (Logic)**:
-  - **Atomic Transaction & Validation**:
-    1. Membaca header file Excel: `['Nama Lengkap', 'Email', 'Role', 'Kelas/Mapel']`.
-    2. Jika kolom tidak sesuai template, gagalkan proses dan kirim notifikasi error.
-    3. Loop setiap baris data: enkripsi password default `Hash::make('password')`, masukkan ke database.
-    4. Jika ada email yang duplikat, lakukan `DB::rollBack()` dan laporkan baris yang bermasalah.
-    5. Jika seluruh baris valid, lakukan `DB::commit()` dan terbitkan data pengguna baru secara instan.
-
----
-
-#### 6. Integrasi Client API & Sinkronisasi Real-Time Lintas Tab (`useRealtimeData`)
-- **Apa yang Dibuat**:
-  - Modul client API sentral (`Frontend/lib/api.ts`).
-  - Hook sinkronisasi data instan (`Frontend/hooks/useRealtimeData.ts`) berbasis browser event.
-- **Tujuan Pembuatan (Buat Apa)**:
-  - Menghubungkan seluruh antarmuka Next.js dengan API Laravel secara mulus dan memastikan data antar-tab browser pengguna selalu terbarui secara *real-time* tanpa perlu menekan tombol refresh halaman secara manual.
-- **Teknologi & Tools yang Digunakan**:
-  - Fetch API, `localStorage`, `BroadcastChannel API` (HTML5), Custom DOM Events (`window.dispatchEvent`), React `useEffect` & `useCallback`.
-- **Logika & Alur Kerja (Logic)**:
-  - **Hybrid Event-Driven Invalidation**:
-    1. Saat operasi mutasi data (`POST`, `PUT`, `DELETE`) selesai di `api.ts`, browser memancarkan pesan ke kanal `new BroadcastChannel('lms_realtime_sync')`.
-    2. Tab browser lain yang sedang membuka halaman siswa/guru menangkap pesan tersebut melalui *event listener*.
-    3. Hook `useRealtimeData` seketika menjalankan fungsi fetcher ulang di latar belakang (*background revalidation*).
-    4. Tampilan data (misal nilai baru atau presensi baru) langsung ter-update di layar siswa dalam hitungan milidetik tanpa kedipan atau reload browser.
-
----
-
-## 💻 2. TEKNOLOGI & TECH STACK YANG DIGUNAKAN (WHY & HOW)
-
-Sistem mengadopsi arsitektur **Decoupled Web Architecture** (pemisahan total antara antarmuka klien dan server API):
-
-```
-                       ┌─────────────────────────────────────────┐
-                       │           CLIENT LAYER (Edge)           │
-                       │           Vercel Cloud Hosting          │
-                       │   Next.js 15 • React 19 • TypeScript    │
-                       └────────────────────┬────────────────────┘
-                                            │
-                                            │ HTTPS / JSON (REST API)
-                                            │ Bearer Token (Sanctum)
-                                            ▼
-                       ┌─────────────────────────────────────────┐
-                       │          BACKEND LAYER (Server)         │
-                       │          Railway Cloud Hosting          │
-                       │        Laravel 12 (PHP 8.2 / FPM)       │
-                       └────────────────────┬────────────────────┘
-                                            │
-                                            │ TCP / SQL Queries
-                                            │ Eloquent ORM
-                                            ▼
-                       ┌─────────────────────────────────────────┐
-                       │             DATABASE LAYER              │
-                       │          MySQL 8.0 Managed DB           │
-                       │          11 Relational Tables           │
-                       └─────────────────────────────────────────┘
-```
-
----
-
-## 📁 3. BEDAH STRUKTUR FOLDER LENGKAP
-
-Berikut adalah peta struktur direktori proyek beserta fungsi dari masing-masing folder dan file:
-
-```
-Sistem-E-learning-main/
-│
-├── Frontend/                             # 🌐 KODE SUMBER FRONTEND (Next.js)
-│   ├── app/                              # Sistem Routing Next.js (App Router)
-│   │   ├── admin/                        # Dashboard & Modul Administrator
-│   │   │   ├── users/                    # Kelola Pengguna (Tambah, Edit, Hapus, Import)
-│   │   │   ├── reports/                  # Rekapitulasi Presensi & Nilai Global
-│   │   │   ├── settings/                 # Pengaturan Sekolah & Logo
-│   │   │   └── page.tsx                  # Dashboard Admin (Grafik & Statistik)
-│   │   ├── guru/                         # Dashboard & Modul Guru Pengajar
-│   │   │   ├── kelas/                    # Manajemen Kelas & Anggota Siswa
-│   │   │   │   └── [id]/                 # Detail Kelas (Tab Materi, Tugas, Absensi, Anggota)
-│   │   │   ├── materi/                   # Kelola Modul & Lampiran Bahan Ajar
-│   │   │   ├── tugas/                    # Buat Tugas LKPD & Penilaian Jawaban
-│   │   │   ├── absensi/                  # Atur Jadwal & Rekap Presensi Kelas
-│   │   │   ├── nilai/                    # Input Nilai UTS & UAS
-│   │   │   └── page.tsx                  # Dashboard Guru
-│   │   ├── siswa/                        # Dashboard & Modul Peserta Didik
-│   │   │   ├── kelas/                    # Katalog Kelas & Belajar Online
-│   │   │   │   └── [id]/                 # Ruang Kelas Siswa (Akses Materi & Absen)
-│   │   │   ├── tugas/                    # Daftar Tugas & Form Pengumpulan (Submit)
-│   │   │   ├── absensi/                  # Riwayat & Tombol Presensi Mandiri
-│   │   │   ├── nilai/                    # Tampilan Rapor & Nilai Mandiri
-│   │   │   └── page.tsx                  # Dashboard Siswa
-│   │   ├── login/                        # Halaman Login Multi-Role & Demo Account
-│   │   ├── reset-password/               # Halaman Reset Kata Sandi
-│   │   ├── layout.tsx                    # Root Layout (Font, Metadata, Providers)
-│   │   └── globals.css                   # Global CSS & Tailwind CSS Config
-│   │
-│   ├── components/                       # Komponen UI Reusable
-│   │   ├── Navbar.tsx                    # Header Atas (Profil, Lonceng Notifikasi)
-│   │   ├── Sidebar.tsx                   # Navigasi Kiri Dinamis Sesuai Role
-│   │   ├── StatCard.tsx                  # Kartu Metrik Statistik
-│   │   ├── CourseCard.tsx                # Kartu Tampilan Kelas
-│   │   └── ModalDialog.tsx               # Modal Dialog Pop-up
-│   │
-│   ├── hooks/                            # Custom React Hooks
-│   │   ├── useAuth.ts                    # Hook Manajemen Sesi Login & Role Check
-│   │   ├── useRealtimeData.ts            # Hook Sinkronisasi Real-time Lintas Tab
-│   │   └── useNotifications.ts           # Hook Polling & Ambil Notifikasi Real-time
-│   │
-│   ├── lib/                              # Utility & API Integration
-│   │   └── api.ts                        # Central API Client (Semua Fetch/Axios Request)
-│   │
-│   └── types/                            # TypeScript Type Definitions
-│       └── index.ts                      # Interface User, Course, Assignment, dll.
-│
-├── backend/                              # ⚙️ KODE SUMBER BACKEND (Laravel 12)
-│   ├── app/
-│   │   ├── Http/Controllers/Api/         # Controller API (Logika Bisnis)
-│   │   │   ├── AuthController.php        # Login, Logout, User Profile, Token
-│   │   │   ├── AdminController.php       # CRUD Pengguna, Bulk Import, Stats
-│   │   │   ├── CourseController.php      # CRUD Kelas, Tambah Siswa ke Kelas
-│   │   │   ├── MaterialController.php    # Upload Modul & Tautan Pembelajaran
-│   │   │   ├── AssignmentController.php  # Buat Tugas, Deadline, Bobot Nilai
-│   │   │   ├── SubmissionController.php  # Kumpul Tugas Siswa, Penilaian Guru
-│   │   │   ├── AttendanceController.php  # Presensi Mandiri & Validasi Waktu
-│   │   │   ├── ReportController.php      # Rekap Nilai Rapor & Ekspor Excel
-│   │   │   └── NotificationController.php# Ambil Notifikasi & Tandai Terbaca
-│   │   │
-│   │   └── Models/                       # Eloquent Models (Relasi Antar Tabel)
-│   │       ├── User.php                  # Model Pengguna (Admin, Guru, Siswa)
-│   │       ├── Course.php                # Model Kelas/Mata Pelajaran
-│   │       ├── Material.php              # Model Bahan Ajar
-│   │       ├── Assignment.php            # Model Penugasan LKPD
-│   │       ├── Submission.php            # Model Jawaban Tugas Siswa
-│   │       ├── Attendance.php            # Model Presensi Siswa
-│   │       └── Notification.php          # Model Notifikasi
-│   │
-│   ├── database/
-│   │   ├── migrations/                   # Skema Migrasi 11 Tabel MySQL
-│   │   └── seeders/                      # Seeder Data Awal & Demo Users
-│   │
-│   ├── routes/
-│   │   └── api.php                       # Definisi 50+ Endpoint RESTful API
-│   │
-│   └── config/
-│       ├── cors.php                      # Konfigurasi Cross-Origin Security
-│       └── sanctum.php                   # Konfigurasi Token Session Sanctum
-│
-├── docs/                                 # 📚 DOKUMENTASI LOKAL & LAPORAN PKL (Diabaikan dari Git)
-│   ├── diagrams/                         # Aset Gambar Diagram (PNG & SVG)
-│   ├── DIAGRAMS_DOKUMENTASI.md           # Penjelasan Lengkap Diagram UML & Flowchart
-│   ├── BUKU PANDUAN LAPORAN PKL FTIK.pdf # Buku Acuan Standar FTIK
-│   └── Laporan_PKL_FTIK_Teknokrat_...docx# File Naskah Word Laporan PKL Resmi
-│
-├── ACCOUNTS_README.md                    # 🔑 Daftar 54 Akun Username & Password Lengkap
-└── README.md                             # 📖 Ringkasan Proyek & Panduan Setup
-```
-
----
-
-## 🔄 4. ALUR KERJA SISTEM (SYSTEM FLOW & BUSINESS LOGIC)
-
-### 1. Alur Autentikasi & Otorisasi Berbasis Peran (RBAC Flow)
-```mermaid
-sequenceDiagram
-    actor User as Pengguna (Admin/Guru/Siswa)
-    participant Browser as Frontend (Next.js)
-    participant Backend as Laravel API Server
-    participant DB as Basis Data MySQL
-
-    User->>Browser: Masukkan Email & Password
-    Browser->>Backend: POST /api/v1/login
-    Backend->>DB: Query User by Email
-    DB-->>Backend: Data User & Password Hash
-    Backend->>Backend: Verifikasi Hash Password
-    alt Password Benar
-        Backend->>DB: Generate Token Sanctum (personal_access_tokens)
-        DB-->>Backend: Token String
-        Backend-->>Browser: HTTP 200 { token, user: { id, name, role } }
-        Browser->>Browser: Simpan Token di localStorage / Cookies
-        Browser->>Browser: Redirect sesuai Role (/admin, /guru, /siswa)
-    else Password Salah
-        Backend-->>Browser: HTTP 422 { message: "Kredensial tidak valid" }
-        Browser-->>User: Tampilkan Pesan Error
-    end
-```
-
----
-
-### 2. Alur Presensi Mandiri Siswa (Time-Window Validation)
-```mermaid
-flowchart TD
-    A([Siswa Buka Menu Presensi]) --> B[Frontend Ambil Data Jadwal Kelas]
-    B --> C{Apakah Kelas Memiliki Jam Presensi Aktif?}
-    C -- Tidak --> D[Tampilkan Status: 'Belum Ada Jadwal Absen']
-    C -- Ya --> E{Waktu Sekarang di Antara Start & End Time?}
-    E -- Di Luar Jam --> F[Tombol Disabled: 'Di Luar Jam Presensi']
-    E -- Dalam Jam --> G[Tombol Aktif: 'Klik untuk Presensi Hadir']
-    G --> H[Siswa Menekan Tombol Presensi]
-    H --> I[POST /api/v1/attendances dengan status='hadir']
-    I --> J{Apakah Sudah Absen Hari Ini?}
-    J -- Sudah Ada Data --> K[Update Data Presensi]
-    J -- Belum Ada --> L[Insert Data Presensi Baru]
-    K --> M[Kirim Notifikasi Berhasil & Trigger Real-time Event]
-    L --> M
-    M --> N([Status Berubah Jadi 'HADIR' Berwarna Hijau])
-```
-
----
-
-### 3. Alur Penugasan LKPD & Penilaian (Assignment & Grading Flow)
-```
-[GURU]                              [SISTEM LMS]                           [SISWA]
-  │                                      │                                    │
-  ├── 1. Buat Tugas LKPD ───────────────>│                                    │
-  │   (Judul, Deadline, Bobot)           │── 2. Kirim Notifikasi Tugas Baru ─>│
-  │                                      │                                    ├── 3. Buka Tugas & Unduh Soal
-  │                                      │                                    │
-  │                                      │<── 4. Upload File Jawaban / Teks ──┤
-  │                                      │    (POST /api/v1/submissions)      │
-  │                                      │                                    │
-  │<── 5. Muncul Notifikasi Pengumpulan ─┤                                    │
-  │                                      │                                    │
-  ├── 6. Beri Nilai (0-100) & Feedback ─>│                                    │
-  │                                      │── 7. Update Nilai ke Rapor Siswa ─>│
-  │                                      │                                    └── 8. Nilai Langsung Terlihat!
-```
-
----
-
-### 4. Alur Sinkronisasi Real-time Lintas Tab (`useRealtimeData`)
-```mermaid
-sequenceDiagram
-    participant TabA as Tab Browser 1 (Guru Input Nilai)
-    participant Channel as BroadcastChannel API (Browser)
-    participant DOM as Custom DOM Event Bus
-    participant TabB as Tab Browser 2 (Siswa / Dashboard)
-
-    TabA->>TabA: Guru Mengubah Nilai / Mengirim Tugas
-    TabA->>Channel: broadcast.postMessage({ type: 'DATA_MUTATED', entity: 'grades' })
-    TabA->>DOM: window.dispatchEvent(new CustomEvent('lms:data-changed'))
-    Channel-->>TabB: Tangkap Sinyal Melalui Event Listener
-    TabB->>TabB: Hook useRealtimeData Memicu Revalidation
-    TabB->>TabB: Fetch Ulang Data Terbaru di Latar Belakang
-    TabB->>TabB: Tampilan Ter-update Otomatis Tanpa Kedipan/Reload!
-```
-
----
-
-## 🔍 5. PENJELASAN KODE PROGRAM INTI (CODE DEEP DIVE)
-
-### A. Client API Centralized (`Frontend/lib/api.ts`)
-```typescript
-// Contoh implementasi di Frontend/lib/api.ts
-async function customFetch(endpoint: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    ...options.headers,
-  };
-
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  // Jika operasi mengubah data, pancarkan sinyal real-time
-  if (['POST', 'PUT', 'DELETE'].includes(options.method || 'GET')) {
-    if (typeof window !== 'undefined') {
-      const channel = new BroadcastChannel('lms_realtime_sync');
-      channel.postMessage({ type: 'DATA_MUTATED', endpoint });
-      window.dispatchEvent(new CustomEvent('lms:data-changed', { detail: { endpoint } }));
-    }
-  }
-
-  return response.json();
-}
-```
-
----
-
-### B. Hook Real-time Sinkronisasi (`Frontend/hooks/useRealtimeData.ts`)
-```typescript
-// Frontend/hooks/useRealtimeData.ts
-export function useRealtimeData(fetcher: () => void, dependencies = []) {
-  useEffect(() => {
-    // 1. Eksekusi awal pengambilan data
-    fetcher();
-
-    // 2. Pasang pendengar BroadcastChannel (Antar-tab)
-    const channel = new BroadcastChannel('lms_realtime_sync');
-    channel.onmessage = () => {
-      fetcher(); // Ambil data baru saat tab lain melakukan mutasi
-    };
-
-    // 3. Pasang pendengar Window Focus (Saat user kembali ke tab ini)
-    const onFocus = () => fetcher();
-    window.addEventListener('focus', onFocus);
-
-    return () => {
-      channel.close();
-      window.removeEventListener('focus', onFocus);
-    };
-  }, dependencies);
-}
-```
-
----
-
-### C. Backend Controller & Normalisasi Validasi (Laravel 12)
-```php
-// Backend AttendanceController.php
-public function store(Request $request)
-{
-    $request->validate([
-        'course_id' => 'required|exists:courses,id',
-        'status' => 'required|string',
-    ]);
-
-    // Normalisasi case-sensitivity (menghindari error huruf besar/kecil)
-    $normalizedStatus = strtolower(trim($request->status));
-    
-    $attendance = Attendance::updateOrCreate(
-        [
-            'user_id' => auth()->id(),
-            'course_id' => $request->course_id,
-            'date' => Carbon::now('Asia/Jakarta')->toDateString(),
-        ],
-        [
-            'status' => $normalizedStatus,
-            'time' => Carbon::now('Asia/Jakarta')->toTimeString(),
-        ]
-    );
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Presensi berhasil dicatat!',
-        'data' => $attendance
-    ], 200);
-}
-```
-
----
-
-## 🎤 6. SKENARIO & RANCANGAN SLIDE PRESENTASI TIM
-
-Berikut adalah panduan pembagian giliran bicara (*Script Presentasi*) yang telah disesuaikan dengan rincian *jobdesk* mendalam masing-masing anggota:
-
-### 🎬 Pembukaan (Moderator / Tim)
-> *"Selamat pagi/siang Bapak/Ibu Dosen Penguji dan Pembimbing. Kami dari kelompok PKL S1 Informatika Universitas Teknokrat Indonesia di CV Newus Teknologi ingin mempresentasikan hasil proyek sistem kami yang berjudul **EduSchool: Sistem Learning Management System (LMS) Terpadu Berbasis Next.js dan Laravel 12**."*
-
----
-
-### 🗣️ Bagian 1: FERY DWI RAMADHI (System Analyst, Cloud & DevOps, Database)
-**Materi yang Dipresentasikan**:
-1. **Latar Belakang & Analisis Kebutuhan Sistem**:
-   - Menjelaskan masalah mendasar dalam pembelajaran daring konvensional dan penjabaran 50 fitur fungsional dalam dokumen PRD.
-2. **Pemodelan UML & Arsitektur Decoupled**:
-   - Memaparkan diagram Use Case terpadu dan Flowchart sistem.
-   - Menjelaskan arsitektur *Decoupled* (Next.js di Vercel + Laravel di Railway + MySQL 8.0).
-3. **Desain Basis Data Relasional & Cloud Deployment**:
-   - Menunjukkan diagram ERD (11 tabel relasional), relasi foreign keys, indexing, dan cascade deletion.
-   - Menjelaskan konfigurasi cloud production di Vercel dan Railway (keamanan CORS, SSL, dan environment variables).
-
----
-
-### 🗣️ Bagian 2: FATHUR RAMANTHA (Frontend UI/UX Specialist)
-**Materi yang Dipresentasikan**:
-1. **Perancangan Desain UI/UX di Figma**:
-   - Menjelaskan prinsip *Human-Centered Design*, hierarki informasi, dan sistem warna 60-30-10.
-2. **Implementasi Design System Tailwind CSS & Responsivitas**:
-   - Menunjukkan bagaimana tata letak menyesuaikan secara mulus di berbagai ukuran layar (*Mobile-First Design*).
-3. **Demonstrasi 3 Dashboard Khusus & Pustaka Komponen**:
-   - Mendemokan **Dashboard Admin**, **Dashboard Guru**, dan **Dashboard Siswa**.
-   - Menjelaskan solusi pencegahan CLS (*Cumulative Layout Shift*) menggunakan *Skeleton Loaders* dan penanganan status form interaktif.
-
----
-
-### 🗣️ Bagian 3: I PUTU PANDU WIRANATA (Full-Stack Engineer - Frontend & Backend)
-**Materi yang Dipresentasikan**:
-1. **Pembangunan RESTful API Laravel 12 & Keamanan Sanctum**:
-   - Menjelaskan struktur 50+ endpoint API, autentikasi Bearer Token, dan middleware otorisasi RBAC.
-2. **Demonstrasi Fitur Unggulan Sistem**:
-   - **Sinkronisasi Real-Time Lintas Tab**: Membuka dua browser sekaligus (Guru menginput nilai / membuat tugas, layar Siswa langsung ter-update seketika tanpa reload via `BroadcastChannel`).
-   - **Presensi Mandiri Terjadwal**: Validasi jendela waktu presensi berbasis server time (WIB).
-   - **Rekapitulasi Nilai Rapor & Bulk Import Excel**: Otomatisasi pembobotan nilai rapor dan import 50+ akun pengguna dalam 1 kali klik.
-
----
-
-### 🎯 7. PERTANYAAN YANG SERING DITANYAKAN (FAQ) & JAWABAN TEKNIS
-
-| Pertanyaan Penguji | Jawaban Teknis yang Direkomendasikan |
+| Tabel | Fungsi |
 | :--- | :--- |
-| **1. Mengapa memisahkan Frontend (Next.js) dan Backend (Laravel) daripada monolitik Blade?** | *"Dengan memisahkan frontend dan backend, kami mendapatkan keunggulan arsitektur modern: frontend berjalan sangat cepat di Edge CDN (Vercel) dengan pengalaman SPA (Single Page Application) yang mulus, sementara backend Laravel berfokus penuh sebagai API Service yang aman dan terukur. Jika di masa depan ingin dibuat aplikasi mobile (misal Flutter/React Native), API yang sama bisa langsung digunakan kembali tanpa perlu menulis ulang backend."* |
-| **2. Bagaimana cara mengamankan API agar tidak sembarang orang bisa mengakses data nilai atau kelas?** | *"Kami menerapkan otorisasi berlapis: Pertama, autentikasi menggunakan **Laravel Sanctum Bearer Token** yang di-hash di database. Kedua, kami memasang **Middleware Role-Based Access Control (RBAC)** di setiap rute API, sehingga misalnya token siswa tidak akan pernah bisa mengakses endpoint manajemen user admin ataupun endpoint input nilai guru."* |
-| **3. Bagaimana mekanisme real-time data bekerja tanpa menggunakan WebSocket yang boros resource?** | *"Kami menggunakan pendekatan **Hybrid Event-Driven Sync** via `BroadcastChannel API` bawaan browser dan custom hook `useRealtimeData`. Setiap mutasi data di sisi client memancarkan sinyal ke seluruh tab yang aktif untuk melakukan revalidasi query data terbaru di background. Pendekatan ini sangat hemat daya, tidak membebani server dengan koneksi socket terbuka terus-menerus, dan memiliki fallback window focus revalidation."* |
-| **4. Bagaimana jika pengguna mengunggah file Excel import yang formatnya salah?** | *"Backend kami dilengkapi validasi header otomatis menggunakan pustaka Maatwebsite Excel. Jika susunan kolom atau format data tidak sesuai dengan template master, sistem akan membatalkan transaksi database secara aman (`DB::rollBack()`) dan menampilkan notifikasi kesalahan yang spesifik kepada administrator."* |
+| `users` | Menyimpan semua pengguna (Admin, Guru, Siswa) + role + nisn_or_nip |
+| `courses` | Data kelas/mata pelajaran + kode kelas + jadwal presensi |
+| `course_student` | Pivot *Many-to-Many* (siswa ↔ kelas) + nilai UTS & UAS |
+| `materials` | Modul materi pembelajaran (judul, link URL, file path) |
+| `assignments` | Data tugas LKPD (judul, deadline, bobot nilai) |
+| `submissions` | Jawaban tugas siswa (file path, status, nilai, feedback) |
+| `attendances` | Data presensi siswa (status: hadir/izin/sakit/alpha, tanggal, jam) |
+| `notifications` | Notifikasi untuk guru dan siswa (tugas baru, nilai masuk) |
+| `settings` | Konfigurasi global sekolah (nama, tahun ajaran, semester) |
+| `activity_logs` | Log audit aktivitas pengguna di sistem |
+| `personal_access_tokens` | Token Sanctum untuk autentikasi sesi API |
+
+#### 🎯 Kegunaan / Buat Apa:
+- Menyimpan seluruh data akademik secara **terstruktur, konsisten, dan bebas redundansi**.
+- Mendukung query kompleks seperti: *"Ambil semua nilai tugas + UTS + UAS siswa di kelas X untuk dihitung nilai rapor"* secara efisien dengan satu relasi Eloquent.
+
+#### 🛠️ Tools & Teknologi:
+- **MySQL 8.0** + **InnoDB Storage Engine**
+- **Laravel Eloquent Migrations** (PHP)
+- **B-Tree Indexing** untuk percepatan pencarian
+- **Bcrypt** untuk enkripsi password
+
+#### 🧠 Logika & Mekanisme (Logic):
+- **Normalisasi 3NF**: Memastikan tidak ada kolom yang menyimpan data dari tabel lain secara langsung.
+- **Tabel Pivot `course_student`**: Hubungan Many-to-Many antara siswa dan kelas. Selain itu, tabel ini juga menyimpan `uts_score` dan `uas_score` langsung di pivot, sehingga satu siswa bisa punya nilai UTS/UAS berbeda per kelas yang dia ikuti.
+- **Composite Unique Key**: Pada tabel `attendances`, kombinasi `(user_id, course_id, date)` dibuat unik — sehingga satu siswa hanya bisa tercatat hadir satu kali per kelas per hari:
+  ```sql
+  UNIQUE KEY `unique_student_course_date` (`user_id`, `course_id`, `date`)
+  ```
+- **Cascade Deletion**: Jika sebuah kelas dihapus oleh admin, seluruh data terkait (materi, tugas, presensi, notifikasi) otomatis terhapus, mencegah *orphan data*.
+- **Iterasi Migrasi Bertahap**: Skema berkembang sepanjang sprint:
+  - Sprint 1: Tabel dasar `users`, `courses`, `assignments`, `submissions`
+  - Sprint 2: Tambah `attendances`, `notifications`, kolom `uts_score`/`uas_score` di pivot
+  - Sprint 3: Tambah kolom `attachment` di tugas, `attendance_schedule` di kelas, `settings`
+
+---
+
+### 📌 JOBDESK 3 — Cloud & DevOps Infrastructure (Vercel + Railway)
+
+#### 🔧 Apa yang Dibuat:
+- **Pipeline Deployment Frontend** ke Vercel (Next.js Serverless + Edge CDN global).
+- **Pipeline Deployment Backend** ke Railway (Containerized PHP 8.2 FPM + Nginx reverse proxy).
+- **Managed MySQL Database** di Railway dengan volume penyimpanan persisten.
+- **Konfigurasi CORS** (`config/cors.php`) untuk mengizinkan komunikasi aman antara domain Vercel ↔ Railway.
+- **Environment Variables** terpisah untuk lokal dan produksi.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Agar sistem **dapat diakses publik 24/7** di URL produksi tanpa memerlukan server fisik.
+- **Vercel Edge CDN** memastikan halaman web dirender dan di-cache dekat dengan lokasi pengguna → latensi rendah.
+- **Railway** menghosting PHP API dengan resource terisolasi dan auto-restart jika crash.
+
+#### 🛠️ Tools & Teknologi:
+- **Vercel** (Frontend Deployment, Serverless Functions)
+- **Railway** (Backend Docker Container + MySQL)
+- **Git Webhooks** (auto-deploy setiap push ke branch `main`)
+- **SSL/TLS 1.3** (HTTPS otomatis)
+- **Nginx** (reverse proxy untuk PHP-FPM)
+
+#### 🧠 Logika & Mekanisme (Logic):
+- **CORS Preflight Handling**: Browser modern selalu mengirim request HTTP `OPTIONS` sebelum request utama. Konfigurasi `cors.php` di Laravel menjawab preflight tersebut dengan header `Access-Control-Allow-Origin: https://sistem-e-learning-g9xn.vercel.app` dan `Access-Control-Allow-Headers: Authorization, Content-Type`.
+- **Dual API Prefix**: Rute API didaftarkan di tiga prefix (`/v1`, `/api/v1`, dan root) untuk kompatibilitas dengan berbagai konfigurasi Railway.
+- **Pemisahan Environment**: File `.env.production` di Railway berisi `DB_HOST`, `DB_PORT`, `DB_PASSWORD`, `APP_KEY` yang berbeda dari `.env.local` pengembang lokal, menjaga keamanan kredensial produksi.
+
+---
+
+### 📌 JOBDESK 4 — Penyusunan Dokumentasi Teknis & Laporan PKL Resmi
+
+#### 🔧 Apa yang Dibuat:
+- **Buku Naskah Laporan PKL** (`.docx`) format 100% standar FTIK Universitas Teknokrat Indonesia.
+- **Panduan Instalasi Lokal** (README.md).
+- **Dokumen Arsitektur Sistem** dan panduan pengembang (file `.md`).
+
+#### 🎯 Kegunaan / Buat Apa:
+- Memenuhi syarat kelulusan PKL secara akademik.
+- Menjadi dokumen serah terima perangkat lunak profesional untuk CV Newus Teknologi.
+
+#### 🛠️ Tools & Teknologi:
+- **Python `python-docx`** (generate file Word `.docx` secara programatik)
+- **Microsoft Word** (format pengetikan akhir)
+- **Panduan Akademik FTIK** (referensi standar penulisan)
+
+#### 🧠 Format & Standar Penulisan:
+- Margin: Kiri 4 cm, Atas 3 cm, Kanan 3 cm, Bawah 3 cm.
+- Font: **Times New Roman 12pt**, spasi 1.5, paragraf rata kanan-kiri.
+- Judul BAB dimulai dari 4 cm dari tepi atas halaman.
+- Sistem sitasi: **Harvard Referencing** (Penulis, Tahun).
+- Penomoran: Romawi (i, ii, iii) untuk halaman awal; angka Arab (1, 2, 3) di kanan atas untuk konten.
+- Halaman penyekat biru (*blue separator*) antar-anggota di BAB III.
+
+---
+
+---
+
+## 🎨 FATHUR RAMANTHA (NPM 23312105) {#fathur}
+### *Frontend UI/UX Specialist · Design System Engineer · Client-Side Component Developer*
+
+---
+
+### 📌 JOBDESK 1 — Riset Pengguna & Desain Antarmuka (UI/UX di Figma)
+
+#### 🔧 Apa yang Dibuat:
+- **User Flow Diagram** — peta perjalanan pengguna dari login sampai selesai menggunakan fitur.
+- **Wireframe Low-Fidelity** — kerangka kasar tata letak halaman tanpa warna/gambar.
+- **High-Fidelity Interactive Prototype** — tampilan visual akhir lengkap (warna, font, komponen) di Figma, dapat diklik dan didemonstrasikan.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Menyepakati tampilan visual **sebelum kode ditulis** sehingga tidak perlu redesign berulang saat implementasi.
+- Memastikan antarmuka **mudah digunakan** oleh guru yang mungkin tidak terbiasa teknologi, maupun siswa SMA yang mengakses dari smartphone.
+
+#### 🛠️ Tools & Teknologi:
+- **Figma** (wireframe, prototyping, component design)
+- **Lucide Icons** (library ikon konsisten, open-source)
+- **Google Fonts** (tipografi Poppins / Inter)
+
+#### 🧠 Prinsip Desain yang Diterapkan:
+- **Human-Centered Design (HCD)**: Mengutamakan kebutuhan dan kenyamanan pengguna nyata.
+- **Skema Warna 60-30-10**:
+  - 60% — Warna netral background (`slate-50`, `white`)
+  - 30% — Warna struktural (`slate-800`, `gray-700` untuk teks dan sidebar)
+  - 10% — Warna aksen primer (`blue-600 #2563EB` untuk tombol utama, `emerald-500` untuk status hadir/sukses)
+- **Hierarki Visual**: Ukuran dan bobot font diatur agar mata langsung tertarik pada informasi paling penting (nilai, nama kelas, tenggat tugas).
+
+---
+
+### 📌 JOBDESK 2 — Design System & Tailwind CSS v4 (Responsif & Mobile-First)
+
+#### 🔧 Apa yang Dibuat:
+- **Token Desain Tailwind CSS v4** — konfigurasi palet warna, skala spasi, jari-jari sudut, bayangan (shadow), dan transisi animasi yang seragam di seluruh aplikasi.
+- **Tata Letak Mobile-First** — tampilan dioptimalkan untuk layar 375px ke atas, kemudian diperlebar secara bertahap untuk tablet dan desktop.
+- **Global CSS** (`globals.css`) — konfigurasi dasar Tailwind dan variabel CSS custom.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Memastikan **konsistensi visual** di seluruh 30+ halaman tanpa perlu mendefinisikan ulang warna atau ukuran setiap saat.
+- Menjamin aplikasi dapat **diakses nyaman dari HP** (mayoritas siswa SMA menggunakan smartphone, bukan laptop).
+
+#### 🛠️ Tools & Teknologi:
+- **Tailwind CSS v4** (utility-first CSS framework)
+- **PostCSS** (pemrosesan CSS)
+- **CSS Grid & Flexbox** (tata letak adaptif)
+
+#### 🧠 Logika Responsivitas:
+- **Breakpoint bertingkat**: `sm (640px)`, `md (768px)`, `lg (1024px)`, `xl (1280px)`.
+- **Sidebar Mobile**: Di layar `< md` (phone/tablet kecil), sidebar disembunyikan dan bisa dibuka melalui tombol hamburger menu yang memanggil state `mobileMenuOpen = true` di `DashboardLayout.tsx`.
+- **Tabel Data Responsif**: Semua tabel panjang (rekap nilai, daftar siswa, laporan presensi) dibungkus `overflow-x-auto` agar pengguna mobile bisa scroll horizontal tanpa konten terpotong.
+- **Grid Kartu Adaptif**: Dashboard menggunakan `grid-cols-1 md:grid-cols-2 xl:grid-cols-4` — di mobile tampil 1 kolom, di tablet 2 kolom, di desktop 4 kolom.
+
+---
+
+### 📌 JOBDESK 3 — Pembangunan DashboardLayout & Komponen Navigasi Utama
+
+#### 🔧 Apa yang Dibuat (berdasarkan kode nyata `DashboardLayout.tsx`):
+- **Komponen `DashboardLayout.tsx`** — satu komponen yang digunakan oleh **semua halaman dari 3 peran** (Admin, Guru, Siswa). Menerima prop `role` dan secara otomatis menampilkan sidebar yang benar untuk setiap peran.
+
+**Menu Sidebar yang Dikonfigurasi per Peran:**
+
+| Peran | Menu Navigasi |
+| :--- | :--- |
+| **Admin** | Dashboard, Management Akun, Monitoring Kelas, Daftar Tugas, Laporan & Presensi, Pengaturan |
+| **Guru** | Dashboard, Courses/Kelas, Materi, Tugas, Absensi, Nilai, Laporan, Profil |
+| **Siswa** | Dashboard, Kelas Saya, Materi, Tugas, Absensi, Nilai Rapor, Profil |
+
+- **Komponen `Navbar`** — header atas dengan nama pengguna, ikon lonceng notifikasi (badge angka merah otomatis berubah sesuai jumlah notifikasi belum dibaca), dan tombol logout.
+- **Komponen `HeadlineAnimation.tsx`** — animasi teks judul dinamis.
+- **Komponen `TypewriterText.tsx`** — efek teks mengetik satu karakter per waktu.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Satu komponen layout bisa dipakai semua peran → hemat kode, mudah di-*maintain*.
+- Navigasi sidebar aktif secara **dinamis berdasarkan `pathname`** saat ini, sehingga menu yang sedang dibuka selalu terhighlight.
+
+#### 🛠️ Tools & Teknologi:
+- **Next.js `usePathname()`** — mendeteksi URL halaman aktif untuk highlight menu.
+- **Next.js `useRouter()`** — navigasi programatik (logout → redirect ke `/login`).
+- **`useAuth()`** — membaca data pengguna dari `localStorage`.
+- **`useNotifications()`** — mengambil jumlah notifikasi belum dibaca untuk badge lonceng.
+- **Lucide React Icons** — `LayoutDashboard`, `Users`, `BookOpen`, `Bell`, `LogOut`, dsb.
+
+#### 🧠 Logika & Mekanisme:
+- **Role-Based Menu Rendering**: Objek `roleConfig` mendefinisikan menu per peran. Komponen membaca `role` prop dan mengambil daftar menu yang sesuai — tidak ada menu lintas-peran yang bocor ke tampilan.
+- **Active Link Detection**: Setiap item menu dicek dengan `pathname.startsWith(item.path)`. Jika cocok, kelas `bg-blue-600 text-white` diterapkan, jika tidak `text-slate-600 hover:bg-slate-100`.
+- **Mobile Overlay**: Saat hamburger diklik, sidebar tampil dengan class `translate-x-0` (animasi slide dari kiri), latar belakang gelap semi-transparan muncul, dan klik di luar sidebar akan menutupnya.
+
+---
+
+### 📌 JOBDESK 4 — Pengembangan 30+ Halaman Dashboard Khusus Per Peran
+
+#### 🔧 Apa yang Dibuat:
+Seluruh halaman visual antarmuka (UI pages) yang bisa dilihat dan diklik pengguna, meliputi:
+
+**Halaman Admin (7 halaman):**
+- `admin/dashboard` — kartu statistik (total pengguna, kelas, tingkat presensi) + grafik aktivitas mingguan.
+- `admin/users` — tabel manajemen pengguna dengan filter role, pencarian nama/email, tambah/edit/hapus pengguna, reset password, dan tombol Import Excel massal.
+- `admin/courses` — monitoring semua kelas aktif di sistem.
+- `admin/assignments` — daftar semua penugasan di semua kelas.
+- `admin/reports` — laporan presensi global seluruh sekolah.
+- `admin/settings` — pengaturan nama sekolah, tahun ajaran, semester, toggle fitur reset password pengguna.
+- `admin/profile` — halaman profil dan pengaturan akun admin.
+
+**Halaman Guru (8 halaman):**
+- `guru/dashboard` — ringkasan kelas diampu, jumlah tugas belum dinilai, jadwal absensi hari ini.
+- `guru/courses` — daftar kelas yang dibuat + tombol buat kelas baru.
+- `guru/courses/[id]` — detail kelas: tab Materi, Tugas, Presensi, Anggota Siswa, Nilai UTS/UAS.
+- `guru/materi` — kelola modul bahan ajar (tambah link YouTube/Drive atau file upload).
+- `guru/tugas` — buat tugas LKPD, lihat daftar pengumpulan, beri nilai + feedback.
+- `guru/absensi` — atur jadwal jam presensi kelas, lihat rekap hadir/alpha per tanggal.
+- `guru/nilai` — form input nilai UTS dan UAS per siswa per kelas.
+- `guru/reports` — rekap nilai rapor kelas yang bisa diekspor ke Excel.
+
+**Halaman Siswa (8 halaman):**
+- `siswa/dashboard` — daftar kelas terdaftar, tenggat tugas terdekat, shortcut absensi.
+- `siswa/courses` — katalog kelas tersedia + form join dengan kode kelas.
+- `siswa/courses/[id]` — ruang kelas: baca materi, download file, klik tombol presensi mandiri.
+- `siswa/materi` — daftar semua modul materi dari semua kelas yang diikuti.
+- `siswa/tugas` — daftar tugas (belum dikerjakan, sudah dikumpulkan, sudah dinilai) + form upload jawaban.
+- `siswa/absensi` — riwayat kehadiran per kelas (hadir/izin/sakit/alpha) dengan persentase.
+- `siswa/nilai` — tampilan rapor semester: nilai LKPD rata-rata, UTS, UAS, dan nilai akhir.
+- `siswa/profile` — halaman profil dan pengaturan akun siswa.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Menyediakan seluruh antarmuka visual yang dapat berinteraksi dengan pengguna, dari form input hingga tabel data dan grafik.
+
+#### 🛠️ Tools & Teknologi:
+- **Next.js 15 App Router** — routing berbasis folder, tiap `page.tsx` = satu halaman URL.
+- **React 19 Client Components** — komponen interaktif dengan state dan event handlers.
+- **Recharts** — grafik batang dan garis untuk visualisasi data statistik.
+- **Canvas Confetti** — animasi perayaan saat siswa berhasil submit tugas.
+- **TypeScript** — *type safety* pada seluruh data API (mencegah `undefined.property` error).
+
+---
+
+### 📌 JOBDESK 5 — Optimasi UX: Skeleton Loader, Animasi, & Pencegahan Error
+
+#### 🔧 Apa yang Dibuat:
+- **Skeleton Loader Components** — placeholder abu-abu beranimasi pulsa yang muncul saat data sedang dimuat dari API.
+- **Loading Spinner pada Tombol** — indikator loading berputar menggantikan label tombol saat proses pengiriman data berlangsung.
+- **State `isSubmitting`** — variabel boolean yang mengunci tombol submit saat request HTTP sedang berjalan.
+- **Canvas Confetti Effect** — animasi konfeti jatuh dari atas layar saat siswa berhasil mengumpulkan tugas.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Mencegah **Cumulative Layout Shift (CLS)** — elemen halaman tidak meloncat saat data tiba-tiba muncul.
+- Mencegah **Double Submission** — pengguna tidak bisa mengklik tombol dua kali yang menyebabkan data ganda di database.
+- Memberikan **umpan balik visual instan** kepada pengguna bahwa sistem merespons aksi mereka.
+
+#### 🛠️ Tools & Teknologi:
+- **Tailwind `animate-pulse`** (efek skeleton placeholder)
+- **Lucide `Loader2` + `animate-spin`** (spinner ikon berputar)
+- **`canvas-confetti`** npm package (animasi konfeti)
+- **React `useState<boolean>`** (`isSubmitting` state)
+
+#### 🧠 Logika Implementasi:
+```typescript
+// Contoh pola pencegahan double-submit
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+const handleSubmit = async () => {
+  setIsSubmitting(true); // Kunci tombol
+  try {
+    await api.submitAssignment(data);
+    confetti({ particleCount: 100, spread: 70 }); // Konfeti perayaan
+  } finally {
+    setIsSubmitting(false); // Buka kunci setelah selesai
+  }
+};
+
+// Tombol terkunci saat loading
+<button disabled={isSubmitting}>
+  {isSubmitting ? <Loader2 className="animate-spin" /> : 'Kumpulkan Tugas'}
+</button>
+```
+
+---
+
+---
+
+## ⚡ I PUTU PANDU WIRANATA (NPM 23312088) {#pandu}
+### *Full-Stack Engineer · RESTful API Developer · Frontend State & Logic Specialist*
+
+---
+
+### 📌 JOBDESK 1 — Pembangunan 50+ Endpoint RESTful API Backend (Laravel 12)
+
+#### 🔧 Apa yang Dibuat (berdasarkan kode nyata `routes/api.php`):
+Seluruh endpoint API yang diakses oleh frontend, terorganisasi dalam 3 grup keamanan:
+
+**Grup Publik (tanpa token):**
+| Endpoint | Method | Fungsi |
+| :--- | :--- | :--- |
+| `/auth/login` | POST | Login & terbitkan Bearer Token |
+| `/auth/forgot-password` | POST | Kirim email reset password |
+| `/auth/reset-password` | POST | Perbarui password baru |
+
+**Grup Terautentikasi (`auth:sanctum`):**
+| Endpoint | Method | Fungsi |
+| :--- | :--- | :--- |
+| `/auth/me` | GET | Ambil profil pengguna aktif |
+| `/auth/logout` | POST | Hapus token & akhiri sesi |
+| `/auth/profile` | PUT | Perbarui profil pengguna |
+| `/courses` | GET | Daftar kelas milik pengguna |
+| `/courses` | POST | Buat kelas baru (guru) |
+| `/courses/{id}` | GET/PUT/DELETE | Detail / edit / hapus kelas |
+| `/courses/{id}/attendance-schedule` | PUT | Atur jam buka presensi |
+| `/courses/{course}/enroll` | POST | Daftarkan siswa ke kelas |
+| `/courses/enroll-by-code` | POST | Join kelas via kode unik |
+| `/courses/{course}/students` | GET | Daftar anggota kelas |
+| `/courses/{course}/students/{id}` | DELETE | Kick siswa dari kelas |
+| `/courses/{course}/students/{id}/grades` | PUT | Input nilai UTS & UAS |
+| `/courses/{course}/attendances` | GET/POST | Rekap / Catat presensi kelas |
+| `/courses/{course}/attendance-stats` | GET | Statistik kehadiran per kelas |
+| `/courses/{course}/report` | GET | Laporan nilai rapor kelas |
+| `/assignments` | GET/POST | Daftar / buat tugas |
+| `/assignments/{id}` | GET/DELETE | Detail / hapus tugas |
+| `/assignments/{id}/submit` | POST | Submit jawaban tugas (siswa) |
+| `/assignments/{id}/submissions` | GET | Daftar pengumpulan (guru) |
+| `/submissions/my` | GET | Tugas saya (siswa) |
+| `/submissions/{id}/grade` | PUT | Beri nilai + feedback (guru) |
+| `/materials` | GET/POST/DELETE | Kelola modul materi |
+| `/attendances/self` | POST | Presensi mandiri (siswa) |
+| `/attendances/my` | GET | Riwayat presensi saya |
+| `/notifications` | GET | Daftar notifikasi |
+| `/notifications/unread-count` | GET | Jumlah belum dibaca |
+| `/notifications/{id}/read` | PUT | Tandai satu notifikasi terbaca |
+| `/notifications/read-all` | PUT | Tandai semua terbaca |
+| `/siswa/stats` | GET | Statistik dashboard siswa |
+| `/guru/stats` | GET | Statistik dashboard guru |
+
+**Grup Admin Only (`auth:sanctum` + `role:admin`):**
+| Endpoint | Method | Fungsi |
+| :--- | :--- | :--- |
+| `/admin/stats` | GET | Statistik global sekolah |
+| `/admin/users` | GET | Daftar seluruh pengguna (filter + search) |
+| `/admin/users` | POST | Tambah satu pengguna baru |
+| `/admin/users/{id}` | PUT | Edit data pengguna |
+| `/admin/users/{id}/reset-password` | PUT | Reset password pengguna |
+| `/admin/users/{id}` | DELETE | Hapus pengguna |
+| `/admin/users/bulk-import` | POST | Import massal dari Excel |
+| `/admin/settings` | GET/PUT | Baca/perbarui pengaturan sekolah |
+
+#### 🎯 Kegunaan / Buat Apa:
+- Menyediakan **seluruh sumber data dan logika bisnis** yang dikonsumsi oleh antarmuka Next.js.
+- Semua validasi data, pemrosesan logika, dan enkripsi dilakukan di server ini sebelum data disimpan ke database.
+
+#### 🛠️ Tools & Teknologi:
+- **Laravel 12 Framework** (PHP 8.2+)
+- **Laravel Sanctum** (Bearer Token API authentication)
+- **Eloquent ORM** (query builder berbasis objek)
+- **Laravel Form Request** (class validasi input terpisah)
+- **Service Layer Pattern** (`AttendanceService`, `NotificationService`)
+- **Bcrypt Hashing** (enkripsi password)
+
+#### 🧠 Logika & Mekanisme:
+- **Service Layer Pattern**: Logika bisnis yang kompleks (seperti aturan presensi) dipindahkan ke class `AttendanceService` dan `NotificationService` agar controller tetap bersih dan mudah di-*maintain*.
+- **Policy & `authorize()`**: Digunakan untuk memastikan hanya pemilik kelas (guru yang membuat kelas tersebut) yang bisa mengakses dan memodifikasi data kelasnya sendiri.
+- **Standar Respon JSON**: Semua endpoint mengembalikan format yang konsisten:
+  ```json
+  { "message": "Keterangan proses", "data": { ... } }
+  ```
+
+---
+
+### 📌 JOBDESK 2 — Keamanan Autentikasi & Otorisasi (Sanctum + RBAC)
+
+#### 🔧 Apa yang Dibuat:
+- Sistem autentikasi **Bearer Token** menggunakan **Laravel Sanctum**.
+- Custom **Middleware `role:admin`** yang memproteksi grup rute admin.
+- **Policy authorization** menggunakan `$this->authorize('view', $course)` di controller.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Menjamin setiap request ke API sudah terautentikasi dan memiliki izin yang tepat.
+- Mencegah siswa mengakses data siswa lain, atau guru lain, atau endpoint admin.
+
+#### 🛠️ Tools & Teknologi:
+- **Laravel Sanctum** — `personal_access_tokens` tabel, `auth:sanctum` middleware.
+- **Custom Middleware** — `role:admin` untuk proteksi grup admin.
+- **Bcrypt** — hash password di `Hash::make()` saat pembuatan/reset akun.
+
+#### 🧠 Logika & Mekanisme:
+- **Token Flow**:
+  1. User login → server hash password (Bcrypt) dan cocokkan dengan database.
+  2. Jika valid → generate token plain-text → simpan **hash token** di tabel `personal_access_tokens`.
+  3. Token plain-text dikirim ke client, disimpan di `localStorage`.
+  4. Setiap request berikutnya, client menyertakan `Authorization: Bearer <token>`.
+  5. Sanctum middleware mencari hash token di database → validasi → inject `auth()->user()`.
+- **Role Check**: Setelah token divalidasi, middleware `role:admin` mengecek `auth()->user()->role === 'admin'`. Jika bukan admin, langsung kembalikan `HTTP 403 Forbidden`.
+
+---
+
+### 📌 JOBDESK 3 — Modul Presensi Mandiri Berbasis Jendela Waktu
+
+#### 🔧 Apa yang Dibuat:
+- Endpoint `POST /attendances/self` di `AttendanceController.php`.
+- Service method `selfAttend()` di `AttendanceService` yang menangani seluruh validasi waktu.
+- Endpoint `PUT /courses/{id}/attendance-schedule` untuk guru mengatur jam buka presensi.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Menggantikan presensi manual (tanda tangan kertas) dengan sistem digital yang **akurat secara waktu** — siswa tidak bisa absen di luar jam pelajaran.
+- Guru dapat membuka dan menutup jendela presensi untuk setiap kelas secara fleksibel.
+
+#### 🛠️ Tools & Teknologi:
+- **Nesbot Carbon** (manajemen waktu dengan timezone `Asia/Jakarta`)
+- **`AttendanceService`** class (service layer)
+- **`Attendance::updateOrCreate()`** (upsert Eloquent)
+
+#### 🧠 Logika & Mekanisme Detil:
+- Guru menyimpan `attendance_start` dan `attendance_end` di tabel `courses` (format `HH:MM`).
+- Saat siswa menekan tombol hadir, `selfAttend()` dipanggil:
+  ```php
+  $now = Carbon::now('Asia/Jakarta'); // Waktu server (WIB)
+  $start = Carbon::parse($course->attendance_start);
+  $end = Carbon::parse($course->attendance_end);
+
+  // Jika di luar jam → tolak
+  if (!$now->between($start, $end)) {
+      throw new \Exception('Di luar jam presensi: ' . $start->format('H:i') . ' - ' . $end->format('H:i') . ' WIB');
+  }
+  ```
+- Setelah lolos validasi waktu, data disimpan dengan `updateOrCreate` berbasis `(user_id, course_id, date)` → anti-duplikasi.
+- Status `alpha` otomatis jika siswa absen setelah waktu selesai (konfigurasi grace period).
+- Normalisasi string status: `strtolower(trim($status))` dan alias `'alpa' → 'alpha'` untuk mencegah inkonsistensi data.
+
+---
+
+### 📌 JOBDESK 4 — Modul Penugasan LKPD, Pengumpulan & Penilaian
+
+#### 🔧 Apa yang Dibuat (berdasarkan kode nyata `SubmissionController.php`):
+- `POST /assignments/{id}/submit` — siswa upload file jawaban atau teks catatan.
+- `PUT /submissions/{id}/grade` — guru input nilai (0–100) + feedback teks.
+- `GET /submissions/my` — siswa melihat semua tugas yang sudah dikumpulkan.
+- `GET /assignments/{id}/submissions` — guru melihat seluruh pengumpulan di satu tugas.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Menggantikan pengumpulan tugas fisik (kertas/WhatsApp) dengan sistem terstruktur yang menyimpan file, mencatat waktu pengumpulan, dan mengirim notifikasi otomatis.
+
+#### 🛠️ Tools & Teknologi:
+- **Laravel File Storage** (`$file->store('tugas', 'public')`) — simpan file di disk.
+- **NotificationService** — kirim notifikasi ke guru saat tugas masuk.
+- **`SubmitAssignmentRequest`** — Form Request class untuk validasi file tugas.
+
+#### 🧠 Logika & Mekanisme Detil:
+- **Validasi Keikutsertaan**: Sebelum menerima file, sistem mengecek apakah siswa terdaftar aktif di kelas terkait:
+  ```php
+  $isEnrolled = $assignment->course->students()
+      ->where('users.id', $student->id)
+      ->where('course_student.status', 'active')
+      ->exists();
+  ```
+- **Deteksi Terlambat**: Jika `now()` melewati `assignment->due_date`, status submission otomatis menjadi `'late'`:
+  ```php
+  $isLate = $assignment->due_date && now()->greaterThan($assignment->due_date);
+  $status = $isLate ? 'late' : 'submitted';
+  ```
+- **Upsert Submission**: Menggunakan `updateOrCreate` berdasarkan `(assignment_id, student_id)` sehingga siswa bisa **mengumpulkan ulang** (revisi) sebelum deadline.
+- **Notifikasi Otomatis**: Setelah file tersimpan, `NotificationService::notifyTeacherOfSubmission()` langsung membuat entry di tabel `notifications` untuk guru pengampu kelas tersebut.
+- **Notifikasi Nilai**: Setelah guru menyimpan nilai, `NotificationService::notifyStudentOfGrade()` mengirim notifikasi ke siswa bahwa tugasnya sudah dinilai.
+
+---
+
+### 📌 JOBDESK 5 — Modul Bulk Import Akun Pengguna (Excel/CSV)
+
+#### 🔧 Apa yang Dibuat (berdasarkan kode nyata `AdminController::bulkImport()`):
+- Endpoint `POST /admin/users/bulk-import` yang menerima array data pengguna dari frontend.
+- Frontend membaca file Excel lokal menggunakan library SheetJS, mengonversinya ke JSON, lalu mengirimnya ke endpoint ini.
+
+#### 🎯 Kegunaan / Buat Apa:
+- Memungkinkan admin mendaftarkan **ratusan siswa dan guru sekaligus** dalam hitungan detik, tanpa menginput satu per satu.
+
+#### 🛠️ Tools & Teknologi:
+- **SheetJS (`xlsx`)** di frontend — parse file `.xlsx` / `.csv` menjadi array JSON di browser.
+- **Laravel `DB::transaction()`** — pembungkus transaksi database atomik.
+- **`User::updateOrCreate()`** — jika email sudah ada, update data; jika belum ada, buat baru.
+- **`Hash::make('password123')`** — password default yang di-hash untuk semua akun baru.
+
+#### 🧠 Logika & Mekanisme Detil:
+```php
+DB::transaction(function () use ($request, $defaultHash, &$imported) {
+    foreach ($request->users as $userData) {
+        // Cek apakah password custom atau password default
+        $password = !empty($userData['password']) 
+            && $userData['password'] !== 'password123'
+            ? Hash::make($userData['password'])
+            : $defaultHash;
+
+        // Upsert berdasarkan email (tidak duplikasi)
+        User::updateOrCreate(
+            ['email' => $userData['email']],
+            ['name' => ..., 'role' => ..., 'nisn_or_nip' => ..., 'class_name' => ...]
+        );
+        $imported++;
+    }
+});
+```
+- Jika salah satu iterasi gagal (misal email format salah), **seluruh transaksi dibatalkan** (`rollback`) — tidak ada data setengah-setengah yang masuk ke database.
+
+---
+
+### 📌 JOBDESK 6 — Central API Client & Sinkronisasi Real-Time Lintas Tab
+
+#### 🔧 Apa yang Dibuat (berdasarkan kode nyata `useRealtimeData.ts`):
+
+**A. `Frontend/lib/api.ts` — Modul Sentral Seluruh Request HTTP**
+- Satu modul yang menjadi **pintu tunggal** semua komunikasi antara Next.js dan Laravel API.
+- Otomatis menyematkan header `Authorization: Bearer <token>` dari `localStorage`.
+- Setelah setiap mutasi data (POST/PUT/DELETE berhasil), otomatis memanggil `broadcastDataMutation()`.
+
+**B. `Frontend/hooks/useRealtimeData.ts` — Hook Sinkronisasi Multi-Layer**
+- Custom React hook yang mengelola seluruh siklus pengambilan dan pembaruan data secara cerdas.
+
+**C. `Frontend/hooks/useNotifications.ts` — Hook Notifikasi Real-Time**
+- Hook khusus untuk mengambil dan memperbarui notifikasi secara otomatis.
+- Polling setiap 8 detik (berhenti otomatis saat tab disembunyikan).
+
+#### 🎯 Kegunaan / Buat Apa:
+- Data di halaman **selalu sinkron** tanpa pengguna perlu reload halaman secara manual.
+- Ketika guru menginput nilai di tab 1, nilai tersebut **langsung muncul** di tab siswa (tab 2) dalam hitungan milidetik.
+
+#### 🛠️ Tools & Teknologi:
+- **`BroadcastChannel API`** (HTML5 Web API bawaan browser) — komunikasi antar-tab
+- **`CustomEvent`** (`window.dispatchEvent`) — komunikasi dalam tab yang sama
+- **React `useCallback` + `useRef`** — optimasi agar fetcher tidak berulang-ulang dibuat ulang
+- **`document.hidden`** — deteksi visibilitas tab
+
+#### 🧠 Logika & Mekanisme 4-Layer (berdasarkan kode nyata):
+
+**Layer 1: Initial Load**
+```typescript
+// Fetch pertama kali saat komponen mount
+useEffect(() => { void load(true); }, [load, depsKey]);
+```
+
+**Layer 2: Smart Polling (berhenti saat tab tersembunyi)**
+```typescript
+// Polling setiap 10 detik, tapi hanya jika tab sedang aktif
+setInterval(() => {
+  if (!document.hidden) void load(false);
+}, refreshInterval); // default: 10.000 ms
+```
+
+**Layer 3: Window Focus & Online Revalidation**
+```typescript
+// Jika pengguna kembali ke tab (focus) atau internet kembali (online),
+// fetch ulang data jika sudah > 2.5 detik tidak di-fetch
+const handleRevalidate = () => {
+  if (Date.now() - lastFetchedTime > 2500) void load(false);
+};
+window.addEventListener('focus', handleRevalidate);
+window.addEventListener('online', handleRevalidate);
+document.addEventListener('visibilitychange', handleRevalidate);
+```
+
+**Layer 4: Event-Driven Cross-Tab Mutation (BroadcastChannel)**
+```typescript
+// Saat mutasi terjadi di tab manapun, semua tab lain langsung refresh
+const channel = new BroadcastChannel('lms-realtime-channel');
+channel.onmessage = (msg) => {
+  const receivedEvent = msg?.data?.event;
+  if (targetEvents.includes(receivedEvent)) {
+    void load(false); // Ambil data terbaru tanpa loading indicator
+  }
+};
+```
+
+**Fungsi `broadcastDataMutation()` (yang dipanggil setelah mutasi):**
+```typescript
+export function broadcastDataMutation(events: string | string[]) {
+  // 1. Dispatch CustomEvent di tab ini sendiri
+  window.dispatchEvent(new CustomEvent(`lms:${eventName}`, { detail: { timestamp: Date.now() } }));
+  
+  // 2. Broadcast ke semua tab lain yang terbuka
+  const channel = new BroadcastChannel('lms-realtime-channel');
+  channel.postMessage({ event: `lms:${eventName}`, timestamp: Date.now() });
+  channel.close();
+}
+```
+
+---
+
+## 💻 ARSITEKTUR SISTEM & TECH STACK KESELURUHAN {#arsitektur}
+
+### Tech Stack Lengkap per Layer:
+
+| Layer | Teknologi | Versi | Fungsi |
+| :--- | :--- | :--- | :--- |
+| **Frontend Framework** | Next.js | 15 (App Router) | Routing, SSR, Bundling |
+| **UI Library** | React | 19 | Komponen & State Management |
+| **Bahasa Frontend** | TypeScript | 5.7 | Type-safe JavaScript |
+| **CSS Framework** | Tailwind CSS | v4 | Utility-first styling |
+| **Ikon** | Lucide React | Latest | Ikon SVG konsisten |
+| **Grafik** | Recharts | Latest | Visualisasi data |
+| **Animasi** | Canvas Confetti | Latest | Efek perayaan |
+| **Backend Framework** | Laravel | 12 | RESTful API, Business Logic |
+| **Bahasa Backend** | PHP | 8.2+ | Server-side scripting |
+| **Autentikasi API** | Laravel Sanctum | - | Bearer Token |
+| **ORM** | Eloquent | - | Database abstraction |
+| **Manajemen Waktu** | Nesbot Carbon | - | Timezone, datetime |
+| **Database** | MySQL | 8.0 | Relational database |
+| **Frontend Hosting** | Vercel | - | Edge CDN, Serverless |
+| **Backend Hosting** | Railway | - | Container PHP + MySQL |
+| **Version Control** | Git + GitHub | - | Source code management |
+
+---
+
+## 📡 PETA LENGKAP RUTE API BACKEND {#api-routes}
+
+```
+BASE URL PRODUKSI: https://deploylms-production.up.railway.app/api/v1
+
+🔓 PUBLIK (Tanpa Token)
+├── POST /auth/login                            → Login & terbitkan token
+├── POST /auth/forgot-password                  → Kirim email reset
+└── POST /auth/reset-password                   → Reset password baru
+
+🔐 TERAUTENTIKASI (Bearer Token Required)
+├── GET  /auth/me                               → Profil pengguna aktif
+├── POST /auth/logout                           → Hapus token sesi
+├── PUT  /auth/profile                          → Update profil
+│
+├── GET  /courses                               → Daftar kelas saya
+├── POST /courses                               → Buat kelas baru
+├── GET  /courses/{id}                          → Detail kelas
+├── PUT  /courses/{id}                          → Edit kelas
+├── DELETE /courses/{id}                        → Hapus kelas
+├── PUT  /courses/{id}/attendance-schedule      → Atur jam presensi
+├── GET  /available-courses                     → Kelas tersedia untuk join
+├── POST /courses/{course}/enroll               → Daftarkan siswa
+├── POST /courses/enroll-by-code                → Join via kode kelas
+├── POST /courses/{course}/leave                → Keluar dari kelas
+├── GET  /courses/{course}/students             → Daftar anggota
+├── DELETE /courses/{course}/students/{id}      → Keluarkan siswa
+├── PUT  /courses/{course}/students/{id}/grades → Input UTS & UAS
+├── GET  /courses/{course}/attendances          → Rekap presensi kelas
+├── POST /courses/{course}/attendances          → Catat presensi kelas
+├── GET  /courses/{course}/attendance-stats     → Statistik kehadiran
+├── GET  /courses/{course}/report               → Laporan rapor kelas
+│
+├── GET  /assignments                           → Daftar tugas
+├── GET  /assignments/{id}                      → Detail tugas
+├── POST /assignments                           → Buat tugas baru
+├── DELETE /assignments/{id}                    → Hapus tugas
+├── POST /assignments/{id}/submit               → Upload jawaban (siswa)
+├── GET  /assignments/{id}/submissions          → Daftar pengumpulan (guru)
+├── GET  /submissions/my                        → Tugas saya (siswa)
+├── PUT  /submissions/{id}/grade                → Nilai + feedback (guru)
+│
+├── GET  /materials                             → Daftar materi
+├── POST /materials                             → Tambah materi
+├── DELETE /materials/{id}                      → Hapus materi
+│
+├── POST /attendances/self                      → Presensi mandiri siswa
+├── GET  /attendances/my                        → Riwayat presensi saya
+│
+├── GET  /notifications                         → Daftar notifikasi
+├── GET  /notifications/unread-count            → Jumlah belum dibaca
+├── PUT  /notifications/{id}/read               → Tandai satu terbaca
+├── PUT  /notifications/read-all                → Tandai semua terbaca
+│
+├── GET  /siswa/stats                           → Statistik dashboard siswa
+└── GET  /guru/stats                            → Statistik dashboard guru
+
+🛡️ ADMIN ONLY (Token + Role Admin)
+├── GET  /admin/stats                           → Statistik global sekolah
+├── GET  /admin/users                           → Daftar semua pengguna
+├── POST /admin/users                           → Tambah pengguna
+├── PUT  /admin/users/{id}                      → Edit pengguna
+├── PUT  /admin/users/{id}/reset-password       → Reset password
+├── DELETE /admin/users/{id}                    → Hapus pengguna
+├── POST /admin/users/bulk-import               → Import massal Excel
+├── GET  /admin/settings                        → Baca pengaturan sekolah
+└── PUT  /admin/settings                        → Update pengaturan sekolah
+```
+
+---
+
+## 🔄 ALUR KERJA & FLOWCHART SISTEM {#flowchart}
+
+### Alur Login & Redirect Berdasarkan Peran
+```
+[Pengguna] → Input Email + Password
+     ↓
+[Frontend] → POST /auth/login
+     ↓
+[Backend] → Cek email di database → Hash & cocokkan password
+     ↓
+[Berhasil] → Generate Bearer Token → Kirim ke client
+     ↓
+[Frontend] → Simpan token + data user di localStorage
+     ↓
+[Redirect berdasarkan role]
+├── role = "admin"  → /admin/dashboard
+├── role = "guru"   → /guru/dashboard
+└── role = "siswa"  → /siswa/dashboard
+```
+
+### Alur Presensi Mandiri Siswa
+```
+[Siswa] → Buka halaman kelas → Klik "Hadir Sekarang"
+     ↓
+[Frontend] → POST /attendances/self { course_id }
+     ↓
+[Backend - AttendanceService::selfAttend()]
+     ├── Ambil course & jadwal presensi
+     ├── Bandingkan Carbon::now('Asia/Jakarta') dengan start_time & end_time
+     ├── [Di luar jam] → Throw Exception → HTTP 422 → Tampilkan pesan error
+     └── [Dalam jam]   → updateOrCreate attendance (hadir) → HTTP 200
+          ↓
+[Frontend] → Tampilkan status "HADIR ✓" warna hijau
+          → broadcastDataMutation('lms:attendance') → semua tab ikut refresh
+```
+
+### Alur Sinkronisasi Real-Time Antar Tab
+```
+[Tab 1 - Guru input nilai] → API PUT /submissions/{id}/grade
+         ↓
+[lib/api.ts] → broadcastDataMutation('lms:submissions')
+         │
+         ├── window.dispatchEvent(CustomEvent 'lms:submissions') ← Tab 1 sendiri
+         │
+         └── BroadcastChannel.postMessage({ event: 'lms:submissions' })
+                    ↓
+         [Tab 2 - Halaman siswa]
+         channel.onmessage → event matched → load(false)
+         → fetch terbaru di background
+         → setData(newData) → React re-render otomatis
+         → Nilai baru muncul di layar siswa TANPA RELOAD!
+```
+
+---
+
+## 🎯 FAQ TANYA JAWAB PRESENTASI {#faq}
+
+| Pertanyaan | Jawaban Teknis |
+| :--- | :--- |
+| **Kenapa pakai Next.js bukan Laravel Blade?** | Next.js berjalan di Edge CDN Vercel → super cepat. Pemisahan frontend-backend memungkinkan API yang sama dipakai app mobile ke depannya. Blade terikat server Laravel, tidak scalable secara terpisah. |
+| **Bagaimana keamanan API dijaga?** | Berlapis: (1) Login menghasilkan Bearer Token terenkripsi. (2) Setiap request divalidasi `auth:sanctum`. (3) Middleware `role:admin` + Laravel Policy `authorize()` memblokir akses lintas peran. |
+| **Real-time tanpa WebSocket, apa itu BroadcastChannel?** | `BroadcastChannel` adalah Web API HTML5 bawaan browser untuk komunikasi antar-tab tanpa server. Tidak butuh koneksi socket terbuka terus → hemat resource server & lebih stabil. |
+| **Bagaimana presensi tidak bisa dimanipulasi?** | Validasi waktu dilakukan di **server** (bukan client) menggunakan `Carbon::now('Asia/Jakarta')`. Pengguna tidak bisa memanipulasi jam browser untuk menipu sistem. |
+| **Bagaimana jika import Excel ada data rusak?** | Seluruh proses import dibungkus `DB::transaction()`. Jika ada satu baris data yang gagal, seluruh transaksi di-rollback — database tetap bersih, tidak ada data setengah-setengah. |
+| **Apa yang dimaksud double submission prevention?** | State `isSubmitting = true` mengunci tombol saat request HTTP berlangsung. Juga, server menggunakan `updateOrCreate` bukan `create` sehingga submit ulang hanya akan menimpa data yang ada, tidak membuat baris ganda. |
 
 ---
 
 <div align="center">
 
-**EduSchool LMS — Siap untuk Presentasi Akademik & Industri dengan Kualitas Terbaik! 🎓✨**
+*Dokumen ini dibuat berdasarkan kode sumber aktual proyek EduSchool LMS.*  
+*Cocok digunakan untuk belajar mandiri, persiapan presentasi, dan sidang PKL.*
+
+**EduSchool LMS — Kelompok PKL Informatika UTI × CV Newus Teknologi 🎓**
 
 </div>
