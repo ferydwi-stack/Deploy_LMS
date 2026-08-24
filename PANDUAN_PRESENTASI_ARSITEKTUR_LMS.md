@@ -1,4 +1,4 @@
-# 🚀 PANDUAN LENGKAP ARSITEKTUR, KODE, & MATERI PRESENTASI SISTEM EDUSCHOOL LMS
+# 🚀 PANDUAN LENGKAP ARSITEKTUR, KODE, JOBDESK & MATERI PRESENTASI EDUSCHOOL LMS
 
 > **Dokumen Resmi Presentasi & Bedah Sistem Full-Stack E-Learning**  
 > Proyek Praktik Kerja Lapangan (PKL) / Tugas Akhir — Program Studi S1 Informatika  
@@ -6,9 +6,9 @@
 
 ---
 
-## 👥 1. IDENTITAS TIM & PEMBAGIAN PERAN (TEAM ROLES)
+## 👥 1. IDENTITAS TIM & RINCIAN LENGKAP JOBDESK ANGGOTA
 
-Proyek **EduSchool LMS** dirancang dan dibangun secara kolaboratif oleh 3 orang mahasiswa dengan pembagian tanggung jawab profesional sebagai berikut:
+Proyek **EduSchool LMS** dibangun oleh tim beranggotakan 3 orang mahasiswa dengan pembagian tugas (*job description*) yang sangat mendalam dan terstruktur:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
@@ -17,29 +17,97 @@ Proyek **EduSchool LMS** dirancang dan dibangun secara kolaboratif oleh 3 orang 
 │     FERY DWI RAMADHI          │       FATHUR RAMANTHA         │  I PUTU PANDU WIRANATA   │
 │       (NPM 23312086)          │        (NPM 23312105)         │      (NPM 23312088)      │
 ├───────────────────────────────┼───────────────────────────────┼──────────────────────────┤
-│ 📌 Peran:                     │ 📌 Peran:                     │ 📌 Peran:                │
+│ 📌 Posisi / Peran:            │ 📌 Posisi / Peran:            │ 📌 Posisi / Peran:       │
 │  • System Analyst             │  • Frontend UI/UX Specialist  │  • Full-Stack Engineer   │
 │  • Cloud & DevOps Engineer    │  • Design System & Styling    │    (Frontend & Backend)  │
-│  • QA & Automated Testing     │  • Client-Side Components     │  • RESTful API & DB Dev  │
-│  • Dokumentasi Program        │  • Responsive & Animations    │  • Real-time Sync Logic  │
-├───────────────────────────────┼───────────────────────────────┼──────────────────────────┤
-│ 🛠 Tanggung Jawab:            │ 🛠 Tanggung Jawab:            │ 🛠 Tanggung Jawab:       │
-│  1. Analisis kebutuhan PRD    │  1. Perancangan UI/UX Figma   │  1. Pembangunan REST API │
-│  2. Desain arsitektur sistem  │  2. Implementasi 30+ halaman  │     50+ endpoint Laravel │
-│  3. Pemodelan ERD & DB MySQL  │     dan 20+ komponen Next.js  │  2. Integrasi Axios/API  │
-│  4. Setup Cloud Vercel/Railway│  3. Tailwind CSS & tema warna │     Client (`lib/api.ts`)│
-│  5. Skrip Automated Bot Test  │  4. Micro-interactions &      │  3. Logika State & Hook  │
-│  6. Penulisan Laporan & Docx  │     animasi responsif mobile  │     `useRealtimeData`    │
-│                               │  5. Dashboard Admin, Guru,    │  4. Modul Tugas, Presensi│
-│                               │     dan Siswa                 │     dan Rekap Nilai      │
+│  • Database Architect         │  • Client-Side Components     │  • RESTful API Developer │
+│  • Dokumentasi Program        │  • Mobile & Micro-Interactions│  • Real-time Sync Logic  │
 └───────────────────────────────┴───────────────────────────────┴──────────────────────────┘
 ```
 
 ---
 
+### 👨‍💻 A. FERY DWI RAMADHI (NPM 23312086)
+**Peran**: *System Analyst, Cloud & DevOps Engineer, Database Architect, dan Dokumentasi Program*
+
+#### 📋 Rincian Jobdesk & Tanggung Jawab Lengkap:
+1. **Analisis Kebutuhan Sistem & Pemodelan UML**:
+   - Menyusun *Product Requirements Document* (PRD) yang mendefinisikan kebutuhan fungsional dan non-fungsional untuk 3 peran pengguna (Administrator, Guru, dan Siswa).
+   - Merancang diagram pemodelan sistem formal:
+     - **Diagram Use Case Terpadu**: Memetakan 50 fitur fungsional antar-aktor.
+     - **Diagram Alir (Flowchart) Sistem Terpadu**: Menetapkan alur kerja bisnis dari login, autentikasi, navigasi peran, hingga manajemen kelas dan penilaian.
+     - **Activity Diagram & Sequence Diagram**: Menjelaskan alur pertukaran pesan antara client browser, server API, dan basis data.
+2. **Perancangan Arsitektur Basis Data (Database Architecture)**:
+   - Merancang skema basis data relasional MySQL 8.0 yang terdiri atas 11 tabel relasional terintegrasi: `users`, `courses`, `course_student`, `materials`, `assignments`, `submissions`, `attendances`, `notifications`, `settings`, `activity_logs`, dan `personal_access_tokens`.
+   - Mengonstruksi Entity Relationship Diagram (ERD) lengkap dengan relasi *One-to-Many* dan *Many-to-Many* (tabel pivot).
+   - Menetapkan aturan integritas data: *Primary Keys*, *Foreign Keys*, *Unique Constraints*, pengindeksan kolom (*indexing* untuk query cepat), dan *Cascade Deletion* guna mencegah data yatim (*orphan data*).
+3. **Arsitektur Cloud & DevOps Infrastructure**:
+   - Merancang arsitektur sistem *Decoupled* (pemisahan total antara frontend Next.js dan backend Laravel).
+   - Menyiapkan infrastruktur produksi pada platform **Vercel** untuk Frontend Next.js dengan optimasi *Edge Network / CDN Caching*.
+   - Menyiapkan infrastruktur produksi pada platform **Railway** untuk Backend Laravel (Runtime PHP 8.2 FPM, Composer, Nginx reverse proxy) dan Managed Database MySQL 8.0.
+   - Mengelola konfigurasi keamanan lingkungan: *Environment Variables* (`.env`), *Cross-Origin Resource Sharing* (CORS), integrasi SSL/HTTPS, dan pemetaan domain kustom.
+4. **Penyusunan Dokumentasi Teknis & Laporan Resmi**:
+   - Menyusun buku naskah Laporan PKL formal 100% berstandar panduan akademik FTIK Universitas Teknokrat Indonesia (format margin 4-3-3-3 cm, Times New Roman 12pt, spasi 1.5, kertas penyekat biru, sistem sitasi Harvard, dan penomoran Romawi/Arab).
+   - Menyusun dokumentasi diagram teknis, manual instalasi server lokal, serta panduan arsitektur sistem.
+
+---
+
+### 🎨 B. FATHUR RAMANTHA (NPM 23312105)
+**Peran**: *Frontend UI/UX Specialist, Design System Engineer, dan Client-Side Component Developer*
+
+#### 📋 Rincian Jobdesk & Tanggung Jawab Lengkap:
+1. **Riset Pengguna & Perancangan Desain Antarmuka (UI/UX Design)**:
+   - Melakukan riset kebutuhan antarmuka pengguna berbasis prinsip *Human-Centered Design*.
+   - Merancang *Wireframe Low-Fidelity* untuk menyusun tata letak (*layout grid*) dan hierarki informasi.
+   - Membangun *High-Fidelity Mockup & Interactive Prototype* di Figma dengan palet warna modern, kontras yang nyaman di mata, dan tipografi sans-serif modern (Poppins / Inter).
+2. **Pembangunan Design System & Styling (Tailwind CSS v4)**:
+   - Mengonfigurasi arsitektur token desain Tailwind CSS (variabel warna, spasi, bayangan/shadow, radius rounded, dan transisi).
+   - Membangun antarmuka yang sepenuhnya responsif (*Mobile-First Design*) sehingga tampilan tetap rapi dan proporsional di berbagai perangkat (smartphone, tablet, laptop, dan layar monitor desktop besar).
+3. **Pengembangan Halaman & Komponen Antarmuka Next.js (30+ Halaman & 20+ Komponen)**:
+   - Membangun 3 dashboard khusus dengan tampilan dan tata letak yang disesuaikan untuk masing-masing peran:
+     - **Dashboard Administrator**: Statistik global sekolah, grafik aktivitas mingguan, tabel manajemen pengguna dengan filter dinamis.
+     - **Dashboard Guru Pengajar**: Katalog kelas yang diampu, ringkasan tugas terkumpul yang belum dinilai, jadwal absensi harian, dan akses cepat materi.
+     - **Dashboard Peserta Didik**: Tampilan kelas terdaftar (*CourseCard*), tenggat waktu tugas terdekat (*Deadline Tracker*), tombol presensi interaktif, dan grafik nilai rapor.
+   - Mengembangkan pustaka komponen *reusable*: `Navbar` dengan lonceng notifikasi interaktif, `Sidebar` navigasi dinamis, `StatCard`, `CourseCard`, `ModalDialog` konfirmasi CRUD, `FileUploader` drag-and-drop, `NotificationBell`, dan `GradeInputForm`.
+4. **Optimasi Pengalaman Pengguna (UX & Micro-Interactions)**:
+   - Mengatasi permasalahan *Cumulative Layout Shift* (CLS) dengan menerapkan *Skeleton Loader Components* agar halaman tidak bergeser saat data sedang di-fetch.
+   - Menambahkan efek mikro-animasi: *hover transition*, *loading spinner* pada tombol submit form untuk mencegah submit ganda (*prevent duplicate submission*), serta efek animasi perayaan *Canvas-Confetti* saat siswa sukses mengumpulkan tugas.
+
+---
+
+### ⚡ C. I PUTU PANDU WIRANATA (NPM 23312088)
+**Peran**: *Full-Stack Engineer (Frontend & Backend Integration), RESTful API Developer, dan State Management Specialist*
+
+#### 📋 Rincian Jobdesk & Tanggung Jawab Lengkap:
+1. **Pembangunan RESTful API Backend (Laravel 12 / 50+ Endpoint)**:
+   - Membangun arsitektur controller API terstruktur di bawah *namespace* `/api/v1`:
+     - `AuthController`: Manajemen login, logout, sesi pengguna, dan penerbitan token autentikasi.
+     - `CourseController`: Operasi CRUD kelas, pengaturan kode kelas, dan penambahan siswa ke kelas.
+     - `MaterialController`: Pengelolaan modul pembelajaran berbasis file dan tautan eksternal (YouTube, Drive).
+     - `AssignmentController`: Pembuatan penugasan LKPD, pengaturan tenggat waktu (*deadline*), dan bobot penilaian.
+     - `SubmissionController`: Mekanisme pengumpulan tugas siswa, unggah berkas jawaban, dan form penilaian tugas oleh guru.
+     - `AttendanceController`: Pencatatan presensi siswa mandiri dengan validasi jendela waktu (*time-window schedule*) dan zona waktu WIB.
+     - `ReportController`: Perhitungan otomatis rekapitulasi nilai rapor (LKPD, UTS, UAS) dan pembuatan laporan Excel.
+     - `AdminController`: Manajemen akun massal (*Bulk Import Spreadsheet 50+ user*) dan statistik ringkasan sekolah.
+     - `NotificationController`: Pengambilan notifikasi real-time dan update status terbaca.
+2. **Keamanan Autentikasi & Otorisasi (Laravel Sanctum & RBAC)**:
+   - Mengimplementasikan pengamanan rute API menggunakan `auth:sanctum` dengan token Bearer.
+   - Membangun middleware otorisasi *Role-Based Access Control* (RBAC) untuk mengisolasi hak akses administrator, guru, dan siswa di tingkat server.
+3. **Integrasi Client-Side API (`Frontend/lib/api.ts`)**:
+   - Membangun modul sentral komunikasi API (`lib/api.ts`) yang menangani seluruh operasi HTTP (*fetch/axios*) dari antarmuka ke backend.
+   - Mengimplementasikan *request interceptor* untuk otomatis menyematkan token Bearer dan menangani respon format JSON.
+4. **Logika Sinkronisasi Data Real-Time Lintas Tab (`useRealtimeData`)**:
+   - Merancang mekanisme mutasi data instan menggunakan kombinasi `BroadcastChannel API` dan *Custom DOM Events*.
+   - Membangun custom hook `useRealtimeData` sehingga saat guru menginput nilai atau membuat tugas di tab 1, layar siswa di tab 2 langsung ter-update secara otomatis tanpa reload browser.
+5. **Fitur Ekspor / Impor Data & Manajemen Seeder**:
+   - Mengimplementasikan modul *Bulk Import* spreadsheet Excel (.xlsx/.csv) untuk pendaftaran puluhan akun sekaligus menggunakan pustaka Maatwebsite Excel.
+   - Membangun skrip *Database Seeder* untuk menginisialisasi 54 akun pengguna nyata (1 Admin, 10 Guru, 40 Siswa, 3 Demo Users) dan kelas aktif.
+
+---
+
 ## 💻 2. TEKNOLOGI & TECH STACK YANG DIGUNAKAN (WHY & HOW)
 
-Sistem mengadopsi arsitektur **Decoupled / Headless Web Architecture** (pemisahan total antara antarmuka klien dan server API):
+Sistem mengadopsi arsitektur **Decoupled Web Architecture** (pemisahan total antara antarmuka klien dan server API):
 
 ```
                        ┌─────────────────────────────────────────┐
@@ -264,7 +332,7 @@ flowchart TD
 ---
 
 ### 4. Alur Sinkronisasi Real-time Lintas Tab (`useRealtimeData`)
-Salah satu pencapaian teknis terbesar proyek ini: **data terbarui seketika tanpa reload browser!**
+Salah satu keunggulan arsitektur sistem ini: **data terbarui seketika tanpa reload browser!**
 
 ```mermaid
 sequenceDiagram
@@ -395,15 +463,15 @@ Untuk memudahkan presentasi kelompok di depan Dosen Pembimbing, Dosen Penguji, a
 
 ---
 
-### 🗣️ Bagian 1: FERY DWI RAMADHI (System Analyst, DevOps & QA)
+### 🗣️ Bagian 1: FERY DWI RAMADHI (System Analyst, Cloud & DevOps, Database)
 **Materi yang Dipresentasikan**:
-1. **Latar Belakang Masalah**: Kebutuhan sekolah akan sistem e-learning yang ringan, tidak lemot, dan memiliki kontrol presensi yang akurat.
-2. **Arsitektur Sistem & Basis Data**:
+1. **Latar Belakang & Analisis Masalah**: Kebutuhan sekolah akan sistem e-learning terpadu yang cepat, aman, dan memiliki kontrol presensi yang akurat.
+2. **Arsitektur Sistem & Pemodelan UML**:
    - Menjelaskan arsitektur *Decoupled* (Next.js di Vercel + Laravel di Railway + MySQL 8.0).
-   - Menunjukkan diagram ERD (11 tabel relasional) dan bagaimana data terhubung secara aman.
-3. **Cloud Infrastructure & Testing**:
-   - Menjelaskan bagaimana sistem di-*deploy* ke cloud produksi publik.
-   - Memaparkan hasil **Automated Bot Testing (53 skenario uji coba)** yang meraih tingkat kelolosan **100% (Passed)**.
+   - Memaparkan diagram Use Case (50 fitur fungsional) dan Flowchart sistem terpadu.
+3. **Desain Basis Data Relasional & Cloud Deployment**:
+   - Menunjukkan diagram ERD (11 tabel relasional) dan bagaimana data terhubung secara aman (*foreign keys, indexing*).
+   - Menjelaskan bagaimana sistem di-*deploy* ke cloud produksi publik (Vercel & Railway) dengan konfigurasi CORS dan environment variables yang aman.
 
 ---
 
@@ -417,7 +485,7 @@ Untuk memudahkan presentasi kelompok di depan Dosen Pembimbing, Dosen Penguji, a
      - **Dashboard Guru**: Manajemen kelas, materi ajar, input nilai tugas & ujian.
      - **Dashboard Siswa**: Ruang kelas interaktif, pengumpulan tugas, presensi mandiri.
 3. **Responsivitas & Solusi CLS (Cumulative Layout Shift)**:
-   - Menunjukkan bagaimana antarmuka menyesuaikan dengan mulus di layar smartphone/tablet menggunakan *Skeleton Loaders*.
+   - Menunjukkan bagaimana antarmuka menyesuaikan dengan mulus di layar smartphone/tablet menggunakan *Skeleton Loaders* dan animasi transisi.
 
 ---
 
