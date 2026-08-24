@@ -27,5 +27,12 @@ build/
 .agents/
 
 # Postman
+postman/
 .postman/
 
+# Documentation & Reports (Local only)
+docs/
+*.docx
+generate_laporan_pkl_docx.py
+__pycache__/
+*.pyc
