@@ -70,4 +70,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    public function sendPasswordResetNotification($token)
+    {
+        $frontendUrl = env('FRONTEND_URL', 'https://sistem-e-learning-g9xn.vercel.app');
+        $url = rtrim($frontendUrl, '/') . '/reset-password?token=' . $token . '&email=' . urlencode($this->email);
+
+        $this->notify(new \App\Notifications\ResetPasswordNotification($url));
+    }
 }
