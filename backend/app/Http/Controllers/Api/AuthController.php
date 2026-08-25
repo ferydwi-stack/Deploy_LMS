@@ -99,20 +99,23 @@ class AuthController extends Controller
 
         $request->validate(['email' => 'required|email']);
 
-        try {
-            $status = Password::sendResetLink(
-                $request->only('email')
-            );
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json([
+                'message' => 'Email tidak terdaftar dalam sistem.'
+            ], 404);
+        }
 
-            if ($status === Password::RESET_LINK_SENT) {
-                return response()->json([
-                    'message' => 'Tautan reset password telah berhasil dikirim ke email Anda. Silakan periksa kotak masuk atau spam.'
-                ]);
-            }
+        try {
+            $token = Password::broker()->createToken($user);
+            $frontendUrl = env('FRONTEND_URL', 'https://sistem-e-learning-g9xn.vercel.app');
+            $url = rtrim($frontendUrl, '/') . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+
+            \App\Services\BrevoService::sendResetPasswordEmail($user->email, $user->name, $url);
 
             return response()->json([
-                'message' => __($status)
-            ], 400);
+                'message' => 'Tautan reset password telah berhasil dikirim ke email Anda. Silakan periksa kotak masuk atau spam.'
+            ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Gagal mengirim email: ' . $e->getMessage()
