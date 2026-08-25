@@ -99,19 +99,25 @@ class AuthController extends Controller
 
         $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        try {
+            $status = Password::sendResetLink(
+                $request->only('email')
+            );
 
-        if ($status === Password::RESET_LINK_SENT) {
+            if ($status === Password::RESET_LINK_SENT) {
+                return response()->json([
+                    'message' => 'Tautan reset password telah berhasil dikirim ke email Anda. Silakan periksa kotak masuk atau spam.'
+                ]);
+            }
+
             return response()->json([
                 'message' => __($status)
-            ]);
+            ], 400);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Gagal mengirim email: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'message' => __($status)
-        ], 400);
     }
 
     public function resetPassword(Request $request)
