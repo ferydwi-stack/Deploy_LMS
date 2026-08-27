@@ -9,7 +9,6 @@ import {
   BookOpen, 
   ShieldCheck, 
   Lock, 
-  Camera, 
   CheckCircle2, 
   Award, 
   GraduationCap, 
@@ -19,7 +18,8 @@ import {
   Star,
   Users,
   CalendarCheck,
-  FileCheck2
+  FileCheck2,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { api, setCurrentUser } from '@/lib/api';
@@ -36,6 +36,7 @@ export default function SiswaProfilePage() {
   });
 
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [profileStats, setProfileStats] = useState({
     avgScore: 0,
     attendancePercent: 0,
@@ -99,6 +100,7 @@ export default function SiswaProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     try {
       const res = await api.updateProfile(formData);
       const updated = (res as any)?.user || (res as any)?.data || res;
@@ -110,6 +112,8 @@ export default function SiswaProfilePage() {
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Failed to update profile:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -148,18 +152,11 @@ export default function SiswaProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               
               <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5">
-                {/* Avatar Box (Only avatar has negative margin) */}
+                {/* Avatar Box (Clean initials avatar without broken photo upload button) */}
                 <div className="-mt-14 sm:-mt-16 relative group shrink-0">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#10B981] text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl border-4 border-white">
                     {formData.name?.split(' ').map(n => n[0]).join('') || 'US'}
                   </div>
-                  <button
-                    type="button"
-                    title="Ubah Foto Profil"
-                    className="absolute bottom-1.5 right-1.5 p-1.5 rounded-xl bg-slate-900 text-white hover:bg-emerald-600 transition shadow-md group-hover:scale-105"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                  </button>
                 </div>
 
                 {/* Text Identity Box */}
@@ -328,10 +325,11 @@ export default function SiswaProfilePage() {
               <div className="flex justify-end pt-4 border-t border-slate-100">
                 <button
                   type="submit"
-                  className="px-6 py-3.5 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs rounded-2xl shadow-lg shadow-emerald-500/25 transition flex items-center gap-2 cursor-pointer"
+                  disabled={isSaving}
+                  className="px-6 py-3.5 bg-[#10B981] hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-bold text-xs rounded-2xl shadow-lg shadow-emerald-500/25 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Save className="w-4 h-4" />
-                  <span>Simpan Profil Siswa</span>
+                  <span>{isSaving ? 'Menyimpan...' : 'Simpan Profil Siswa'}</span>
                 </button>
               </div>
             </form>

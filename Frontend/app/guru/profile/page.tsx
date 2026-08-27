@@ -12,7 +12,6 @@ import {
   BookOpen,
   ShieldCheck,
   Lock,
-  Camera,
   CheckCircle2,
   Award,
   Briefcase,
@@ -20,7 +19,8 @@ import {
   Save,
   Users,
   CalendarCheck,
-  GraduationCap
+  GraduationCap,
+  Loader2
 } from 'lucide-react';
 
 export default function GuruProfilePage() {
@@ -36,6 +36,7 @@ export default function GuruProfilePage() {
 
   const [formData, setFormData] = useState({ name: '', nip: '', email: '', subject: '', phone: '', bio: '' });
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [profileStats, setProfileStats] = useState({ courses: 0, students: 0, attendanceRate: 100 });
 
   useEffect(() => {
@@ -71,15 +72,19 @@ export default function GuruProfilePage() {
     }
   }, [currentUser]);
 
-  const { data: profileStatsData } = useRealtimeData(fetchProfileStats, 60000, [currentUser?.id]);
+  const { data: statsData } = useRealtimeData(
+    fetchProfileStats,
+    ['lms:courses', 'lms:users'],
+    { courses: 0, students: 0, attendanceRate: 100 }
+  );
 
   useEffect(() => {
-    if (profileStatsData) setProfileStats(profileStatsData);
-  }, [profileStatsData]);
-
+    if (statsData) setProfileStats(statsData);
+  }, [statsData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
 
     try {
       const res = await api.updateProfile({
@@ -103,6 +108,8 @@ export default function GuruProfilePage() {
     } catch (e: any) {
       console.error('Failed to save profile:', e);
       alert('Gagal menyimpan profil: ' + (e.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -118,12 +125,12 @@ export default function GuruProfilePage() {
     >
       <div className="max-w-6xl mx-auto space-y-8 pb-8">
 
-        {/* Success Toast */}
+        {/* Top Notification Toast */}
         {saved && (
           <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-2xl flex items-center justify-between shadow-xs animate-in fade-in">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Profil pengajar berhasil diperbarui!</span>
+              <span>Profil Pengajar berhasil diperbarui!</span>
             </div>
             <span className="text-[11px] text-emerald-600 font-mono">Tersimpan</span>
           </div>
@@ -131,12 +138,11 @@ export default function GuruProfilePage() {
 
         {/* Banner Cover & Header Card */}
         <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-xs relative">
-          {/* Top Gradient Banner */}
-          <div className="h-44 bg-gradient-to-r from-[#0F172E] via-[#1E293B] to-[#2563EB] relative overflow-hidden">
+          <div className="h-44 bg-gradient-to-r from-[#0F172E] via-[#1E3A8A] to-[#2563EB] relative overflow-hidden">
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:24px_24px]" />
             <div className="absolute right-8 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white text-xs font-medium">
-              <Award className="w-4 h-4 text-amber-400" />
-              <span>Tenaga Pendidik Bersertifikasi</span>
+              <GraduationCap className="w-4 h-4 text-blue-400" />
+              <span>Tenaga Pendidik Terverifikasi</span>
             </div>
           </div>
 
@@ -145,18 +151,11 @@ export default function GuruProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
 
               <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5">
-                {/* Avatar Box */}
+                {/* Avatar Box (Clean initials avatar without camera button) */}
                 <div className="-mt-14 sm:-mt-16 relative group shrink-0">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#2563EB] text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl border-4 border-white font-mono uppercase" suppressHydrationWarning>
                     {avatarInitials}
                   </div>
-                  <button
-                    type="button"
-                    title="Ubah Foto Profil"
-                    className="absolute bottom-1.5 right-1.5 p-1.5 rounded-xl bg-slate-900 text-white hover:bg-blue-600 transition shadow-md group-hover:scale-105"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                  </button>
                 </div>
 
                 {/* Text Identity Box */}
@@ -311,10 +310,11 @@ export default function GuruProfilePage() {
               <div className="flex justify-end pt-4 border-t border-slate-100">
                 <button
                   type="submit"
-                  className="px-6 py-3.5 bg-[#2563EB] hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer"
+                  disabled={isSaving}
+                  className="px-6 py-3.5 bg-[#2563EB] hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>Simpan Perubahan</span>
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
                 </button>
               </div>
             </form>

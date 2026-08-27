@@ -98,74 +98,178 @@ export default function SiswaReportsPage() {
     }
   }, [user]);
 
-  const handleExport = (type: 'pdf' | 'excel') => {
-    const selected = enrolledClassesReports[0];
-    if (!selected) return;
+  const handleExport = async (type: 'pdf' | 'csv' | 'excel') => {
+    if (!enrolledClassesReports || enrolledClassesReports.length === 0) {
+      alert('Belum ada data laporan atau presensi untuk diekspor.');
+      return;
+    }
 
-    if (type === 'excel') {
-      const csvContent = [
-        ['Nama Siswa', 'NIS', 'Kelas', 'Guru', 'Tugas', 'UTS', 'UAS', 'Kehadiran', 'Nilai Akhir', 'Status'],
-        ...enrolledClassesReports.map((row) => [
-          user?.name || '-',
-          user?.nisn_or_nip || '-',
+    const studentName = String(user?.name || 'Siswa').replace(/[^a-zA-Z0-9]/g, '_');
+
+    if (type === 'csv') {
+      const csvRows = [
+        ['No', 'Mata Pelajaran', 'Kode', 'Pengajar', 'Nilai Tugas', 'UTS', 'UAS', 'Persentase Kehadiran', 'Detail Kehadiran', 'Nilai Akhir', 'Status'],
+        ...enrolledClassesReports.map((row, idx) => [
+          idx + 1,
           row.title,
+          row.code,
           row.teacher,
           row.tugasScore ?? '-',
           row.utsScore ?? '-',
           row.uasScore ?? '-',
           row.absensiPercent,
+          row.absensiDetail,
           row.finalScore ?? '-',
           row.status,
         ])
-      ].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      ];
 
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const csvContent = '\uFEFF' + csvRows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Rapor_Akademik_${String(user?.name || 'siswa').replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
+      link.setAttribute('download', `Laporan_Presensi_Nilai_${studentName}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      setExportNotice('Rapor Excel berhasil diunduh.');
+
+      setExportNotice('Laporan Presensi & Nilai (CSV) berhasil diunduh.');
       setTimeout(() => setExportNotice(null), 4000);
       return;
     }
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    if (type === 'excel') {
+      try {
+        const XLSX = await import('xlsx');
+        const raporData = enrolledClassesReports.map((row, index) => ({
+          'No': index + 1,
+          'Kode': row.code,
+          'Mata Pelajaran / Kelas': row.title,
+          'Pengajar': row.teacher,
+          'Nilai Rata-rata Tugas': row.tugasScore ?? '-',
+          'Nilai UTS': row.utsScore ?? '-',
+          'Nilai UAS': row.uasScore ?? '-',
+          'Persentase Kehadiran': row.absensiPercent,
+          'Detail Kehadiran': row.absensiDetail,
+          'Nilai Akhir Kumulatif': row.finalScore ?? '-',
+          'Status Ketuntasan': row.status,
+        }));
 
-    const html = `
-      <html>
-        <head>
-          <title>Rapor Akademik Siswa</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #1e293b; }
-            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-            th, td { border: 1px solid #cbd5e1; padding: 8px; font-size: 12px; }
-            th { background: #f1f5f9; text-align: left; }
-          </style>
-        </head>
-        <body>
-          <h1>Rapor Akademik Siswa</h1>
-          <p>Nama: ${user?.name || '-'}</p>
-          <p>NISN/NIP: ${user?.nisn_or_nip || '-'}</p>
-          <table>
-            <thead><tr><th>Kelas</th><th>Guru</th><th>Tugas</th><th>UTS</th><th>UAS</th><th>Kehadiran</th><th>Nilai Akhir</th><th>Status</th></tr></thead>
-            <tbody>
-              ${enrolledClassesReports.map((row) => `<tr><td>${row.title}</td><td>${row.teacher}</td><td>${row.tugasScore ?? '-'}</td><td>${row.utsScore ?? '-'}</td><td>${row.uasScore ?? '-'}</td><td>${row.absensiPercent}</td><td>${row.finalScore ?? '-'}</td><td>${row.status}</td></tr>`).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>`;
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-    setExportNotice('Rapor PDF siap dicetak.');
-    setTimeout(() => setExportNotice(null), 4000);
+        const wb = XLSX.utils.book_new();
+        const wsRapor = XLSX.utils.json_to_sheet(raporData);
+        XLSX.utils.book_append_sheet(wb, wsRapor, 'Rapor & Presensi');
+        XLSX.writeFile(wb, `Laporan_Presensi_Nilai_${studentName}.xlsx`);
+
+        setExportNotice('Laporan Presensi & Nilai Excel (.xlsx) berhasil diunduh.');
+        setTimeout(() => setExportNotice(null), 4000);
+      } catch (err) {
+        console.error('Failed to export excel:', err);
+      }
+      return;
+    }
+
+    if (type === 'pdf') {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Laporan Hasil Belajar & Presensi Siswa</title>
+            <style>
+              * { box-sizing: border-box; }
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 32px; color: #0f172a; margin: 0; background: #fff; }
+              .header { border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; }
+              .title { font-size: 20px; font-weight: bold; color: #1e293b; margin: 0; }
+              .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; }
+              .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 12px; margin-bottom: 24px; font-size: 11px; }
+              th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+              th { background: #f1f5f9; font-weight: bold; color: #334155; }
+              .center { text-align: center; }
+              .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; background: #dcfce7; color: #166534; }
+              .badge-warn { background: #fee2e2; color: #991b1b; }
+              .footer { margin-top: 32px; display: flex; justify-content: space-between; font-size: 11px; color: #64748b; }
+              @media print {
+                body { padding: 16px; }
+                button { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div>
+                <h1 class="title">EduSchool LMS Platform</h1>
+                <p class="subtitle">Laporan Akademik & Presensi Kehadiran Siswa</p>
+              </div>
+              <div style="text-align: right; font-size: 11px; color: #64748b;">
+                Dicetak pada: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div><strong>Nama Siswa:</strong> ${user?.name || '-'}</div>
+              <div><strong>NIS / NISN:</strong> ${user?.nisn_or_nip || '-'}</div>
+              <div><strong>Kelas / Rombel:</strong> ${user?.specialization || user?.class_name || 'Siswa Reguler'}</div>
+              <div><strong>Email:</strong> ${user?.email || '-'}</div>
+            </div>
+
+            <h3 style="font-size: 14px; margin: 16px 0 8px 0; color: #1e293b;">Ringkasan Nilai & Presensi Per Mata Pelajaran</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 30px;" class="center">No</th>
+                  <th>Mata Pelajaran</th>
+                  <th>Pengajar</th>
+                  <th class="center">Tugas</th>
+                  <th class="center">UTS</th>
+                  <th class="center">UAS</th>
+                  <th class="center">Kehadiran</th>
+                  <th class="center">Nilai Akhir</th>
+                  <th class="center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${enrolledClassesReports.map((row, idx) => `
+                  <tr>
+                    <td class="center">${idx + 1}</td>
+                    <td><strong>${row.title}</strong> (${row.code})</td>
+                    <td>${row.teacher}</td>
+                    <td class="center">${row.tugasScore ?? '-'}</td>
+                    <td class="center">${row.utsScore ?? '-'}</td>
+                    <td class="center">${row.uasScore ?? '-'}</td>
+                    <td class="center">${row.absensiPercent} (${row.absensiDetail})</td>
+                    <td class="center"><strong>${row.finalScore ?? '-'}</strong></td>
+                    <td class="center">
+                      <span class="badge ${row.status === 'Remedial' ? 'badge-warn' : ''}">${row.status}</span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+
+            <div class="footer">
+              <div>* Dokumen ini dibuat otomatis oleh Sistem E-Learning EduSchool</div>
+              <div>Mengetahui,<br><br><br><strong>Wali Kelas / Guru Pengajar</strong></div>
+            </div>
+          </body>
+        </html>`;
+
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 300);
+
+      setExportNotice('Rapor PDF siap dicetak / disimpan.');
+      setTimeout(() => setExportNotice(null), 4000);
+    }
   };
 
   return (
@@ -200,18 +304,18 @@ export default function SiswaReportsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleExport('pdf')}
-            className="px-5 py-3 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-2xl text-xs flex items-center gap-2 transition shadow-md shadow-blue-500/20"
+            className="px-5 py-3 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-2xl text-xs flex items-center gap-2 transition shadow-md shadow-blue-500/20 cursor-pointer"
           >
             <FileText className="w-4 h-4" />
             <span>Unduh Rapor (PDF)</span>
           </button>
 
           <button
-            onClick={() => handleExport('excel')}
-            className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs flex items-center gap-2 transition"
+            onClick={() => handleExport('csv')}
+            className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs flex items-center gap-2 transition cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-slate-500" />
-            <span>Export Excel</span>
+            <span>Export CSV</span>
           </button>
         </div>
       </div>

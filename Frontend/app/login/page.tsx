@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, ArrowRight, Mail, Lock, Eye, EyeOff, ShieldCheck, UserCheck, BookOpen } from 'lucide-react';
+import { GraduationCap, ArrowRight, Mail, Lock, Eye, EyeOff, ShieldCheck, UserCheck, BookOpen, Loader2 } from 'lucide-react';
 
 import TypewriterText from '@/components/TypewriterText';
 import { api } from '@/lib/api';
@@ -172,36 +172,44 @@ export default function LoginPage() {
             {/* Main Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="login-email" className="block text-xs font-bold text-slate-700 mb-1.5">Email / Username</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5" htmlFor="login-email">
+                  Email atau NIP / NISN
+                </label>
                 <div className="relative">
                   <input
                     id="login-email"
                     name="email"
                     type="text"
                     required
-                    aria-label="Email atau Username"
-                    placeholder="nama@EduSchool.sch.id"
+                    disabled={loading}
+                    autoComplete="username"
+                    aria-label="Email atau NIP / NISN"
+                    placeholder="nama@sekolah.sch.id atau NIP/NISN"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB] transition shadow-xs pl-10 font-medium"
+                    className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB] transition shadow-xs pl-10 font-medium disabled:bg-slate-100 disabled:opacity-60"
                   />
                   <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" aria-hidden="true" />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="login-password" className="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5" htmlFor="login-password">
+                  Kata Sandi
+                </label>
                 <div className="relative">
                   <input
                     id="login-password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
+                    disabled={loading}
+                    autoComplete="current-password"
                     aria-label="Kata Sandi / Password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB] transition shadow-xs pl-10 pr-10 font-medium"
+                    className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB] transition shadow-xs pl-10 pr-10 font-medium disabled:bg-slate-100 disabled:opacity-60"
                   />
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" aria-hidden="true" />
                   <button
@@ -222,6 +230,7 @@ export default function LoginPage() {
                     name="remember"
                     type="checkbox"
                     checked={rememberMe}
+                    disabled={loading}
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]"
                   />
@@ -238,10 +247,20 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full py-4 bg-[#2563EB] hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2 mt-4 cursor-pointer"
+                disabled={loading}
+                className="w-full py-4 bg-[#2563EB] hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:cursor-not-allowed"
               >
-                <span>Login</span>
-                <ArrowRight className="w-4 h-4" />
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Memproses Login...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Login</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
 
