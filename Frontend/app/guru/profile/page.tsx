@@ -72,11 +72,7 @@ export default function GuruProfilePage() {
     }
   }, [currentUser]);
 
-  const { data: statsData } = useRealtimeData(
-    fetchProfileStats,
-    ['lms:courses', 'lms:users'],
-    { courses: 0, students: 0, attendanceRate: 100 }
-  );
+  const { data: statsData } = useRealtimeData(fetchProfileStats, 60000, [currentUser?.id]);
 
   useEffect(() => {
     if (statsData) setProfileStats(statsData);
