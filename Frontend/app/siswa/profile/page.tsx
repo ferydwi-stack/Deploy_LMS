@@ -117,6 +117,20 @@ export default function SiswaProfilePage() {
     }
   };
 
+  const avatarInitials = formData.name
+    ? formData.name
+        .replace(/\(.*?\)/g, '')
+        .replace(/,.*$/, '')
+        .replace(/[^a-zA-Z\s]/g, '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((n: string) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase() || 'SD'
+    : 'SD';
+
   return (
     <DashboardLayout
       role="siswa"
@@ -152,10 +166,10 @@ export default function SiswaProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               
               <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5">
-                {/* Avatar Box (Clean initials avatar without broken photo upload button) */}
+                {/* Avatar Box (Clean 2-letter uppercase initials) */}
                 <div className="-mt-14 sm:-mt-16 relative group shrink-0">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#10B981] text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl border-4 border-white">
-                    {formData.name?.split(' ').map(n => n[0]).join('') || 'US'}
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#10B981] text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl border-4 border-white font-mono uppercase" suppressHydrationWarning>
+                    {avatarInitials}
                   </div>
                 </div>
 

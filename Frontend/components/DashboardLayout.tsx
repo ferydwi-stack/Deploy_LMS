@@ -110,7 +110,17 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
     const activeUser = rawUser?.user || rawUser?.data || rawUser;
     if (activeUser?.name) {
       userDisplayName = activeUser.name;
-      userInitials = activeUser.name.replace(/,.*$/, '').split(' ').filter(Boolean).map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+      userInitials = activeUser.name
+        .replace(/\(.*?\)/g, '')
+        .replace(/,.*$/, '')
+        .replace(/[^a-zA-Z\s]/g, '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((n: string) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase() || fallbackInitials;
     }
     if (activeUser?.subject || activeUser?.specialization) {
       userDisplaySub = activeUser.subject || activeUser.specialization;
