@@ -36,3 +36,4 @@ docs/
 generate_laporan_pkl_docx.py
 __pycache__/
 *.pyc
+PANDUAN_PRESENTASI_ARSITEKTUR_LMS.md
