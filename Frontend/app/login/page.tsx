@@ -173,7 +173,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5" htmlFor="login-email">
-                  Email atau NIP / NISN
+                  Email
                 </label>
                 <div className="relative">
                   <input
@@ -183,8 +183,8 @@ export default function LoginPage() {
                     required
                     disabled={loading}
                     autoComplete="username"
-                    aria-label="Email atau NIP / NISN"
-                    placeholder="nama@sekolah.sch.id atau NIP/NISN"
+                    aria-label="Email"
+                    placeholder="nama@sekolah.sch.id "
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB] transition shadow-xs pl-10 font-medium disabled:bg-slate-100 disabled:opacity-60"
