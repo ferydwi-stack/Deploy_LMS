@@ -112,27 +112,40 @@ function GuruAbsensiContent() {
     setIsLoading(attendanceLoading);
   }, [attendanceData, attendanceLoading]);
 
-  const saveAttendances = async (updated: any[]) => {
-    await api.saveCourseAttendances(Number(courseId), {
-      date: selectedDate,
-      attendances: updated.map((student) => ({
-        student_id: student.dbId,
-        status: student.status
-      }))
-    });
-  };
-
   const handleStatusChange = async (index: number, newStatus: string) => {
+    const targetStudent = students[index];
+    if (!targetStudent || !targetStudent.dbId) return;
+
+    const normalizedStatus = newStatus.toLowerCase() === 'alfa' ? 'alpha' : newStatus.toLowerCase();
+
     const updated = students.map((student, studentIndex) =>
-      studentIndex === index ? { ...student, status: newStatus } : student
+      studentIndex === index
+        ? {
+            ...student,
+            status: newStatus,
+            time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+          }
+        : student
     );
     setStudents(updated);
 
     try {
-      await saveAttendances(updated);
+      await api.saveCourseAttendances(Number(courseId), {
+        date: selectedDate,
+        attendances: [{
+          student_id: targetStudent.dbId,
+          status: normalizedStatus
+        }]
+      });
+      notifyDataChanged('lms:attendances');
+      notifyDataChanged('lms:stats');
       await refreshAttendance();
-    } catch (e) {
+      setBatchToast(`Status kehadiran untuk "${targetStudent.name}" berhasil diubah menjadi ${newStatus}!`);
+      setTimeout(() => setBatchToast(''), 3000);
+    } catch (e: any) {
       console.error('Failed to save attendance:', e);
+      alert(e.message || 'Gagal menyimpan status kehadiran siswa.');
+      await refreshAttendance();
     }
   };
 
@@ -162,13 +175,31 @@ function GuruAbsensiContent() {
     setStudents(updated);
 
     try {
-      await saveAttendances(updated);
+      await api.saveCourseAttendances(Number(courseId), {
+        date: selectedDate,
+        attendances: students.map(s => ({
+          student_id: s.dbId,
+          status: 'hadir'
+        }))
+      });
+      notifyDataChanged('lms:attendances');
+      notifyDataChanged('lms:stats');
       await refreshAttendance();
       setBatchToast(`Seluruh siswa berhasil ditandai HADIR pada tanggal ${selectedDate}!`);
       setTimeout(() => setBatchToast(''), 3000);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to save attendance:', e);
+      alert(e.message || 'Gagal menyimpan kehadiran semua siswa.');
     }
+  };
+
+  const isAttendanceActive = (): boolean => {
+    if (!attendanceOpenTime || !attendanceCloseTime) return false;
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const openTime = attendanceOpenTime.substring(0, 5);
+    const closeTime = attendanceCloseTime.substring(0, 5);
+    return currentTime >= openTime && currentTime <= closeTime;
   };
 
   const getStatusBadgeClass = (status: string) => {
@@ -297,35 +328,72 @@ function GuruAbsensiContent() {
       </div>
 
       {/* Schedule Setting Section */}
-      <div className="bg-blue-50 border border-blue-200 rounded-3xl p-5 mb-6 shadow-xs">
-        <p className="text-xs font-bold text-slate-700 mb-3">⏰ Atur Jadwal Absensi Aktif</p>
-        <div className="flex flex-wrap items-end gap-3">
+      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 mb-6 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100">
           <div>
-            <label className="text-xs font-bold text-slate-600 block mb-1">Jam Mulai Absensi:</label>
+            <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+              <span>⏰ Jadwal Presensi Mandiri Siswa</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Atur jam buka dan jam tutup agar siswa dapat melakukan absensi secara mandiri.
+            </p>
+          </div>
+          <div>
+            {attendanceOpenTime && attendanceCloseTime ? (
+              isAttendanceActive() ? (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl text-xs font-extrabold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 -ml-4.5"></span>
+                  <span>PRESENSI SEDANG AKTIF ({attendanceOpenTime} – {attendanceCloseTime} WIB)</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs font-extrabold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                  <span>PRESENSI DITUTUP (Jadwal: {attendanceOpenTime} – {attendanceCloseTime} WIB)</span>
+                </div>
+              )
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-2xl text-xs font-extrabold">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span>JADWAL BELUM DIATUR</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1.5">Jam Mulai Absensi (Buka):</label>
             <input
               type="time"
               value={attendanceOpenTime}
-              onChange={(e) => setAttendanceOpenTime(e.target.value)}
-              className="px-3 py-2 bg-white border border-blue-300 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600"
+              onChange={(e) => {
+                setAttendanceOpenTime(e.target.value);
+                setIsEditingSchedule(true);
+              }}
+              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-600 block mb-1">Jam Selesai Absensi:</label>
+            <label className="text-xs font-bold text-slate-700 block mb-1.5">Jam Selesai Absensi (Tutup):</label>
             <input
               type="time"
               value={attendanceCloseTime}
-              onChange={(e) => setAttendanceCloseTime(e.target.value)}
-              className="px-3 py-2 bg-white border border-blue-300 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600"
+              onChange={(e) => {
+                setAttendanceCloseTime(e.target.value);
+                setIsEditingSchedule(true);
+              }}
+              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
             />
           </div>
           <button
             onClick={handleSaveSchedule}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl text-xs transition cursor-pointer"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl text-xs transition shadow-xs cursor-pointer"
           >
-            Simpan Jadwal
+            Simpan Jadwal Absensi
           </button>
           {scheduleMessage && (
-            <span className="text-xs font-semibold text-blue-700 px-3 py-1 bg-blue-100 rounded-xl">
+            <span className="text-xs font-semibold text-emerald-700 px-3.5 py-2 bg-emerald-50 border border-emerald-200 rounded-2xl">
               {scheduleMessage}
             </span>
           )}

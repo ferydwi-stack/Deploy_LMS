@@ -31,11 +31,18 @@ class AttendanceService
 
         foreach ($attendanceData as $data) {
             if (! in_array((int) $data['student_id'], $enrolledStudentIds, true)) {
-                throw new \InvalidArgumentException('Siswa tidak terdaftar aktif di kelas ini.');
+                continue;
             }
 
             $rawStatus = strtolower(trim((string)$data['status']));
+            if ($rawStatus === '-' || $rawStatus === '' || $rawStatus === 'belum absen' || $rawStatus === 'belum') {
+                continue;
+            }
+
             $cleanStatus = ($rawStatus === 'alpa') ? 'alpha' : $rawStatus;
+            if (! in_array($cleanStatus, ['hadir', 'izin', 'sakit', 'alpha'], true)) {
+                continue;
+            }
 
             Attendance::updateOrCreate(
                 [
@@ -45,7 +52,7 @@ class AttendanceService
                 ],
                 [
                     'status' => $cleanStatus,
-                    'note' => $data['note'] ?? null,
+                    'note' => $data['note'] ?? 'Presensi oleh Guru Pengampu',
                 ]
             );
         }
