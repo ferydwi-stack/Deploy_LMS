@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, CheckCircle2, UserCheck, Calendar, RefreshCw, Clock, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
-import { api } from '@/lib/api';
+import { api, notifyDataChanged } from '@/lib/api';
 
 function GuruAbsensiContent() {
   const searchParams = useSearchParams();
@@ -38,6 +38,9 @@ function GuruAbsensiContent() {
     dateOptions.push({ label, value: val });
   }
 
+  const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+  const scheduleLoadedRef = React.useRef(false);
+
   const loadAttendanceData = React.useCallback(async () => {
     try {
       const [courseDetail, attendances, statsRes] = await Promise.all([
@@ -46,11 +49,14 @@ function GuruAbsensiContent() {
         api.getCourseAttendanceStats(Number(courseId)).catch(() => ({ stats: {} })),
       ]);
 
-       const enrolled = courseDetail?.students || [];
-       setAttendanceOpenTime(courseDetail?.attendance_open_time || '');
-       setAttendanceCloseTime(courseDetail?.attendance_close_time || '');
-       setAttendanceStats(statsRes?.stats || {});
-       const savedDailyList = Array.isArray(attendances) ? attendances : [];
+      const enrolled = courseDetail?.students || [];
+      if (!scheduleLoadedRef.current) {
+        if (courseDetail?.attendance_open_time) setAttendanceOpenTime(courseDetail.attendance_open_time.substring(0, 5));
+        if (courseDetail?.attendance_close_time) setAttendanceCloseTime(courseDetail.attendance_close_time.substring(0, 5));
+        scheduleLoadedRef.current = true;
+      }
+      setAttendanceStats(statsRes?.stats || {});
+      const savedDailyList = Array.isArray(attendances) ? attendances : [];
 
       if (!Array.isArray(enrolled) || enrolled.length === 0) return [];
 
@@ -141,7 +147,11 @@ function GuruAbsensiContent() {
         attendance_open_time: attendanceOpenTime,
         attendance_close_time: attendanceCloseTime,
       });
-      setScheduleMessage(`Absensi aktif pukul ${attendanceOpenTime}–${attendanceCloseTime} WIB.`);
+      scheduleLoadedRef.current = true;
+      notifyDataChanged('lms:courses');
+      notifyDataChanged('lms:attendances');
+      setScheduleMessage(`✓ Jadwal absensi berhasil disimpan! Aktif pukul ${attendanceOpenTime}–${attendanceCloseTime} WIB.`);
+      setTimeout(() => setScheduleMessage(''), 4000);
     } catch (error: any) {
       setScheduleMessage(error.message || 'Jadwal absensi gagal disimpan.');
     }
