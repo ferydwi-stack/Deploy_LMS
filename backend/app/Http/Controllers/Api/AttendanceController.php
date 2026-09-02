@@ -20,7 +20,10 @@ class AttendanceController extends Controller
         $date = $request->query('date', $todayWib);
         $attendances = app(AttendanceService::class)->getCourseAttendances($course, $date);
         
-        return response()->json(['attendances' => $attendances]);
+        return response()->json([
+            'attendances' => $attendances,
+            'data' => $attendances,
+        ]);
     }
 
     public function stats(Course $course)
@@ -91,6 +94,9 @@ class AttendanceController extends Controller
         $user = $request->user();
         $attendances = app(AttendanceService::class)->getMyAttendances($user);
         
-        return response()->json(['attendances' => $attendances]);
+        return response()->json([
+            'attendances' => $attendances,
+            'data' => $attendances,
+        ]);
     }
 }

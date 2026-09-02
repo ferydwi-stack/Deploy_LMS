@@ -56,13 +56,19 @@ function GuruAbsensiContent() {
         scheduleLoadedRef.current = true;
       }
       setAttendanceStats(statsRes?.stats || {});
-      const savedDailyList = Array.isArray(attendances) ? attendances : [];
+      const savedDailyList = Array.isArray(attendances)
+        ? attendances
+        : ((attendances as any)?.attendances || (attendances as any)?.data || []);
 
       if (!Array.isArray(enrolled) || enrolled.length === 0) return [];
 
       return enrolled.map((s: any, idx: number) => {
+        const studentIdNum = Number(s.id);
         const existing = savedDailyList.find((item: any) =>
-          String(item.student_id) === String(s.id) || String(item.student?.id) === String(s.id) || (s.email && item.email === s.email)
+          Number(item.student_id) === studentIdNum ||
+          Number(item.student?.id) === studentIdNum ||
+          (s.email && item.email === s.email) ||
+          (s.email && item.student?.email === s.email)
         );
 
         let timeFormatted = '-';
