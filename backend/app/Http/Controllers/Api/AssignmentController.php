@@ -84,11 +84,20 @@ class AssignmentController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $assignment = Assignment::findOrFail($id);
+        $assignment = Assignment::find($id);
+        if (!$assignment) {
+            return response()->json([
+                'message' => 'Tugas sudah berhasil dihapus atau tidak ditemukan.',
+            ]);
+        }
+
         $this->authorize('delete', $assignment);
 
         if ($assignment->attachment_path) {
-            Storage::disk('public')->delete($assignment->attachment_path);
+            try {
+                Storage::disk('public')->delete($assignment->attachment_path);
+                \App\Models\FileStorage::where('path', $assignment->attachment_path)->delete();
+            } catch (\Throwable $t) {}
         }
 
         $assignment->delete();

@@ -208,12 +208,14 @@ function GuruTugasContent() {
     try {
       await api.deleteAssignment(itemToDelete.id);
       notifyDataChanged('lms_assignments_updated');
+      notifyDataChanged('lms:assignments');
       await loadDataFromApi();
+    } catch (err: any) {
+      console.warn('Delete assignment notice:', err);
+      await loadDataFromApi();
+    } finally {
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
-    } catch (err: any) {
-      console.error('Delete assignment error:', err);
-      alert(err.message || 'Gagal menghapus tugas');
     }
   };
 

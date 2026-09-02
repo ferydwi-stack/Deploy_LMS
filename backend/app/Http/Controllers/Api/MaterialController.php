@@ -77,7 +77,10 @@ class MaterialController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $material = Material::findOrFail($id);
+        $material = Material::find($id);
+        if (!$material) {
+            return response()->json(['message' => 'Materi sudah berhasil dihapus atau tidak ditemukan.']);
+        }
         
         $user = $request->user();
         
@@ -89,7 +92,10 @@ class MaterialController extends Controller
         }
 
         if ($material->file_path) {
-            Storage::disk('public')->delete($material->file_path);
+            try {
+                Storage::disk('public')->delete($material->file_path);
+                \App\Models\FileStorage::where('path', $material->file_path)->delete();
+            } catch (\Throwable $t) {}
         }
 
         $material->delete();
