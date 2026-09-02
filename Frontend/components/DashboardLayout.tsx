@@ -58,40 +58,57 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('lms_token');
-      const cached = localStorage.getItem('lms_user');
+      const verifySession = () => {
+        const token = localStorage.getItem('lms_token');
+        const cached = localStorage.getItem('lms_user');
 
-      if (!token || !cached) {
-        setIsAuthorized(false);
-        window.location.replace('/login');
-        return;
-      }
-
-      try {
-        const parsed = JSON.parse(cached);
-        const activeUser = parsed?.user || parsed?.data || parsed;
-        setMountedUser(activeUser);
-
-        const activeRole = activeUser?.role;
-        if (!activeRole) {
+        if (!token || !cached) {
           setIsAuthorized(false);
           window.location.replace('/login');
           return;
         }
 
-        // Strict role matching: if activeRole !== role of current layout, redirect to correct role dashboard
-        if (activeRole !== role) {
+        try {
+          const parsed = JSON.parse(cached);
+          const activeUser = parsed?.user || parsed?.data || parsed;
+          setMountedUser(activeUser);
+
+          const activeRole = activeUser?.role;
+          if (!activeRole) {
+            setIsAuthorized(false);
+            window.location.replace('/login');
+            return;
+          }
+
+          // Strict role matching: if activeRole !== role of current layout, redirect to correct role dashboard
+          if (activeRole !== role) {
+            setIsAuthorized(false);
+            window.location.replace(`/${activeRole}/dashboard`);
+            return;
+          }
+
+          setIsAuthorized(true);
+        } catch (err) {
           setIsAuthorized(false);
-          window.location.replace(`/${activeRole}/dashboard`);
+          window.location.replace('/login');
           return;
         }
+      };
 
-        setIsAuthorized(true);
-      } catch (err) {
-        setIsAuthorized(false);
-        window.location.replace('/login');
-        return;
-      }
+      verifySession();
+
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === 'lms_token' || e.key === 'lms_user' || e.key === null) {
+          verifySession();
+        }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('lms_user_updated', verifySession);
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('lms_user_updated', verifySession);
+      };
     }
   }, [role]);
 
