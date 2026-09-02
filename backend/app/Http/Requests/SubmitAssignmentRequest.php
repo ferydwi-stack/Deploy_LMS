@@ -14,8 +14,9 @@ class SubmitAssignmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['nullable', 'file', 'max:10240', 'mimes:pdf,doc,docx,zip,rar,png,jpg,jpeg'],
-            'note' => ['nullable', 'string'],
+            'file' => ['nullable', 'file', 'max:51200', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,png,jpg,jpeg,txt,csv'],
+            'note' => ['nullable', 'string', 'max:5000'],
         ];
     }
 }
+

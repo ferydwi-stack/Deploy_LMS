@@ -18,8 +18,18 @@ function SiswaAbsensiContent() {
   const courseCode = searchParams.get('code') || 'MAPEL';
   const courseId = searchParams.get('course_id') || '2';
 
-  const todayStr = new Date().toISOString().split('T')[0];
   const [attendanceMessage, setAttendanceMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const getLocalDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getLocalDateString();
 
   const loadAttendances = React.useCallback(async () => {
     try {
@@ -30,7 +40,12 @@ function SiswaAbsensiContent() {
       const courseAttendances = Array.isArray(attendances)
         ? attendances.filter((a: any) => String(a.course_id) === String(courseId))
         : [];
-      const hasToday = courseAttendances.some((a: any) => String(a.date).startsWith(todayStr));
+      
+      const localDate = getLocalDateString();
+      const hasToday = courseAttendances.some((a: any) => {
+        const attDate = String(a.date || '').substring(0, 10);
+        return attDate === localDate || (a.created_at && String(a.created_at).substring(0, 10) === localDate);
+      });
 
       return {
         courseDetail: courseData,
@@ -41,11 +56,11 @@ function SiswaAbsensiContent() {
       console.error(e);
       return { courseDetail: null, history: [], submittedToday: false };
     }
-  }, [courseId, todayStr]);
+  }, [courseId]);
 
   const { data: realtimeAttData, refresh: refreshAttendance } = useRealtimeData(
     loadAttendances,
-    8000,
+    5000,
     [courseId, todayStr],
     ['lms:attendances', 'lms:courses']
   );
@@ -55,14 +70,17 @@ function SiswaAbsensiContent() {
   const submittedToday = realtimeAttData?.submittedToday || false;
 
   const handleFillAttendance = async () => {
-    if (submittedToday) return;
+    if (submittedToday || isSubmitting) return;
+    setIsSubmitting(true);
     try {
-      await api.selfAttend(parseInt(courseId));
-      setAttendanceMessage('Kehadiran Anda berhasil dicatat.');
+      const res = await api.selfAttend(parseInt(courseId));
+      setAttendanceMessage(res.message || 'Kehadiran Anda berhasil dicatat.');
       await refreshAttendance();
     } catch (e: any) {
       setAttendanceMessage(e.message || 'Gagal mencatat kehadiran.');
       console.error(e);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -72,7 +90,9 @@ function SiswaAbsensiContent() {
     }
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    return currentTime >= courseDetail.attendance_open_time && currentTime <= courseDetail.attendance_close_time;
+    const openTime = courseDetail.attendance_open_time.substring(0, 5);
+    const closeTime = courseDetail.attendance_close_time.substring(0, 5);
+    return currentTime >= openTime && currentTime <= closeTime;
   };
 
   const queryParamsStr = `?course_id=${courseId}&title=${encodeURIComponent(courseTitle)}&teacher=${encodeURIComponent(courseTeacher)}&code=${encodeURIComponent(courseCode)}`;
@@ -139,7 +159,7 @@ function SiswaAbsensiContent() {
 
         {courseDetail?.attendance_open_time && courseDetail?.attendance_close_time && (
           <div className="mb-4 p-3 bg-slate-100 rounded-2xl text-xs font-semibold text-slate-700">
-            ⏰ Jadwal Absensi Aktif: {courseDetail.attendance_open_time}–{courseDetail.attendance_close_time} WIB
+            ⏰ Jadwal Absensi Aktif: {courseDetail.attendance_open_time.substring(0, 5)}–{courseDetail.attendance_close_time.substring(0, 5)} WIB
             {isAttendanceTimeOpen() ? (
               <span className="ml-2 text-emerald-600">✓ Sedang Aktif</span>
             ) : (
@@ -150,7 +170,7 @@ function SiswaAbsensiContent() {
 
         {attendanceMessage && (
           <div className={`mb-4 p-3 rounded-2xl text-xs font-semibold ${
-            attendanceMessage.includes('berhasil') 
+            attendanceMessage.includes('berhasil') || attendanceMessage.includes('Kehadiran')
               ? 'bg-emerald-100 text-emerald-700' 
               : 'bg-rose-100 text-rose-700'
           }`}>
@@ -160,19 +180,27 @@ function SiswaAbsensiContent() {
 
         <button
           onClick={handleFillAttendance}
-          disabled={submittedToday || !isAttendanceTimeOpen()}
+          disabled={submittedToday || isSubmitting || !isAttendanceTimeOpen()}
           className={`w-full max-w-sm py-3.5 rounded-2xl font-bold text-xs shadow-lg transition flex items-center justify-center gap-2 mx-auto cursor-pointer ${
             submittedToday
               ? 'bg-emerald-500 text-white cursor-not-allowed shadow-none'
+              : isSubmitting
+              ? 'bg-slate-400 text-white cursor-not-allowed shadow-none'
               : !isAttendanceTimeOpen()
               ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
               : 'bg-[#10B981] hover:bg-emerald-600 text-white shadow-emerald-500/25'
           }`}
         >
-          <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+          {isSubmitting ? (
+            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+          )}
           <span>
             {submittedToday 
               ? '✓ Kehadiran Hari Ini Sudah Tercatat' 
+              : isSubmitting
+              ? '⏳ Memproses Presensi...'
               : !isAttendanceTimeOpen()
               ? '⏳ Absensi Belum Dibuka atau Sudah Ditutup'
               : 'Klik Untuk Absen Hadir Hari Ini'}

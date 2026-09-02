@@ -117,9 +117,13 @@ function SiswaTugasContent() {
     });
   })();
 
+  const [submitLink, setSubmitLink] = useState('');
+  const [isSubmittingTask, setIsSubmittingTask] = useState(false);
+
   const handleOpenSubmitModal = (t: any) => {
     setSelectedTask(t);
     setSubmitFile(null);
+    setSubmitLink('');
     setSubmitNote('');
     setIsSubmitModalOpen(true);
   };
@@ -151,26 +155,43 @@ function SiswaTugasContent() {
 
   const handleSubmitTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTask) return;
+    if (!selectedTask || isSubmittingTask) return;
 
+    if (!submitFile && !submitLink.trim() && !submitNote.trim()) {
+      alert('Mohon unggah file jawaban atau cantumkan tautan link tugas.');
+      return;
+    }
+
+    setIsSubmittingTask(true);
     try {
       const formData = new FormData();
       if (submitFile) {
         formData.append('file', submitFile);
       }
-      formData.append('note', submitNote || 'Tugas dikumpulkan via web LMS');
 
-      await api.submitAssignment(selectedTask.id, formData);
+      let combinedNote = '';
+      if (submitLink.trim()) {
+        combinedNote += `Tautan Tugas: ${submitLink.trim()}`;
+      }
+      if (submitNote.trim()) {
+        combinedNote += combinedNote ? `\n\nCatatan: ${submitNote.trim()}` : submitNote.trim();
+      }
+
+      formData.append('note', combinedNote || 'Tugas dikumpulkan via web LMS');
+
+      const res = await api.submitAssignment(selectedTask.id, formData);
       await Promise.all([refreshSubmissions(), refreshAssignments()]);
       notifyDataChanged('lms_submissions_updated');
       notifyDataChanged('lms_assignments_updated');
 
       setIsSubmitModalOpen(false);
-      setSubmittedNotice(`Tugas "${selectedTask.title}" berhasil dikumpulkan!`);
+      setSubmittedNotice(res?.message || `Tugas "${selectedTask.title}" berhasil dikumpulkan!`);
       setTimeout(() => setSubmittedNotice(null), 4000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Submit error:', err);
-      alert('Gagal mengirim tugas. Silakan coba lagi.');
+      alert(err.message || 'Gagal mengirim tugas. Silakan periksa koneksi dan coba lagi.');
+    } finally {
+      setIsSubmittingTask(false);
     }
   };
 
@@ -454,9 +475,20 @@ function SiswaTugasContent() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Tautan / Link Tugas Online (Opsional)</label>
+                <input
+                  type="url"
+                  placeholder="https://docs.google.com/..., https://github.com/..., dsb."
+                  value={submitLink}
+                  onChange={(e) => setSubmitLink(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">Catatan Tambahan (Opsional)</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Tuliskan catatan singkat untuk Guru jika ada..."
                   value={submitNote}
                   onChange={(e) => setSubmitNote(e.target.value)}
@@ -468,15 +500,20 @@ function SiswaTugasContent() {
                 <button
                   type="button"
                   onClick={() => setIsSubmitModalOpen(false)}
-                  className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition"
+                  disabled={isSubmittingTask}
+                  className="px-5 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition"
+                  disabled={isSubmittingTask}
+                  className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2"
                 >
-                  Kirimkan Jawaban
+                  {isSubmittingTask && (
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  <span>{isSubmittingTask ? 'Mengirimkan...' : 'Kirimkan Jawaban'}</span>
                 </button>
               </div>
             </form>

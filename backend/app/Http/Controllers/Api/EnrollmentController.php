@@ -16,9 +16,12 @@ class EnrollmentController extends Controller
     {
         $user = $request->user();
         
-        app(CourseService::class)->enrollStudent($course, $user);
-        
-        return response()->json(['message' => 'Successfully enrolled in course']);
+        try {
+            app(CourseService::class)->enrollStudent($course, $user);
+            return response()->json(['message' => "Berhasil bergabung ke kelas {$course->title}."]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 
     public function enrollByCode(Request $request)
@@ -30,9 +33,12 @@ class EnrollmentController extends Controller
         ]);
 
         $code = strtoupper(trim($validated['code']));
-        $course = app(CourseService::class)->enrollByCode($code, $user);
-        
-        return response()->json(['message' => 'Successfully enrolled', 'course' => $course]);
+        try {
+            $course = app(CourseService::class)->enrollByCode($code, $user);
+            return response()->json(['message' => "Berhasil bergabung ke kelas {$course->title}!", 'course' => $course]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 
     public function leave(Course $course, Request $request)

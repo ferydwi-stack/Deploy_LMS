@@ -39,17 +39,43 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
   const [isClient, setIsClient] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('lms_token');
       const cached = localStorage.getItem('lms_user');
-      if (cached) {
-        try { setMountedUser(JSON.parse(cached)); } catch {}
+
+      if (!token) {
+        window.location.replace('/login');
+        return;
       }
+
+      let activeRole = role;
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          const activeUser = parsed?.user || parsed?.data || parsed;
+          setMountedUser(activeUser);
+          if (activeUser?.role) {
+            activeRole = activeUser.role;
+          }
+        } catch {}
+      }
+
+      // Role mismatch redirection
+      if (activeRole !== role) {
+        window.location.replace(`/${activeRole}/dashboard`);
+        return;
+      }
+
+      setIsAuthorized(true);
     }
-  }, []);
+  }, [role]);
 
   useEffect(() => {
+    if (!isAuthorized) return;
     const loadNotifications = async () => {
       try {
         const data = await api.getNotifications();
@@ -58,7 +84,7 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
       } catch {}
     };
     loadNotifications();
-  }, []);
+  }, [isAuthorized]);
 
   const roleConfig = {
     admin: {
@@ -180,6 +206,15 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
       });
     }
   }, [role, userStats.total]);
+
+  if (!isClient || !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#2563EB] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs font-bold text-slate-500">Memverifikasi Sesi Autentikasi...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white">

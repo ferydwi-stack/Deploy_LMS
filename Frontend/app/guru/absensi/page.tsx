@@ -56,16 +56,26 @@ function GuruAbsensiContent() {
 
       return enrolled.map((s: any, idx: number) => {
         const existing = savedDailyList.find((item: any) =>
-          String(item.student_id) === String(s.id) || String(item.student?.id) === String(s.id) || item.email === s.email
+          String(item.student_id) === String(s.id) || String(item.student?.id) === String(s.id) || (s.email && item.email === s.email)
         );
 
         let timeFormatted = '-';
         if (existing?.updated_at) {
           const d = new Date(existing.updated_at);
-          timeFormatted = d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+          timeFormatted = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
         } else if (existing?.created_at) {
           const d = new Date(existing.created_at);
-          timeFormatted = d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+          timeFormatted = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+        }
+
+        let displayStatus = '-';
+        if (existing?.status) {
+          const st = String(existing.status).toLowerCase().trim();
+          if (st === 'hadir') displayStatus = 'Hadir';
+          else if (st === 'izin') displayStatus = 'Izin';
+          else if (st === 'sakit') displayStatus = 'Sakit';
+          else if (st === 'alpha' || st === 'alpa') displayStatus = 'Alfa';
+          else displayStatus = existing.status;
         }
 
         return {
@@ -74,7 +84,7 @@ function GuruAbsensiContent() {
           dbId: s.id,
           name: s.name,
           email: s.email,
-          status: existing?.status || '-',
+          status: displayStatus,
           note: existing?.note || '',
           time: timeFormatted,
         };

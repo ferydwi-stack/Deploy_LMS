@@ -12,16 +12,13 @@ class AttendanceService
 {
     public function getCourseAttendances(Course $course, ?string $date = null): Collection
     {
-        $query = Attendance::with('student')
-            ->where('course_id', $course->id);
+        $todayWib = Carbon::today('Asia/Jakarta')->toDateString();
+        $targetDate = $date ?: $todayWib;
 
-        if ($date) {
-            $query->whereDate('date', $date);
-        } else {
-            $query->whereDate('date', today());
-        }
-
-        return $query->get();
+        return Attendance::with('student')
+            ->where('course_id', $course->id)
+            ->whereDate('date', $targetDate)
+            ->get();
     }
 
     public function saveBulkAttendances(Course $course, array $attendanceData, string $date): void
@@ -37,6 +34,9 @@ class AttendanceService
                 throw new \InvalidArgumentException('Siswa tidak terdaftar aktif di kelas ini.');
             }
 
+            $rawStatus = strtolower(trim((string)$data['status']));
+            $cleanStatus = ($rawStatus === 'alpa') ? 'alpha' : $rawStatus;
+
             Attendance::updateOrCreate(
                 [
                     'course_id' => $course->id,
@@ -44,7 +44,7 @@ class AttendanceService
                     'date' => $date,
                 ],
                 [
-                    'status' => $data['status'],
+                    'status' => $cleanStatus,
                     'note' => $data['note'] ?? null,
                 ]
             );
@@ -59,31 +59,41 @@ class AttendanceService
             ->exists();
 
         if (!$isEnrolled) {
-            throw new \Exception('Tidak terdaftar di kelas ini');
+            throw new \Exception('Anda belum terdaftar di kelas ini.');
         }
 
         if (!$course->attendance_open_time || !$course->attendance_close_time) {
-            throw new \Exception('Jadwal absensi belum diatur oleh guru.');
+            throw new \Exception('Jadwal jam absensi belum diatur oleh guru pengampu.');
         }
 
-        $now = now();
-        $openTime = Carbon::createFromFormat('Y-m-d H:i', today()->toDateString().' '.$course->attendance_open_time->format('H:i'));
-        $closeTime = Carbon::createFromFormat('Y-m-d H:i', today()->toDateString().' '.$course->attendance_close_time->format('H:i'));
+        $nowWib = Carbon::now('Asia/Jakarta');
+        $todayWib = Carbon::today('Asia/Jakarta')->toDateString();
 
-        if ($now->lt($openTime)) {
-            throw new \Exception('Absensi belum dibuka oleh guru.');
+        $openTimeStr = is_string($course->attendance_open_time) 
+            ? substr($course->attendance_open_time, 0, 5) 
+            : ($course->attendance_open_time ? $course->attendance_open_time->format('H:i') : '00:00');
+
+        $closeTimeStr = is_string($course->attendance_close_time) 
+            ? substr($course->attendance_close_time, 0, 5) 
+            : ($course->attendance_close_time ? $course->attendance_close_time->format('H:i') : '23:59');
+
+        $openTime = Carbon::createFromFormat('Y-m-d H:i', "{$todayWib} {$openTimeStr}", 'Asia/Jakarta');
+        $closeTime = Carbon::createFromFormat('Y-m-d H:i', "{$todayWib} {$closeTimeStr}", 'Asia/Jakarta');
+
+        if ($nowWib->lt($openTime)) {
+            throw new \Exception("Absensi belum dibuka. Jadwal aktif: {$openTimeStr} - {$closeTimeStr} WIB.");
         }
 
-        if ($now->gt($closeTime)) {
+        if ($nowWib->gt($closeTime)) {
             return Attendance::updateOrCreate(
                 [
                     'course_id' => $course->id,
                     'student_id' => $student->id,
-                    'date' => today(),
+                    'date' => $todayWib,
                 ],
                 [
                     'status' => 'alpha',
-                    'note' => 'Terlambat absen',
+                    'note' => "Terlambat absen (melewati {$closeTimeStr} WIB)",
                 ]
             );
         }
@@ -92,11 +102,11 @@ class AttendanceService
             [
                 'course_id' => $course->id,
                 'student_id' => $student->id,
-                'date' => today(),
+                'date' => $todayWib,
             ],
             [
                 'status' => 'hadir',
-                'note' => 'Self check-in',
+                'note' => 'Presensi Mandiri Siswa (Tepat Waktu)',
             ]
         );
     }

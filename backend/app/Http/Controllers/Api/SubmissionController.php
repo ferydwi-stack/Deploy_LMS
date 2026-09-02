@@ -24,7 +24,12 @@ class SubmissionController extends Controller
             ->exists();
 
         if (! $isEnrolled) {
-            return response()->json(['message' => 'Tidak terdaftar di kelas ini.'], 403);
+            return response()->json(['message' => 'Anda belum terdaftar aktif di kelas ini.'], 403);
+        }
+
+        $note = trim((string)$request->input('note'));
+        if (!$request->hasFile('file') && empty($note)) {
+            return response()->json(['message' => 'Mohon unggah berkas file jawaban atau tuliskan tautan/catatan tugas.'], 422);
         }
 
         $path = null;
@@ -46,7 +51,7 @@ class SubmissionController extends Controller
             [
                 'file_path' => $path,
                 'original_filename' => $originalName,
-                'note' => $request->input('note'),
+                'note' => $note ?: ($path ? 'Berkas jawaban terlampir' : 'Tugas dikumpulkan via web LMS'),
                 'status' => $isLate ? 'late' : 'submitted',
                 'submitted_at' => now(),
             ]

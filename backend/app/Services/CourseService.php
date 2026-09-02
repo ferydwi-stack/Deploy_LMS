@@ -81,7 +81,14 @@ class CourseService
 
     public function enrollByCode(string $code, User $student): Course
     {
-        $course = Course::where('code', $code)->firstOrFail();
+        $cleanCode = strtoupper(trim($code));
+        $cleanCode = preg_replace('/-JOIN$/i', '', $cleanCode);
+
+        $course = Course::whereRaw('UPPER(TRIM(code)) = ?', [$cleanCode])->first();
+        if (!$course) {
+            throw new \Exception("Kode kelas \"{$cleanCode}\" tidak ditemukan di sistem.");
+        }
+
         $this->enrollStudent($course, $student);
 
         return $course;

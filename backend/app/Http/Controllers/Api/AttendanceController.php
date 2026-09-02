@@ -16,7 +16,8 @@ class AttendanceController extends Controller
     {
         $this->authorize('view', $course);
         
-        $date = $request->query('date', today()->toDateString());
+        $todayWib = \Carbon\Carbon::today('Asia/Jakarta')->toDateString();
+        $date = $request->query('date', $todayWib);
         $attendances = app(AttendanceService::class)->getCourseAttendances($course, $date);
         
         return response()->json(['attendances' => $attendances]);

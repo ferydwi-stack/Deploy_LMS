@@ -203,11 +203,13 @@ export function LmsProvider({ children }: { children: React.ReactNode }) {
       const result = await api.enrollByCode(cleanCode);
       await refreshCourses();
       notifyDataChanged('lms_courses_updated');
+      notifyDataChanged('lms:courses');
       
+      const courseTitle = (result as any)?.course?.title || '';
       return { 
         success: true, 
         course: (result as any).course ? mapApiCourseToLocal((result as any).course) : undefined, 
-        message: `Berhasil bergabung ke kelas dengan kode ${cleanCode}!` 
+        message: (result as any)?.message || `Berhasil bergabung ke kelas ${courseTitle || cleanCode}!` 
       };
     } catch (error: any) {
       return { 
