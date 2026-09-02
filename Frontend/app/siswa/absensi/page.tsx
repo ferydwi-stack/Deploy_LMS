@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, FileCheck2, CalendarCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { api } from '@/lib/api';
+import { api, notifyDataChanged } from '@/lib/api';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 
 function SiswaAbsensiContent() {
@@ -37,14 +37,27 @@ function SiswaAbsensiContent() {
         api.getCourseDetail(Number(courseId)).catch(() => null),
         api.getMyAttendances().catch(() => []),
       ]);
-      const courseAttendances = Array.isArray(attendances)
-        ? attendances.filter((a: any) => String(a.course_id) === String(courseId))
-        : [];
+      const rawList = Array.isArray(attendances) ? attendances : ((attendances as any)?.attendances || []);
+      const courseAttendances = rawList
+        .filter((a: any) => String(a.course_id) === String(courseId))
+        .map((a: any) => {
+          let timeFormatted = '-';
+          if (a.created_at || a.updated_at) {
+            const d = new Date(a.created_at || a.updated_at);
+            timeFormatted = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+          }
+          return {
+            ...a,
+            time: timeFormatted,
+            displayStatus: a.status ? a.status.charAt(0).toUpperCase() + a.status.slice(1) : 'Hadir'
+          };
+        });
       
       const localDate = getLocalDateString();
       const hasToday = courseAttendances.some((a: any) => {
         const attDate = String(a.date || '').substring(0, 10);
-        return attDate === localDate || (a.created_at && String(a.created_at).substring(0, 10) === localDate);
+        const createDate = a.created_at ? String(a.created_at).substring(0, 10) : '';
+        return attDate === localDate || createDate === localDate;
       });
 
       return {
@@ -75,6 +88,8 @@ function SiswaAbsensiContent() {
     try {
       const res = await api.selfAttend(parseInt(courseId));
       setAttendanceMessage(res.message || 'Kehadiran Anda berhasil dicatat.');
+      notifyDataChanged('lms:attendances');
+      notifyDataChanged('lms:stats');
       await refreshAttendance();
     } catch (e: any) {
       setAttendanceMessage(e.message || 'Gagal mencatat kehadiran.');
@@ -210,19 +225,33 @@ function SiswaAbsensiContent() {
         {/* Riwayat Kehadiran */}
         <div className="mt-10 text-left pt-6 border-t border-slate-100">
           <p className="text-xs font-bold text-slate-700 mb-3">Riwayat Kehadiran Anda Pada Mata Pelajaran Ini</p>
-          <div className="space-y-2">
-            {history.map((h, i) => (
-              <div key={i} className="flex items-center justify-between p-3.5 bg-[#F8FAFC] border border-slate-100 rounded-2xl text-xs">
-                <div>
-                  <p className="font-bold text-slate-900 font-mono">{h.date}</p>
-                  <p className="text-[11px] text-slate-400 font-mono">Waktu Absen: {h.time}</p>
+          {history.length === 0 ? (
+            <div className="p-4 text-center bg-slate-50 border border-slate-100 rounded-2xl text-xs text-slate-400">
+              Belum ada riwayat kehadiran tercatat pada mata pelajaran ini.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {history.map((h: any, i: number) => (
+                <div key={i} className="flex items-center justify-between p-3.5 bg-[#F8FAFC] border border-slate-100 rounded-2xl text-xs">
+                  <div>
+                    <p className="font-bold text-slate-900 font-mono">{h.date}</p>
+                    <p className="text-[11px] text-slate-400 font-mono">Waktu Absen: {h.time}</p>
+                  </div>
+                  <span className={`px-3 py-1 font-bold rounded-xl text-[11px] ${
+                    String(h.status).toLowerCase() === 'hadir'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : String(h.status).toLowerCase() === 'izin'
+                      ? 'bg-blue-100 text-blue-700'
+                      : String(h.status).toLowerCase() === 'sakit'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-rose-100 text-rose-700'
+                  }`}>
+                    {h.displayStatus || h.status}
+                  </span>
                 </div>
-                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 font-bold rounded-xl text-[11px]">
-                  {h.status}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

@@ -349,8 +349,14 @@ export const api = {
   },
 
   // Attendance
-  getCourseAttendances: (courseId: number, date?: string): Promise<Attendance[]> => fetchApi(`/courses/${courseId}/attendances${date ? `?date=${date}` : ''}`),
-  getCourseAttendanceStats: (courseId: number): Promise<any> => fetchApi(`/courses/${courseId}/attendance-stats`),
+  getCourseAttendances: async (courseId: number, date?: string): Promise<Attendance[]> => {
+    const res = await fetchApi(`/courses/${courseId}/attendances${date ? `?date=${date}` : ''}`);
+    return Array.isArray(res) ? res : (res?.attendances || []);
+  },
+  getCourseAttendanceStats: async (courseId: number): Promise<any> => {
+    const res = await fetchApi(`/courses/${courseId}/attendance-stats`);
+    return res?.stats ? res : { stats: res || {} };
+  },
   saveCourseAttendances: async (courseId: number, data: { date: string; attendances: Array<{ student_id: number; status: string; note?: string }> }): Promise<ApiResponse> => {
     const res = await fetchApi(`/courses/${courseId}/attendances`, { method: 'POST', body: JSON.stringify(data) });
     notifyDataChanged('lms:attendances');
@@ -363,7 +369,10 @@ export const api = {
     notifyDataChanged('lms:stats');
     return res;
   },
-  getMyAttendances: (): Promise<Attendance[]> => fetchApi('/attendances/my'),
+  getMyAttendances: async (): Promise<Attendance[]> => {
+    const res = await fetchApi('/attendances/my');
+    return Array.isArray(res) ? res : (res?.attendances || []);
+  },
 
   // Notifications
   getNotifications: (): Promise<Notification[]> => fetchApi('/notifications'),
