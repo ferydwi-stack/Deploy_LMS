@@ -4,6 +4,7 @@ nixPkgs = ["php83", "php83Packages.composer"]
 [phases.build]
 cmds = [
     "composer install --no-dev --optimize-autoloader",
+    "php artisan storage:link || true",
     "php artisan config:clear"
 ]
 
