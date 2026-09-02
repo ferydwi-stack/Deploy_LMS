@@ -41,36 +41,57 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
 
   const [isAuthorized, setIsAuthorized] = useState(false);
 
+  const handleSignOut = async () => {
+    try {
+      await api.logout();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.replace('/login');
+      }
+    }
+  };
+
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('lms_token');
       const cached = localStorage.getItem('lms_user');
 
-      if (!token) {
+      if (!token || !cached) {
+        setIsAuthorized(false);
         window.location.replace('/login');
         return;
       }
 
-      let activeRole = role;
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          const activeUser = parsed?.user || parsed?.data || parsed;
-          setMountedUser(activeUser);
-          if (activeUser?.role) {
-            activeRole = activeUser.role;
-          }
-        } catch {}
-      }
+      try {
+        const parsed = JSON.parse(cached);
+        const activeUser = parsed?.user || parsed?.data || parsed;
+        setMountedUser(activeUser);
 
-      // Role mismatch redirection
-      if (activeRole !== role) {
-        window.location.replace(`/${activeRole}/dashboard`);
+        const activeRole = activeUser?.role;
+        if (!activeRole) {
+          setIsAuthorized(false);
+          window.location.replace('/login');
+          return;
+        }
+
+        // Strict role matching: if activeRole !== role of current layout, redirect to correct role dashboard
+        if (activeRole !== role) {
+          setIsAuthorized(false);
+          window.location.replace(`/${activeRole}/dashboard`);
+          return;
+        }
+
+        setIsAuthorized(true);
+      } catch (err) {
+        setIsAuthorized(false);
+        window.location.replace('/login');
         return;
       }
-
-      setIsAuthorized(true);
     }
   }, [role]);
 
@@ -300,7 +321,7 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
           )}
 
           <button
-            onClick={() => router.push('/login')}
+            onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
           >
             <LogOut className="w-4 h-4 text-rose-400" />
@@ -350,7 +371,7 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
                       onClick={() => setShowNotifications(false)}
                       className="p-1 text-slate-400 hover:text-slate-600"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
@@ -428,8 +449,8 @@ export default function DashboardLayout({ role, title, subtitle, children }: Das
                       <span>Profil Saya</span>
                     </button>
                     <button
-                      onClick={() => { setShowProfileMenu(false); router.push('/login'); }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
+                      onClick={() => { setShowProfileMenu(false); handleSignOut(); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 text-rose-500" />
                       <span>Keluar</span>

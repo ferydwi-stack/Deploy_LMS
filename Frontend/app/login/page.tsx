@@ -22,6 +22,22 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMsg, setForgotMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('lms_token');
+      const cached = localStorage.getItem('lms_user');
+      if (token && cached) {
+        try {
+          const user = JSON.parse(cached);
+          const active = user?.user || user?.data || user;
+          if (active?.role) {
+            router.replace(`/${active.role}/dashboard`);
+          }
+        } catch {}
+      }
+    }
+  }, [router]);
+
   const handleForgotPassword = async () => {
     setForgotMsg(null);
     if (!forgotEmail.trim()) {
