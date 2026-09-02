@@ -167,12 +167,32 @@ function GuruAbsensiContent() {
         attendance_close_time: attendanceCloseTime,
       });
       scheduleLoadedRef.current = true;
+      setIsEditingSchedule(false);
       notifyDataChanged('lms:courses');
       notifyDataChanged('lms:attendances');
       setScheduleMessage(`✓ Jadwal absensi berhasil disimpan! Aktif pukul ${attendanceOpenTime}–${attendanceCloseTime} WIB.`);
       setTimeout(() => setScheduleMessage(''), 4000);
     } catch (error: any) {
       setScheduleMessage(error.message || 'Jadwal absensi gagal disimpan.');
+    }
+  };
+
+  const handleCloseAttendanceSchedule = async () => {
+    try {
+      await api.updateAttendanceSchedule(courseId, {
+        attendance_open_time: null as any,
+        attendance_close_time: null as any,
+      });
+      setAttendanceOpenTime('');
+      setAttendanceCloseTime('');
+      scheduleLoadedRef.current = true;
+      setIsEditingSchedule(false);
+      notifyDataChanged('lms:courses');
+      notifyDataChanged('lms:attendances');
+      setScheduleMessage('⛔ Absensi mandiri siswa berhasil ditutup/dimatikan.');
+      setTimeout(() => setScheduleMessage(''), 4000);
+    } catch (error: any) {
+      setScheduleMessage(error.message || 'Gagal mematikan absensi.');
     }
   };
 
@@ -398,8 +418,16 @@ function GuruAbsensiContent() {
           >
             Simpan Jadwal Absensi
           </button>
+          {attendanceOpenTime && attendanceCloseTime && (
+            <button
+              onClick={handleCloseAttendanceSchedule}
+              className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-2xl text-xs transition shadow-xs cursor-pointer flex items-center gap-1.5"
+            >
+              <span>⛔ Tutup / Matikan Absen</span>
+            </button>
+          )}
           {scheduleMessage && (
-            <span className="text-xs font-semibold text-emerald-700 px-3.5 py-2 bg-emerald-50 border border-emerald-200 rounded-2xl">
+            <span className="text-xs font-semibold text-slate-700 px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-2xl">
               {scheduleMessage}
             </span>
           )}

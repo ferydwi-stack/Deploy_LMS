@@ -104,9 +104,24 @@ class CourseController extends Controller
         $course = Course::findOrFail($id);
         $this->authorize('update', $course);
 
+        $openTime = $request->input('attendance_open_time');
+        $closeTime = $request->input('attendance_close_time');
+
+        if (empty($openTime) || empty($closeTime)) {
+            $course->update([
+                'attendance_open_time' => null,
+                'attendance_close_time' => null,
+            ]);
+
+            return response()->json([
+                'message' => 'Absensi mandiri siswa berhasil ditutup/dimatikan.',
+                'course' => $course,
+            ]);
+        }
+
         $validated = $request->validate([
-            'attendance_open_time' => 'nullable|date_format:H:i',
-            'attendance_close_time' => 'nullable|date_format:H:i|after:attendance_open_time',
+            'attendance_open_time' => 'required|date_format:H:i',
+            'attendance_close_time' => 'required|date_format:H:i|after:attendance_open_time',
         ]);
 
         $course->update($validated);
