@@ -52,7 +52,7 @@ class MaterialController extends Controller
 
         $filePath = null;
         if ($request->hasFile('file')) {
-            $filePath = $request->file('file')->store('materi', 'public');
+            $filePath = \App\Services\PersistentStorageService::store($request->file('file'), 'materi');
         } elseif (! empty($url)) {
             $filePath = $url;
         }

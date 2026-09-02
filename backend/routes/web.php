@@ -3,6 +3,12 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    try {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('file_storages')) {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        }
+    } catch (\Throwable $e) {}
+
     return response()->json([
         'status' => 'online',
         'app' => 'EduSchool Platform LMS API',
@@ -12,25 +18,9 @@ Route::get('/', function () {
 });
 
 Route::get('/storage/{path}', function (string $path) {
-    // Sanitize path to prevent directory traversal
-    $path = str_replace(['../', '..\\'], '', $path);
-    
-    // Check in default storage/app/public
-    $disk = \Illuminate\Support\Facades\Storage::disk('public');
-    if ($disk->exists($path)) {
-        return $disk->response($path);
-    }
-    
-    // Check in storage_path('app/public/' . $path)
-    $filePath = storage_path('app/public/' . $path);
-    if (file_exists($filePath)) {
-        return response()->file($filePath);
-    }
-
-    // Check in public_path('storage/' . $path)
-    $publicPath = public_path('storage/' . $path);
-    if (file_exists($publicPath)) {
-        return response()->file($publicPath);
+    $response = \App\Services\PersistentStorageService::getFileResponse($path);
+    if ($response) {
+        return $response;
     }
 
     abort(404, 'Berkas file tidak ditemukan di server.');

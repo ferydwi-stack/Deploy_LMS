@@ -56,7 +56,7 @@ class AssignmentController extends Controller
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $attachmentName = $file->getClientOriginalName();
-            $attachmentPath = $file->store('tugas_soal', 'public');
+            $attachmentPath = \App\Services\PersistentStorageService::store($file, 'tugas_soal');
         }
 
         $assignment = Assignment::create([

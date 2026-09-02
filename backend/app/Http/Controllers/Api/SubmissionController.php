@@ -38,7 +38,7 @@ class SubmissionController extends Controller
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $originalName = $file->getClientOriginalName();
-            $path = $file->store('tugas', 'public');
+            $path = \App\Services\PersistentStorageService::store($file, 'tugas');
         }
 
         $isLate = $assignment->due_date && now()->greaterThan($assignment->due_date);
